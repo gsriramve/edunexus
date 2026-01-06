@@ -3659,4 +3659,134 @@ export interface QuickReportParams {
   format?: ReportFormat;
 }
 
+// =============================================================================
+// PUSH NOTIFICATIONS API
+// =============================================================================
+
+export interface PushNotificationPayload {
+  title: string;
+  body: string;
+  icon?: string;
+  image?: string;
+  badge?: string;
+  clickAction?: string;
+  data?: Record<string, string>;
+}
+
+export interface DeviceTokenInput {
+  userId: string;
+  tenantId: string;
+  token: string;
+  deviceType?: string;
+  deviceName?: string;
+  deviceModel?: string;
+  appVersion?: string;
+}
+
+export interface PushResult {
+  success: boolean;
+  messageId?: string;
+  failedTokens?: string[];
+  error?: string;
+}
+
+export const pushNotificationsApi = {
+  // Device token management
+  registerToken: (tenantId: string, data: DeviceTokenInput) =>
+    api<{ success: boolean; tokenId?: string }>('/notifications/push/register-token', {
+      method: 'POST',
+      body: data,
+      tenantId,
+    }),
+
+  unregisterToken: (token: string) =>
+    api<{ success: boolean }>('/notifications/push/unregister-token', {
+      method: 'DELETE',
+      body: { token },
+    }),
+
+  // Send push notifications
+  send: (tenantId: string, userId: string, notification: PushNotificationPayload) =>
+    api<PushResult>('/notifications/push', {
+      method: 'POST',
+      body: { userId, tenantId, notification },
+      tenantId,
+    }),
+
+  sendBulk: (tenantId: string, userIds: string[], notification: PushNotificationPayload) =>
+    api<PushResult>('/notifications/push/bulk', {
+      method: 'POST',
+      body: { userIds, tenantId, notification },
+      tenantId,
+    }),
+
+  // Convenience methods
+  sendPaymentSuccess: (
+    tenantId: string,
+    userId: string,
+    studentName: string,
+    amount: number,
+    receiptNumber: string,
+  ) =>
+    api<PushResult>('/notifications/push/payment-success', {
+      method: 'POST',
+      body: { userId, tenantId, studentName, amount, receiptNumber },
+      tenantId,
+    }),
+
+  sendFeeReminder: (
+    tenantId: string,
+    userId: string,
+    studentName: string,
+    amount: number,
+    dueDate: string,
+  ) =>
+    api<PushResult>('/notifications/push/fee-reminder', {
+      method: 'POST',
+      body: { userId, tenantId, studentName, amount, dueDate },
+      tenantId,
+    }),
+
+  sendFeeOverdue: (tenantId: string, userId: string, studentName: string, amount: number) =>
+    api<PushResult>('/notifications/push/fee-overdue', {
+      method: 'POST',
+      body: { userId, tenantId, studentName, amount },
+      tenantId,
+    }),
+
+  sendAttendanceAlert: (
+    tenantId: string,
+    userId: string,
+    studentName: string,
+    percentage: number,
+  ) =>
+    api<PushResult>('/notifications/push/attendance-alert', {
+      method: 'POST',
+      body: { userId, tenantId, studentName, percentage },
+      tenantId,
+    }),
+
+  sendExamResult: (tenantId: string, userId: string, examName: string, subjectName: string) =>
+    api<PushResult>('/notifications/push/exam-result', {
+      method: 'POST',
+      body: { userId, tenantId, examName, subjectName },
+      tenantId,
+    }),
+
+  sendAnnouncement: (tenantId: string, userIds: string[], title: string, message: string) =>
+    api<PushResult>('/notifications/push/announcement', {
+      method: 'POST',
+      body: { userIds, tenantId, title, message },
+      tenantId,
+    }),
+
+  // Test push notification
+  sendTest: (tenantId: string, userId: string) =>
+    api<PushResult>('/notifications/test/push', {
+      method: 'POST',
+      body: { userId, tenantId },
+      tenantId,
+    }),
+};
+
 export { ApiError };
