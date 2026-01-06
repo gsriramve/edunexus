@@ -1,3 +1,16 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+// TEMPORARY: Bypass Clerk for local testing
+// TODO: Re-enable Clerk authentication with valid keys for production
+
+export default function middleware(req: NextRequest) {
+  // Allow all routes for testing
+  return NextResponse.next();
+}
+
+/*
+// Original Clerk middleware - uncomment when ready for production
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 // Define public routes that don't require authentication
@@ -55,6 +68,7 @@ export default clerkMiddleware(async (auth, req) => {
 
   // Add more role checks as needed...
 });
+*/
 
 export const config = {
   matcher: [

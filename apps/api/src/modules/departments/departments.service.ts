@@ -19,25 +19,32 @@ export class DepartmentsService {
       throw new ConflictException('A department with this code already exists');
     }
 
-    return this.prisma.department.create({
+    // Validate HOD exists if provided
+    if (createDepartmentDto.hodId) {
+      const hod = await this.prisma.staff.findFirst({
+        where: { id: createDepartmentDto.hodId, tenantId },
+      });
+      if (!hod) {
+        throw new NotFoundException('HOD staff member not found');
+      }
+    }
+
+    const department = await this.prisma.department.create({
       data: {
         tenantId,
         name: createDepartmentDto.name,
         code: createDepartmentDto.code,
-        description: createDepartmentDto.description,
         hodId: createDepartmentDto.hodId,
       },
       include: {
-        hod: {
-          select: {
-            id: true,
-            employeeId: true,
-            designation: true,
+        staff: {
+          take: 1,
+          include: {
             user: {
               select: {
                 id: true,
                 email: true,
-                profile: true,
+                name: true,
               },
             },
           },
@@ -50,6 +57,28 @@ export class DepartmentsService {
         },
       },
     });
+
+    // Get HOD info if hodId is set
+    let hodInfo = null;
+    if (department.hodId) {
+      hodInfo = await this.prisma.staff.findFirst({
+        where: { id: department.hodId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+            },
+          },
+        },
+      });
+    }
+
+    return {
+      ...department,
+      hod: hodInfo,
+    };
   }
 
   async findAll(tenantId: string, options?: { search?: string; limit?: number; offset?: number }) {
@@ -71,20 +100,6 @@ export class DepartmentsService {
         skip: offset,
         orderBy: { name: 'asc' },
         include: {
-          hod: {
-            select: {
-              id: true,
-              employeeId: true,
-              designation: true,
-              user: {
-                select: {
-                  id: true,
-                  email: true,
-                  profile: true,
-                },
-              },
-            },
-          },
           _count: {
             select: {
               staff: true,
@@ -96,8 +111,33 @@ export class DepartmentsService {
       this.prisma.department.count({ where }),
     ]);
 
+    // Get HOD info for each department
+    const departmentsWithHod = await Promise.all(
+      departments.map(async (dept) => {
+        let hodInfo = null;
+        if (dept.hodId) {
+          hodInfo = await this.prisma.staff.findFirst({
+            where: { id: dept.hodId },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  name: true,
+                },
+              },
+            },
+          });
+        }
+        return {
+          ...dept,
+          hod: hodInfo,
+        };
+      }),
+    );
+
     return {
-      data: departments,
+      data: departmentsWithHod,
       total,
       limit,
       offset,
@@ -108,20 +148,6 @@ export class DepartmentsService {
     const department = await this.prisma.department.findFirst({
       where: { id, tenantId },
       include: {
-        hod: {
-          select: {
-            id: true,
-            employeeId: true,
-            designation: true,
-            user: {
-              select: {
-                id: true,
-                email: true,
-                profile: true,
-              },
-            },
-          },
-        },
         staff: {
           take: 10,
           include: {
@@ -129,7 +155,7 @@ export class DepartmentsService {
               select: {
                 id: true,
                 email: true,
-                profile: true,
+                name: true,
               },
             },
           },
@@ -147,7 +173,27 @@ export class DepartmentsService {
       throw new NotFoundException('Department not found');
     }
 
-    return department;
+    // Get HOD info if hodId is set
+    let hodInfo = null;
+    if (department.hodId) {
+      hodInfo = await this.prisma.staff.findFirst({
+        where: { id: department.hodId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+            },
+          },
+        },
+      });
+    }
+
+    return {
+      ...department,
+      hod: hodInfo,
+    };
   }
 
   async update(tenantId: string, id: string, updateDepartmentDto: UpdateDepartmentDto) {
@@ -160,24 +206,23 @@ export class DepartmentsService {
       throw new NotFoundException('Department not found');
     }
 
-    return this.prisma.department.update({
+    // Validate HOD exists if provided
+    if (updateDepartmentDto.hodId) {
+      const hod = await this.prisma.staff.findFirst({
+        where: { id: updateDepartmentDto.hodId, tenantId },
+      });
+      if (!hod) {
+        throw new NotFoundException('HOD staff member not found');
+      }
+    }
+
+    const department = await this.prisma.department.update({
       where: { id },
-      data: updateDepartmentDto,
+      data: {
+        name: updateDepartmentDto.name,
+        hodId: updateDepartmentDto.hodId,
+      },
       include: {
-        hod: {
-          select: {
-            id: true,
-            employeeId: true,
-            designation: true,
-            user: {
-              select: {
-                id: true,
-                email: true,
-                profile: true,
-              },
-            },
-          },
-        },
         _count: {
           select: {
             staff: true,
@@ -186,6 +231,28 @@ export class DepartmentsService {
         },
       },
     });
+
+    // Get HOD info if hodId is set
+    let hodInfo = null;
+    if (department.hodId) {
+      hodInfo = await this.prisma.staff.findFirst({
+        where: { id: department.hodId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+            },
+          },
+        },
+      });
+    }
+
+    return {
+      ...department,
+      hod: hodInfo,
+    };
   }
 
   async remove(tenantId: string, id: string) {

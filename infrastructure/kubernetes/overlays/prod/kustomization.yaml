@@ -1,0 +1,66 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: edunexus-production
+
+resources:
+  - ../../base
+  - ingress.yaml
+  - external-secrets.yaml
+
+nameSuffix: ""
+
+commonLabels:
+  environment: production
+
+configMapGenerator:
+  - name: edunexus-api-config
+    behavior: merge
+    literals:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+  - name: edunexus-web-config
+    behavior: merge
+    literals:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://api.edunexus.io
+
+patches:
+  # Scale up API replicas for production
+  - target:
+      kind: Deployment
+      name: edunexus-api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+  # Scale up Web replicas for production
+  - target:
+      kind: Deployment
+      name: edunexus-web
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  # Increase resources for production
+  - target:
+      kind: Deployment
+      name: edunexus-api
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+
+images:
+  - name: edunexus-api
+    newName: ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/edunexus/api
+    newTag: production-latest
+  - name: edunexus-web
+    newName: ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/edunexus/web
+    newTag: production-latest

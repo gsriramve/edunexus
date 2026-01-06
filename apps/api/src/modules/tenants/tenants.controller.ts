@@ -45,9 +45,9 @@ export class TenantsController {
     return this.tenantsService.findOne(id);
   }
 
-  @Get('slug/:slug')
-  findBySlug(@Param('slug') slug: string) {
-    return this.tenantsService.findBySlug(slug);
+  @Get('domain/:domain')
+  findByDomain(@Param('domain') domain: string) {
+    return this.tenantsService.findByDomain(domain);
   }
 
   @Patch(':id/status')

@@ -1,0 +1,228 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main        # Production deployment
+      - staging     # Staging deployment
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      skip_migrations:
+        description: 'Skip database migrations'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY_API: edunexus/api
+  ECR_REPOSITORY_WEB: edunexus/web
+  EKS_CLUSTER_NAME: edunexus-cluster
+
+jobs:
+  # Determine deployment environment
+  setup:
+    name: Setup Deployment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      skip_migrations: ${{ steps.set-env.outputs.skip_migrations }}
+    steps:
+      - name: Set environment
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+            echo "skip_migrations=${{ github.event.inputs.skip_migrations }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "skip_migrations=false" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "skip_migrations=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Build and push Docker images
+  build:
+    name: Build & Push Images
+    needs: setup
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup.outputs.environment }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image tags
+        id: image-tags
+        run: |
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "tag=${{ needs.setup.outputs.environment }}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "latest=${{ needs.setup.outputs.environment }}-latest" >> $GITHUB_OUTPUT
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_API }}:${{ steps.image-tags.outputs.tag }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_API }}:${{ steps.image-tags.outputs.latest }}
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/web/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_WEB }}:${{ steps.image-tags.outputs.tag }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_WEB }}:${{ steps.image-tags.outputs.latest }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+
+    outputs:
+      image_tag: ${{ steps.image-tags.outputs.tag }}
+
+  # Run database migrations
+  migrate:
+    name: Database Migrations
+    needs: [setup, build]
+    if: needs.setup.outputs.skip_migrations != 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup.outputs.environment }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        working-directory: packages/database
+
+      - name: Check Migration Status
+        run: npx prisma migrate status
+        working-directory: packages/database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Run Database Migrations
+        run: npx prisma migrate deploy
+        working-directory: packages/database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Verify Migration Success
+        run: |
+          echo "Verifying migrations applied successfully..."
+          npx prisma migrate status
+        working-directory: packages/database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  # Deploy to Kubernetes
+  deploy:
+    name: Deploy to Kubernetes
+    needs: [setup, build, migrate]
+    if: always() && needs.build.result == 'success' && (needs.migrate.result == 'success' || needs.migrate.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup.outputs.environment }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }}-${{ needs.setup.outputs.environment }} --region ${{ env.AWS_REGION }}
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Deploy to Kubernetes
+        run: |
+          cd infrastructure/kubernetes/overlays/${{ needs.setup.outputs.environment }}
+
+          # Update image tags
+          kustomize edit set image \
+            edunexus-api=${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_API }}:${{ needs.build.outputs.image_tag }} \
+            edunexus-web=${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_WEB }}:${{ needs.build.outputs.image_tag }}
+
+          # Apply manifests
+          kustomize build . | kubectl apply -f -
+
+      - name: Wait for deployment
+        run: |
+          kubectl rollout status deployment/edunexus-api -n edunexus-${{ needs.setup.outputs.environment }} --timeout=300s
+          kubectl rollout status deployment/edunexus-web -n edunexus-${{ needs.setup.outputs.environment }} --timeout=300s
+
+      - name: Run smoke tests
+        run: |
+          API_URL=$(kubectl get svc edunexus-api -n edunexus-${{ needs.setup.outputs.environment }} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          echo "Testing API health endpoint..."
+          curl -f http://${API_URL}/health || exit 1
+          echo "API health check passed!"
+
+  # Notify deployment status
+  notify:
+    name: Notify
+    needs: [setup, build, migrate, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deployment Notification
+        run: |
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+            echo "✅ Deployment to ${{ needs.setup.outputs.environment }} succeeded!"
+            echo "Image: ${{ needs.build.outputs.image_tag }}"
+          else
+            echo "❌ Deployment to ${{ needs.setup.outputs.environment }} failed!"
+            exit 1
+          fi
+
+      # Optional: Add Slack/Discord notification here
+      # - name: Slack Notification
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: ${{ needs.deploy.result }}
+      #     fields: repo,message,commit,author
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

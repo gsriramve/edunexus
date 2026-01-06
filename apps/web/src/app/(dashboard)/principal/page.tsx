@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from "next/link";
 import {
   Building2,
@@ -9,43 +12,25 @@ import {
   AlertCircle,
   BookOpen,
   Bell,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useDepartments, useDepartmentStats, useStaffStats, useStudentStats } from "@/hooks/use-api";
+import { useTenantId, setTenantId } from "@/hooks/use-tenant";
 
-// Mock data
-const stats = [
-  {
-    title: "Total Departments",
-    value: "8",
-    change: "+1 this year",
-    icon: Building2,
-    href: "/principal/departments",
-  },
-  {
-    title: "Total Staff",
-    value: "186",
-    change: "+12 this semester",
-    icon: Users,
-    href: "/principal/staff",
-  },
-  {
-    title: "Total Students",
-    value: "2,840",
-    change: "+320 new admissions",
-    icon: GraduationCap,
-    href: "/principal/students",
-  },
-  {
-    title: "Fee Collection",
-    value: "₹1.2Cr",
-    change: "78% collected",
-    icon: Wallet,
-    href: "/principal/fees",
-  },
-];
-
+// Mock data for activities and events (would be separate APIs)
 const recentActivities = [
   {
     id: 1,
@@ -118,15 +103,106 @@ const alerts = [
   },
 ];
 
-const departmentPerformance = [
-  { name: "CSE", students: 480, attendance: 92, placement: 95 },
-  { name: "ECE", students: 420, attendance: 88, placement: 85 },
-  { name: "MECH", students: 380, attendance: 85, placement: 78 },
-  { name: "CIVIL", students: 240, attendance: 90, placement: 72 },
-  { name: "EEE", students: 320, attendance: 87, placement: 80 },
-];
-
 export default function PrincipalDashboard() {
+  const tenantId = useTenantId();
+  const [showTenantDialog, setShowTenantDialog] = useState(false);
+  const [inputTenantId, setInputTenantId] = useState('');
+
+  // Check if we need to prompt for tenant ID
+  useEffect(() => {
+    if (!tenantId) {
+      setShowTenantDialog(true);
+    }
+  }, [tenantId]);
+
+  // Fetch data with tenant ID
+  const { data: deptStats, isLoading: deptStatsLoading } = useDepartmentStats(tenantId || '');
+  const { data: staffStats, isLoading: staffStatsLoading } = useStaffStats(tenantId || '');
+  const { data: studentStats, isLoading: studentStatsLoading } = useStudentStats(tenantId || '');
+  const { data: departmentsData, isLoading: deptsLoading } = useDepartments(tenantId || '', { limit: 10 });
+
+  const isLoading = deptStatsLoading || staffStatsLoading || studentStatsLoading || deptsLoading;
+
+  // Build stats from API data
+  const stats = [
+    {
+      title: "Total Departments",
+      value: deptStats?.totalDepartments?.toString() || "0",
+      change: `${deptStats?.departmentsWithHod || 0} with HOD`,
+      icon: Building2,
+      href: "/principal/departments",
+    },
+    {
+      title: "Total Staff",
+      value: staffStats?.total?.toString() || "0",
+      change: `${staffStats?.active || 0} active`,
+      icon: Users,
+      href: "/principal/staff",
+    },
+    {
+      title: "Total Students",
+      value: studentStats?.total?.toLocaleString() || "0",
+      change: `${studentStats?.active || 0} active`,
+      icon: GraduationCap,
+      href: "/principal/students",
+    },
+    {
+      title: "Fee Collection",
+      value: "₹--",
+      change: "Coming soon",
+      icon: Wallet,
+      href: "/principal/fees",
+    },
+  ];
+
+  // Build department performance from API data
+  const departmentPerformance = departmentsData?.data?.map(dept => ({
+    name: dept.code,
+    students: dept._count?.students || 0,
+    staff: dept._count?.staff || 0,
+    attendance: 0, // Would come from attendance API
+    placement: 0, // Would come from placement API
+  })) || [];
+
+  const handleSetTenantId = () => {
+    if (inputTenantId.trim()) {
+      setTenantId(inputTenantId.trim());
+      setShowTenantDialog(false);
+      window.location.reload();
+    }
+  };
+
+  if (!tenantId && showTenantDialog) {
+    return (
+      <Dialog open={showTenantDialog} onOpenChange={setShowTenantDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Enter Tenant ID</DialogTitle>
+            <DialogDescription>
+              Enter your college tenant ID to access the dashboard. You can find this in the Platform dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="tenantId">Tenant ID</Label>
+              <Input
+                id="tenantId"
+                placeholder="e.g., cmk2emocr0000vintzzjc52nb"
+                value={inputTenantId}
+                onChange={(e) => setInputTenantId(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSetTenantId} disabled={!inputTenantId.trim()}>
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -159,8 +235,14 @@ export default function PrincipalDashboard() {
                 <stat.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">{stat.change}</p>
+                {isLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{stat.value}</div>
+                    <p className="text-xs text-muted-foreground">{stat.change}</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </Link>
@@ -176,38 +258,54 @@ export default function PrincipalDashboard() {
             <CardDescription>Overview of all departments</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {departmentPerformance.map((dept) => (
-                <div
-                  key={dept.name}
-                  className="flex items-center justify-between p-3 rounded-lg border"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary">
-                      {dept.name}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : departmentPerformance.length > 0 ? (
+              <div className="space-y-4">
+                {departmentPerformance.map((dept) => (
+                  <div
+                    key={dept.name}
+                    className="flex items-center justify-between p-3 rounded-lg border"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary">
+                        {dept.name}
+                      </div>
+                      <div>
+                        <p className="font-medium">{dept.name} Department</p>
+                        <p className="text-sm text-muted-foreground">
+                          {dept.students} students, {dept.staff} staff
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{dept.name} Department</p>
-                      <p className="text-sm text-muted-foreground">
-                        {dept.students} students
-                      </p>
+                    <div className="flex gap-6">
+                      <div className="text-center">
+                        <p className="text-sm font-medium">{dept.attendance || '--'}%</p>
+                        <p className="text-xs text-muted-foreground">Attendance</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-green-600">
+                          {dept.placement || '--'}%
+                        </p>
+                        <p className="text-xs text-muted-foreground">Placement</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-6">
-                    <div className="text-center">
-                      <p className="text-sm font-medium">{dept.attendance}%</p>
-                      <p className="text-xs text-muted-foreground">Attendance</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-green-600">
-                        {dept.placement}%
-                      </p>
-                      <p className="text-xs text-muted-foreground">Placement</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No departments found</p>
+                <Link href="/principal/departments">
+                  <Button variant="outline" className="mt-4">
+                    Add Department
+                  </Button>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
 

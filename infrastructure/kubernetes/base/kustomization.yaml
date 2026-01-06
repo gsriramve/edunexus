@@ -1,0 +1,33 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: edunexus
+
+resources:
+  - namespace.yaml
+  - api/deployment.yaml
+  - web/deployment.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: edunexus
+  app.kubernetes.io/managed-by: kustomize
+
+configMapGenerator:
+  - name: edunexus-api-config
+    literals:
+      - NODE_ENV=production
+      - PORT=3001
+  - name: edunexus-web-config
+    literals:
+      - NODE_ENV=production
+
+# Secrets are managed separately (via External Secrets Operator or sealed secrets)
+# Do not include actual secrets in git
+
+images:
+  - name: edunexus-api
+    newName: ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/edunexus/api
+    newTag: latest
+  - name: edunexus-web
+    newName: ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/edunexus/web
+    newTag: latest

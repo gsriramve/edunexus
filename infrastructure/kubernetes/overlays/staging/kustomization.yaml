@@ -1,0 +1,60 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: edunexus-staging
+
+resources:
+  - ../../base
+
+nameSuffix: ""
+
+commonLabels:
+  environment: staging
+
+configMapGenerator:
+  - name: edunexus-api-config
+    behavior: merge
+    literals:
+      - NODE_ENV=staging
+      - LOG_LEVEL=debug
+  - name: edunexus-web-config
+    behavior: merge
+    literals:
+      - NODE_ENV=staging
+      - NEXT_PUBLIC_API_URL=https://api-staging.edunexus.io
+
+patches:
+  # Scale down for staging
+  - target:
+      kind: Deployment
+      name: edunexus-api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+  - target:
+      kind: Deployment
+      name: edunexus-web
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  # Disable HPA for staging
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: edunexus-api-hpa
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 3
+
+images:
+  - name: edunexus-api
+    newName: ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/edunexus/api
+    newTag: staging-latest
+  - name: edunexus-web
+    newName: ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/edunexus/web
+    newTag: staging-latest

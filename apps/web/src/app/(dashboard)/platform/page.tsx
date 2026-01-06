@@ -1,4 +1,6 @@
-import { Building2, Users, CreditCard, TrendingUp, AlertCircle, CheckCircle } from "lucide-react";
+'use client';
+
+import { Building2, Users, CreditCard, TrendingUp, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,78 +12,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTenants, useTenantStats } from "@/hooks/use-api";
 
-// Mock data - will be replaced with real API calls
-const stats = [
-  {
-    title: "Total Colleges",
-    value: "12",
-    change: "+2 this month",
-    icon: Building2,
-    trend: "up",
-  },
-  {
-    title: "Total Students",
-    value: "45,230",
-    change: "+1,234 this month",
-    icon: Users,
-    trend: "up",
-  },
-  {
-    title: "Monthly Revenue",
-    value: "₹22.6L",
-    change: "+12% from last month",
-    icon: CreditCard,
-    trend: "up",
-  },
-  {
-    title: "Active Users",
-    value: "38,450",
-    change: "85% of total",
-    icon: TrendingUp,
-    trend: "neutral",
-  },
-];
-
-const recentColleges = [
-  {
-    id: "1",
-    name: "ABC Engineering College",
-    location: "Chennai",
-    students: 5200,
-    status: "active",
-    subscription: "Premium",
-    mrr: "₹2.6L",
-  },
-  {
-    id: "2",
-    name: "XYZ Institute of Technology",
-    location: "Bangalore",
-    students: 4800,
-    status: "active",
-    subscription: "Premium",
-    mrr: "₹2.4L",
-  },
-  {
-    id: "3",
-    name: "PQR College of Engineering",
-    location: "Hyderabad",
-    students: 3500,
-    status: "trial",
-    subscription: "Trial",
-    mrr: "₹0",
-  },
-  {
-    id: "4",
-    name: "LMN Technical University",
-    location: "Mumbai",
-    students: 6100,
-    status: "active",
-    subscription: "Enterprise",
-    mrr: "₹3.05L",
-  },
-];
-
+// Mock support tickets - would be a separate API
 const recentTickets = [
   {
     id: "T-1234",
@@ -107,6 +40,71 @@ const recentTickets = [
 ];
 
 export default function PlatformDashboard() {
+  const { data: tenantsData, isLoading: tenantsLoading, error: tenantsError } = useTenants({ limit: 10 });
+  const { data: statsData, isLoading: statsLoading, error: statsError } = useTenantStats();
+
+  const isLoading = tenantsLoading || statsLoading;
+  const hasError = tenantsError || statsError;
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    if (amount >= 100000) {
+      return `₹${(amount / 100000).toFixed(1)}L`;
+    }
+    return `₹${amount.toLocaleString()}`;
+  };
+
+  // Build stats from API data
+  const stats = [
+    {
+      title: "Total Colleges",
+      value: statsData?.totalTenants?.toString() || "0",
+      change: `${statsData?.activeTenants || 0} active`,
+      icon: Building2,
+      trend: "up",
+    },
+    {
+      title: "Total Students",
+      value: statsData?.totalStudents?.toLocaleString() || "0",
+      change: "Across all colleges",
+      icon: Users,
+      trend: "up",
+    },
+    {
+      title: "Monthly Revenue",
+      value: formatCurrency(statsData?.monthlyRevenue || 0),
+      change: "Current month",
+      icon: CreditCard,
+      trend: "up",
+    },
+    {
+      title: "Trial Colleges",
+      value: statsData?.trialTenants?.toString() || "0",
+      change: "Pending conversion",
+      icon: TrendingUp,
+      trend: "neutral",
+    },
+  ];
+
+  if (hasError) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <Card className="p-6">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Error Loading Data</h2>
+            <p className="text-muted-foreground">
+              {(tenantsError as Error)?.message || (statsError as Error)?.message || "Failed to load dashboard data"}
+            </p>
+            <Button className="mt-4" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -132,8 +130,14 @@ export default function PlatformDashboard() {
               <stat.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.change}</p>
+              {isLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <p className="text-xs text-muted-foreground">{stat.change}</p>
+                </>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -150,60 +154,81 @@ export default function PlatformDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>College</TableHead>
-                  <TableHead>Students</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>MRR</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentColleges.map((college) => (
-                  <TableRow key={college.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{college.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {college.location}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{college.students.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          college.subscription === "Enterprise"
-                            ? "default"
-                            : college.subscription === "Premium"
-                            ? "secondary"
-                            : "outline"
-                        }
-                      >
-                        {college.subscription}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{college.mrr}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={college.status === "active" ? "default" : "outline"}
-                        className={
-                          college.status === "active"
-                            ? "bg-green-500"
-                            : college.status === "trial"
-                            ? "bg-yellow-500"
-                            : ""
-                        }
-                      >
-                        {college.status}
-                      </Badge>
-                    </TableCell>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : tenantsData?.data && tenantsData.data.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>College</TableHead>
+                    <TableHead>Students</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>MRR</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {tenantsData.data.map((tenant) => (
+                    <TableRow key={tenant.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{tenant.displayName || tenant.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {tenant.domain}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {tenant.subscription?.studentCount?.toLocaleString() || "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            tenant.subscription?.plan === "enterprise"
+                              ? "default"
+                              : tenant.subscription?.plan === "premium"
+                              ? "secondary"
+                              : "outline"
+                          }
+                        >
+                          {tenant.subscription?.plan || "No plan"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {tenant.subscription?.amount
+                          ? formatCurrency(parseFloat(tenant.subscription.amount))
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={tenant.status === "active" ? "default" : "outline"}
+                          className={
+                            tenant.status === "active"
+                              ? "bg-green-500"
+                              : tenant.status === "trial"
+                              ? "bg-yellow-500"
+                              : ""
+                          }
+                        >
+                          {tenant.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No colleges onboarded yet</p>
+                <Button variant="outline" className="mt-4">
+                  <Building2 className="mr-2 h-4 w-4" />
+                  Add First College
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 

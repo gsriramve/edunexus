@@ -1,4 +1,5 @@
 import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateStaffDto, UpdateStaffDto, StaffQueryDto, StaffRole } from './dto/create-staff.dto';
 
@@ -16,9 +17,9 @@ export class StaffService {
       throw new ConflictException('Employee ID already exists');
     }
 
-    // Check if email already exists
-    const existingEmail = await this.prisma.user.findUnique({
-      where: { email: createStaffDto.email },
+    // Check if email already exists in this tenant
+    const existingEmail = await this.prisma.user.findFirst({
+      where: { tenantId, email: createStaffDto.email },
     });
 
     if (existingEmail) {
@@ -35,18 +36,22 @@ export class StaffService {
     }
 
     // Create user and staff in a transaction
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Create user account
       const user = await tx.user.create({
         data: {
           tenantId,
           email: createStaffDto.email,
+          name: `${createStaffDto.firstName} ${createStaffDto.lastName}`,
           role: this.mapStaffRoleToUserRole(createStaffDto.role),
-          profile: {
-            firstName: createStaffDto.firstName,
-            lastName: createStaffDto.lastName,
-            phone: createStaffDto.phone,
-          },
+          status: 'active',
+        },
+      });
+
+      // Create user profile
+      await tx.userProfile.create({
+        data: {
+          userId: user.id,
         },
       });
 
@@ -59,16 +64,13 @@ export class StaffService {
           designation: createStaffDto.designation,
           departmentId: createStaffDto.departmentId,
           joiningDate: new Date(createStaffDto.joiningDate),
-          qualification: createStaffDto.qualification,
-          specialization: createStaffDto.specialization,
-          experience: createStaffDto.experience,
-          status: 'ACTIVE',
         },
         include: {
           user: {
             select: {
               id: true,
               email: true,
+              name: true,
               role: true,
               profile: true,
             },
@@ -98,14 +100,14 @@ export class StaffService {
       where.departmentId = departmentId;
     }
 
-    if (status) {
-      where.status = status.toUpperCase();
-    }
-
-    if (role) {
-      where.user = {
-        role: this.mapStaffRoleToUserRole(role),
-      };
+    if (role || status) {
+      where.user = {};
+      if (role) {
+        where.user.role = this.mapStaffRoleToUserRole(role);
+      }
+      if (status) {
+        where.user.status = status;
+      }
     }
 
     if (search) {
@@ -113,8 +115,7 @@ export class StaffService {
         { employeeId: { contains: search, mode: 'insensitive' } },
         { designation: { contains: search, mode: 'insensitive' } },
         { user: { email: { contains: search, mode: 'insensitive' } } },
-        { user: { profile: { path: ['firstName'], string_contains: search } } },
-        { user: { profile: { path: ['lastName'], string_contains: search } } },
+        { user: { name: { contains: search, mode: 'insensitive' } } },
       ];
     }
 
@@ -129,6 +130,7 @@ export class StaffService {
             select: {
               id: true,
               email: true,
+              name: true,
               role: true,
               profile: true,
             },
@@ -161,6 +163,7 @@ export class StaffService {
           select: {
             id: true,
             email: true,
+            name: true,
             role: true,
             profile: true,
           },
@@ -206,27 +209,26 @@ export class StaffService {
       }
     }
 
-    // Update staff and user profile
-    const result = await this.prisma.$transaction(async (tx) => {
-      // Update user profile if name/phone changed
-      if (updateStaffDto.firstName || updateStaffDto.lastName || updateStaffDto.phone) {
+    // Update staff and user in a transaction
+    const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Update user name if firstName/lastName changed
+      if (updateStaffDto.firstName || updateStaffDto.lastName) {
         const currentUser = await tx.user.findFirst({
           where: { id: existing.userId },
         });
 
-        const currentProfile = (currentUser?.profile as any) || {};
+        if (currentUser) {
+          const nameParts = currentUser.name.split(' ');
+          const firstName = updateStaffDto.firstName || nameParts[0] || '';
+          const lastName = updateStaffDto.lastName || nameParts.slice(1).join(' ') || '';
 
-        await tx.user.update({
-          where: { id: existing.userId },
-          data: {
-            profile: {
-              ...currentProfile,
-              ...(updateStaffDto.firstName && { firstName: updateStaffDto.firstName }),
-              ...(updateStaffDto.lastName && { lastName: updateStaffDto.lastName }),
-              ...(updateStaffDto.phone && { phone: updateStaffDto.phone }),
+          await tx.user.update({
+            where: { id: existing.userId },
+            data: {
+              name: `${firstName} ${lastName}`.trim(),
             },
-          },
-        });
+          });
+        }
       }
 
       // Update staff record
@@ -235,16 +237,13 @@ export class StaffService {
         data: {
           designation: updateStaffDto.designation,
           departmentId: updateStaffDto.departmentId,
-          status: updateStaffDto.status?.toUpperCase(),
-          qualification: updateStaffDto.qualification,
-          specialization: updateStaffDto.specialization,
-          experience: updateStaffDto.experience,
         },
         include: {
           user: {
             select: {
               id: true,
               email: true,
+              name: true,
               role: true,
               profile: true,
             },
@@ -274,37 +273,46 @@ export class StaffService {
       throw new NotFoundException('Staff member not found');
     }
 
-    // Soft delete by setting status to RESIGNED
-    return this.prisma.staff.update({
-      where: { id },
-      data: { status: 'RESIGNED' },
+    // Update user status to inactive (soft delete)
+    return this.prisma.user.update({
+      where: { id: existing.userId },
+      data: { status: 'inactive' },
     });
   }
 
   async getStats(tenantId: string) {
-    const [total, active, byRole, byDepartment] = await Promise.all([
+    const [total, byRole, byDepartment] = await Promise.all([
       this.prisma.staff.count({ where: { tenantId } }),
-      this.prisma.staff.count({ where: { tenantId, status: 'ACTIVE' } }),
       this.prisma.user.groupBy({
         by: ['role'],
         where: {
           tenantId,
-          role: { in: ['PRINCIPAL', 'HOD', 'ADMIN_STAFF', 'TEACHER', 'LAB_ASSISTANT'] },
+          role: { in: [UserRole.principal, UserRole.hod, UserRole.admin_staff, UserRole.teacher, UserRole.lab_assistant] },
+          status: 'active',
         },
         _count: true,
       }),
       this.prisma.staff.groupBy({
         by: ['departmentId'],
-        where: { tenantId, status: 'ACTIVE' },
+        where: { tenantId },
         _count: true,
       }),
     ]);
 
+    // Count active users (staff roles)
+    const activeStaff = await this.prisma.user.count({
+      where: {
+        tenantId,
+        status: 'active',
+        role: { in: [UserRole.principal, UserRole.hod, UserRole.admin_staff, UserRole.teacher, UserRole.lab_assistant] },
+      },
+    });
+
     return {
       total,
-      active,
-      inactive: total - active,
-      byRole: byRole.map((r) => ({ role: r.role, count: r._count })),
+      active: activeStaff,
+      inactive: total - activeStaff,
+      byRole: byRole.map((r: { role: UserRole; _count: number }) => ({ role: r.role, count: r._count })),
       byDepartment,
     };
   }
@@ -312,9 +320,9 @@ export class StaffService {
   async getTeachers(tenantId: string, departmentId?: string) {
     const where: any = {
       tenantId,
-      status: 'ACTIVE',
       user: {
-        role: { in: ['TEACHER', 'HOD'] },
+        role: { in: [UserRole.teacher, UserRole.hod] },
+        status: 'active',
       },
     };
 
@@ -329,6 +337,7 @@ export class StaffService {
           select: {
             id: true,
             email: true,
+            name: true,
             profile: true,
           },
         },
@@ -342,13 +351,13 @@ export class StaffService {
     });
   }
 
-  private mapStaffRoleToUserRole(staffRole: StaffRole): string {
-    const mapping: Record<StaffRole, string> = {
-      [StaffRole.PRINCIPAL]: 'PRINCIPAL',
-      [StaffRole.HOD]: 'HOD',
-      [StaffRole.ADMIN_STAFF]: 'ADMIN_STAFF',
-      [StaffRole.TEACHER]: 'TEACHER',
-      [StaffRole.LAB_ASSISTANT]: 'LAB_ASSISTANT',
+  private mapStaffRoleToUserRole(staffRole: StaffRole): UserRole {
+    const mapping: Record<StaffRole, UserRole> = {
+      [StaffRole.PRINCIPAL]: UserRole.principal,
+      [StaffRole.HOD]: UserRole.hod,
+      [StaffRole.ADMIN_STAFF]: UserRole.admin_staff,
+      [StaffRole.TEACHER]: UserRole.teacher,
+      [StaffRole.LAB_ASSISTANT]: UserRole.lab_assistant,
     };
     return mapping[staffRole];
   }

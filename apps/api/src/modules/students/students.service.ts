@@ -1,4 +1,5 @@
 import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateStudentDto, UpdateStudentDto, StudentQueryDto } from './dto/student.dto';
 
@@ -16,18 +17,9 @@ export class StudentsService {
       throw new ConflictException('Roll number already exists');
     }
 
-    // Check if registration number already exists
-    const existingRegNo = await this.prisma.student.findFirst({
-      where: { tenantId, registrationNo: createStudentDto.registrationNo },
-    });
-
-    if (existingRegNo) {
-      throw new ConflictException('Registration number already exists');
-    }
-
     // Check if email already exists
-    const existingEmail = await this.prisma.user.findUnique({
-      where: { email: createStudentDto.email },
+    const existingEmail = await this.prisma.user.findFirst({
+      where: { tenantId, email: createStudentDto.email },
     });
 
     if (existingEmail) {
@@ -44,22 +36,26 @@ export class StudentsService {
     }
 
     // Create user and student in a transaction
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Create user account
       const user = await tx.user.create({
         data: {
           tenantId,
           email: createStudentDto.email,
-          role: 'STUDENT',
-          profile: {
-            firstName: createStudentDto.firstName,
-            lastName: createStudentDto.lastName,
-            phone: createStudentDto.phone,
-            gender: createStudentDto.gender,
-            dateOfBirth: createStudentDto.dateOfBirth,
-            bloodGroup: createStudentDto.bloodGroup,
-            nationality: createStudentDto.nationality,
-          },
+          name: `${createStudentDto.firstName} ${createStudentDto.lastName}`,
+          role: 'student',
+          status: 'active',
+        },
+      });
+
+      // Create user profile
+      await tx.userProfile.create({
+        data: {
+          userId: user.id,
+          gender: createStudentDto.gender,
+          dob: createStudentDto.dateOfBirth ? new Date(createStudentDto.dateOfBirth) : null,
+          bloodGroup: createStudentDto.bloodGroup,
+          nationality: createStudentDto.nationality,
         },
       });
 
@@ -69,25 +65,19 @@ export class StudentsService {
           tenantId,
           userId: user.id,
           rollNo: createStudentDto.rollNo,
-          registrationNo: createStudentDto.registrationNo,
           departmentId: createStudentDto.departmentId,
-          batchYear: createStudentDto.batchYear,
-          currentSemester: createStudentDto.currentSemester,
-          status: 'ACTIVE',
-          fatherName: createStudentDto.fatherName,
-          motherName: createStudentDto.motherName,
-          parentPhone: createStudentDto.parentPhone,
-          parentEmail: createStudentDto.parentEmail,
-          address: createStudentDto.address,
-          city: createStudentDto.city,
-          state: createStudentDto.state,
-          pincode: createStudentDto.pincode,
+          batch: createStudentDto.batch,
+          semester: createStudentDto.semester || 1,
+          section: createStudentDto.section,
+          status: 'active',
+          admissionDate: new Date(),
         },
         include: {
           user: {
             select: {
               id: true,
               email: true,
+              name: true,
               profile: true,
             },
           },
@@ -108,7 +98,7 @@ export class StudentsService {
   }
 
   async findAll(tenantId: string, query: StudentQueryDto) {
-    const { search, departmentId, batchYear, semester, status, limit = 20, offset = 0 } = query;
+    const { search, departmentId, batch, semester, status, limit = 20, offset = 0 } = query;
 
     const where: any = { tenantId };
 
@@ -116,23 +106,23 @@ export class StudentsService {
       where.departmentId = departmentId;
     }
 
-    if (batchYear) {
-      where.batchYear = batchYear;
+    if (batch) {
+      where.batch = batch;
     }
 
     if (semester) {
-      where.currentSemester = semester;
+      where.semester = semester;
     }
 
     if (status) {
-      where.status = status.toUpperCase();
+      where.status = status.toLowerCase();
     }
 
     if (search) {
       where.OR = [
         { rollNo: { contains: search, mode: 'insensitive' } },
-        { registrationNo: { contains: search, mode: 'insensitive' } },
         { user: { email: { contains: search, mode: 'insensitive' } } },
+        { user: { name: { contains: search, mode: 'insensitive' } } },
       ];
     }
 
@@ -147,6 +137,7 @@ export class StudentsService {
             select: {
               id: true,
               email: true,
+              name: true,
               profile: true,
             },
           },
@@ -178,6 +169,7 @@ export class StudentsService {
           select: {
             id: true,
             email: true,
+            name: true,
             profile: true,
           },
         },
@@ -206,6 +198,7 @@ export class StudentsService {
           select: {
             id: true,
             email: true,
+            name: true,
             profile: true,
           },
         },
@@ -235,47 +228,42 @@ export class StudentsService {
       throw new NotFoundException('Student not found');
     }
 
-    // Update student and user profile
-    const result = await this.prisma.$transaction(async (tx) => {
-      // Update user profile if name/phone changed
-      if (updateStudentDto.firstName || updateStudentDto.lastName || updateStudentDto.phone) {
+    // Update student and user in a transaction
+    const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Update user name if provided
+      if (updateStudentDto.firstName || updateStudentDto.lastName) {
         const currentUser = await tx.user.findFirst({
           where: { id: existing.userId },
         });
 
-        const currentProfile = (currentUser?.profile as any) || {};
+        if (currentUser) {
+          const nameParts = currentUser.name.split(' ');
+          const firstName = updateStudentDto.firstName || nameParts[0] || '';
+          const lastName = updateStudentDto.lastName || nameParts.slice(1).join(' ') || '';
 
-        await tx.user.update({
-          where: { id: existing.userId },
-          data: {
-            profile: {
-              ...currentProfile,
-              ...(updateStudentDto.firstName && { firstName: updateStudentDto.firstName }),
-              ...(updateStudentDto.lastName && { lastName: updateStudentDto.lastName }),
-              ...(updateStudentDto.phone && { phone: updateStudentDto.phone }),
+          await tx.user.update({
+            where: { id: existing.userId },
+            data: {
+              name: `${firstName} ${lastName}`.trim(),
             },
-          },
-        });
+          });
+        }
       }
 
       // Update student record
       const student = await tx.student.update({
         where: { id },
         data: {
-          currentSemester: updateStudentDto.currentSemester,
-          status: updateStudentDto.status?.toUpperCase(),
-          address: updateStudentDto.address,
-          city: updateStudentDto.city,
-          state: updateStudentDto.state,
-          pincode: updateStudentDto.pincode,
-          parentPhone: updateStudentDto.parentPhone,
-          parentEmail: updateStudentDto.parentEmail,
+          semester: updateStudentDto.semester,
+          section: updateStudentDto.section,
+          status: updateStudentDto.status?.toLowerCase(),
         },
         include: {
           user: {
             select: {
               id: true,
               email: true,
+              name: true,
               profile: true,
             },
           },
@@ -297,15 +285,14 @@ export class StudentsService {
 
   async getDashboard(tenantId: string, studentId: string) {
     const student = await this.findOne(tenantId, studentId);
-    const profile = student.user.profile as any;
 
-    // Get attendance percentage (mock calculation)
+    // Get attendance percentage
     const attendanceRecords = await this.prisma.studentAttendance.findMany({
       where: { studentId, tenantId },
     });
 
     const totalClasses = attendanceRecords.length || 1;
-    const presentClasses = attendanceRecords.filter(a => a.status === 'PRESENT').length;
+    const presentClasses = attendanceRecords.filter((a: { status: string }) => a.status === 'present').length;
     const attendancePercentage = Math.round((presentClasses / totalClasses) * 100);
 
     // Get pending fees
@@ -313,7 +300,7 @@ export class StudentsService {
       where: {
         studentId,
         tenantId,
-        status: { in: ['PENDING', 'PARTIAL'] },
+        status: { in: ['pending', 'partial'] },
       },
       _sum: { amount: true },
     });
@@ -336,39 +323,38 @@ export class StudentsService {
 
     return {
       studentId: student.id,
-      name: `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim(),
+      name: student.user.name,
       rollNo: student.rollNo,
       department: student.department.name,
       departmentCode: student.department.code,
-      semester: student.currentSemester,
-      batchYear: student.batchYear,
+      semester: student.semester,
+      batch: student.batch,
       cgpa: 8.5, // TODO: Calculate from results
       attendancePercentage,
-      pendingFees: pendingFees._sum.amount || 0,
+      pendingFees: Number(pendingFees._sum.amount || 0),
       upcomingExams,
       notifications,
       email: student.user.email,
-      phone: profile?.phone,
     };
   }
 
   async getStats(tenantId: string) {
     const [total, active, byDepartment, byBatch, bySemester] = await Promise.all([
       this.prisma.student.count({ where: { tenantId } }),
-      this.prisma.student.count({ where: { tenantId, status: 'ACTIVE' } }),
+      this.prisma.student.count({ where: { tenantId, status: 'active' } }),
       this.prisma.student.groupBy({
         by: ['departmentId'],
-        where: { tenantId, status: 'ACTIVE' },
+        where: { tenantId, status: 'active' },
         _count: true,
       }),
       this.prisma.student.groupBy({
-        by: ['batchYear'],
-        where: { tenantId, status: 'ACTIVE' },
+        by: ['batch'],
+        where: { tenantId, status: 'active' },
         _count: true,
       }),
       this.prisma.student.groupBy({
-        by: ['currentSemester'],
-        where: { tenantId, status: 'ACTIVE' },
+        by: ['semester'],
+        where: { tenantId, status: 'active' },
         _count: true,
       }),
     ]);
@@ -378,8 +364,8 @@ export class StudentsService {
       active,
       inactive: total - active,
       byDepartment,
-      byBatch: byBatch.sort((a, b) => b.batchYear - a.batchYear),
-      bySemester: bySemester.sort((a, b) => a.currentSemester - b.currentSemester),
+      byBatch: byBatch.sort((a: { batch: string }, b: { batch: string }) => b.batch.localeCompare(a.batch)),
+      bySemester: bySemester.sort((a: { semester: number }, b: { semester: number }) => a.semester - b.semester),
     };
   }
 
@@ -390,8 +376,7 @@ export class StudentsService {
     const subjects = await this.prisma.subject.findMany({
       where: {
         tenantId,
-        semester: student.currentSemester,
-        // Filter by department/course if needed
+        semester: student.semester,
       },
       include: {
         teacherSubjects: {
@@ -400,6 +385,7 @@ export class StudentsService {
               include: {
                 user: {
                   select: {
+                    name: true,
                     profile: true,
                   },
                 },
@@ -424,24 +410,46 @@ export class StudentsService {
     });
 
     return {
-      currentSemester: student.currentSemester,
-      subjects: subjects.map(s => ({
+      currentSemester: student.semester,
+      subjects: subjects.map((s: any) => ({
         id: s.id,
         name: s.name,
         code: s.code,
         credits: s.credits,
         isLab: s.isLab,
-        teacher: s.teacherSubjects[0]?.staff?.user?.profile,
+        teacher: s.teacherSubjects[0]?.staff?.user?.name,
       })),
-      results: results.map(r => ({
+      results: results.map((r: any) => ({
         examId: r.examId,
         examType: r.exam.type,
         subject: r.exam.subject?.name,
         date: r.exam.date,
-        marks: r.marks,
+        marks: Number(r.marks),
         totalMarks: r.exam.totalMarks,
         grade: r.grade,
       })),
     };
+  }
+
+  async remove(tenantId: string, id: string) {
+    const existing = await this.prisma.student.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Student not found');
+    }
+
+    // Update both student and user status to inactive (soft delete)
+    await this.prisma.$transaction([
+      this.prisma.student.update({
+        where: { id },
+        data: { status: 'inactive' },
+      }),
+      this.prisma.user.update({
+        where: { id: existing.userId },
+        data: { status: 'inactive' },
+      }),
+    ]);
   }
 }

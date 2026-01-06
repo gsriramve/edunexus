@@ -141,9 +141,9 @@ export const tenantsApi = {
 // Types
 export interface Department {
   id: string;
+  tenantId: string;
   name: string;
   code: string;
-  description?: string;
   hodId?: string;
   hod?: {
     id: string;
@@ -152,9 +152,9 @@ export interface Department {
     user: {
       id: string;
       email: string;
-      profile: { firstName: string; lastName: string };
+      name: string;
     };
-  };
+  } | null;
   _count?: {
     staff: number;
     students: number;
@@ -166,13 +166,11 @@ export interface Department {
 export interface CreateDepartmentInput {
   name: string;
   code: string;
-  description?: string;
   hodId?: string;
 }
 
 export interface UpdateDepartmentInput {
   name?: string;
-  description?: string;
   hodId?: string;
 }
 
@@ -186,23 +184,25 @@ export interface DepartmentStats {
 
 export interface Staff {
   id: string;
+  tenantId: string;
+  userId: string;
   employeeId: string;
   designation: string;
   departmentId: string;
   joiningDate: string;
-  qualification?: string;
-  specialization?: string;
-  experience?: number;
-  status: string;
   user: {
     id: string;
     email: string;
+    name: string;
     role: string;
-    profile: {
-      firstName: string;
-      lastName: string;
-      phone?: string;
-    };
+    profile?: {
+      id: string;
+      photoUrl?: string;
+      dob?: string;
+      gender?: string;
+      bloodGroup?: string;
+      nationality?: string;
+    } | null;
   };
   department: {
     id: string;
@@ -223,9 +223,6 @@ export interface CreateStaffInput {
   designation: string;
   departmentId: string;
   joiningDate: string;
-  qualification?: string;
-  specialization?: string;
-  experience?: number;
 }
 
 export interface UpdateStaffInput {
@@ -234,17 +231,13 @@ export interface UpdateStaffInput {
   phone?: string;
   designation?: string;
   departmentId?: string;
-  status?: 'active' | 'inactive' | 'on_leave' | 'resigned';
-  qualification?: string;
-  specialization?: string;
-  experience?: number;
 }
 
 export interface StaffListParams {
   search?: string;
   departmentId?: string;
   role?: string;
-  status?: string;
+  status?: 'active' | 'inactive';
   limit?: number;
   offset?: number;
 }
@@ -260,18 +253,23 @@ export interface StaffStats {
 export interface Tenant {
   id: string;
   name: string;
-  slug: string;
   domain: string;
+  displayName: string;
   logo?: string;
+  theme: any;
   config: any;
   status: string;
-  subscriptions?: Array<{
+  onboardedAt: string;
+  subscription?: {
     id: string;
     plan: string;
     studentCount: number;
-    amount: number;
+    amount: string;
+    currency: string;
+    startDate: string;
+    endDate: string;
     status: string;
-  }>;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -301,7 +299,7 @@ export const studentsApi = {
     const searchParams = new URLSearchParams();
     if (params?.search) searchParams.set('search', params.search);
     if (params?.departmentId) searchParams.set('departmentId', params.departmentId);
-    if (params?.batchYear) searchParams.set('batchYear', params.batchYear.toString());
+    if (params?.batch) searchParams.set('batch', params.batch);
     if (params?.semester) searchParams.set('semester', params.semester.toString());
     if (params?.status) searchParams.set('status', params.status);
     if (params?.limit) searchParams.set('limit', params.limit.toString());
@@ -322,6 +320,9 @@ export const studentsApi = {
   update: (tenantId: string, id: string, data: UpdateStudentInput) =>
     api<Student>(`/students/${id}`, { method: 'PATCH', body: data, tenantId }),
 
+  delete: (tenantId: string, id: string) =>
+    api<void>(`/students/${id}`, { method: 'DELETE', tenantId }),
+
   stats: (tenantId: string) =>
     api<StudentStats>('/students/stats', { tenantId }),
 
@@ -335,32 +336,27 @@ export const studentsApi = {
 // Student Types
 export interface Student {
   id: string;
+  tenantId: string;
+  userId: string;
   rollNo: string;
-  registrationNo: string;
+  batch: string;
   departmentId: string;
-  batchYear: number;
-  currentSemester: number;
+  semester: number;
+  section?: string;
   status: string;
-  fatherName?: string;
-  motherName?: string;
-  parentPhone?: string;
-  parentEmail?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
+  admissionDate: string;
   user: {
     id: string;
     email: string;
-    profile: {
-      firstName: string;
-      lastName: string;
-      phone?: string;
+    name: string;
+    profile?: {
+      id: string;
+      photoUrl?: string;
+      dob?: string;
       gender?: string;
-      dateOfBirth?: string;
       bloodGroup?: string;
       nationality?: string;
-    };
+    } | null;
   };
   department: {
     id: string;
@@ -377,42 +373,29 @@ export interface CreateStudentInput {
   email: string;
   phone?: string;
   rollNo: string;
-  registrationNo: string;
   departmentId: string;
-  batchYear: number;
-  currentSemester: number;
+  batch: string;
+  semester?: number;
+  section?: string;
   gender?: 'male' | 'female' | 'other';
   dateOfBirth?: string;
   bloodGroup?: string;
   nationality?: string;
-  fatherName?: string;
-  motherName?: string;
-  parentPhone?: string;
-  parentEmail?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
 }
 
 export interface UpdateStudentInput {
   firstName?: string;
   lastName?: string;
   phone?: string;
-  currentSemester?: number;
+  semester?: number;
+  section?: string;
   status?: 'active' | 'inactive' | 'graduated' | 'dropped' | 'suspended';
-  address?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
-  parentPhone?: string;
-  parentEmail?: string;
 }
 
 export interface StudentListParams {
   search?: string;
   departmentId?: string;
-  batchYear?: number;
+  batch?: string;
   semester?: number;
   status?: string;
   limit?: number;
@@ -424,8 +407,8 @@ export interface StudentStats {
   active: number;
   inactive: number;
   byDepartment: Array<{ departmentId: string; _count: number }>;
-  byBatch: Array<{ batchYear: number; _count: number }>;
-  bySemester: Array<{ currentSemester: number; _count: number }>;
+  byBatch: Array<{ batch: string; _count: number }>;
+  bySemester: Array<{ semester: number; _count: number }>;
 }
 
 export interface StudentDashboard {
@@ -435,14 +418,13 @@ export interface StudentDashboard {
   department: string;
   departmentCode: string;
   semester: number;
-  batchYear: number;
+  batch: string;
   cgpa: number;
   attendancePercentage: number;
   pendingFees: number;
   upcomingExams: number;
   notifications: number;
   email: string;
-  phone?: string;
 }
 
 export interface StudentAcademics {
@@ -464,6 +446,123 @@ export interface StudentAcademics {
     totalMarks: number;
     grade: string;
   }>;
+}
+
+// Payments API
+export const paymentsApi = {
+  createOrder: (tenantId: string, studentId: string, data: CreatePaymentOrderInput) =>
+    api<PaymentOrder>('/payments/create-order', {
+      method: 'POST',
+      body: data,
+      tenantId,
+      headers: { 'x-student-id': studentId },
+    }),
+
+  verifyPayment: (tenantId: string, data: VerifyPaymentInput) =>
+    api<PaymentVerificationResult>('/payments/verify', {
+      method: 'POST',
+      body: data,
+      tenantId,
+    }),
+
+  getPaymentStatus: (tenantId: string, orderId: string) =>
+    api<PaymentTransaction>(`/payments/order/${orderId}`, { tenantId }),
+
+  getStudentPaymentHistory: (tenantId: string, studentId: string, params?: { limit?: number; offset?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: PaymentTransaction[]; total: number }>(
+      `/payments/student/${studentId}${query ? `?${query}` : ''}`,
+      { tenantId }
+    );
+  },
+
+  getStudentFees: (tenantId: string, studentId: string) =>
+    api<StudentFeesResponse>(`/payments/fees/${studentId}`, { tenantId }),
+};
+
+// Payment Types
+export interface CreatePaymentOrderInput {
+  feeIds: string[];
+  amount: number; // Amount in paise
+  currency?: string;
+  notes?: Record<string, string>;
+}
+
+export interface PaymentOrder {
+  orderId: string;
+  amount: number;
+  currency: string;
+  receipt: string;
+  keyId: string;
+  studentName: string;
+  studentEmail: string;
+  description: string;
+}
+
+export interface VerifyPaymentInput {
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+  feeIds: string[];
+}
+
+export interface PaymentVerificationResult {
+  success: boolean;
+  message: string;
+  receiptNumber: string;
+  paymentId: string;
+  method: string;
+  amount: number;
+  fees: StudentFee[];
+}
+
+export interface PaymentTransaction {
+  id: string;
+  tenantId: string;
+  studentFeeId: string;
+  studentId: string;
+  amount: string;
+  currency: string;
+  razorpayOrderId: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
+  paymentMethod?: string;
+  status: string;
+  receiptNumber?: string;
+  notes?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudentFee {
+  id: string;
+  tenantId: string;
+  studentId: string;
+  feeType: string;
+  amount: string;
+  dueDate: string;
+  paidDate?: string;
+  paidAmount?: string;
+  status: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  paymentMethod?: string;
+  receiptNumber?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudentFeesResponse {
+  fees: StudentFee[];
+  summary: {
+    totalPending: number;
+    totalPaid: number;
+    pendingCount: number;
+    paidCount: number;
+  };
 }
 
 export { ApiError };

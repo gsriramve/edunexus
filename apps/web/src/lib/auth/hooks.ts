@@ -1,6 +1,8 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+// TEMPORARY: Mock auth hooks for local testing without Clerk
+// TODO: Re-enable Clerk integration when valid keys are available
+// import { useUser } from "@clerk/nextjs";
 import { useMemo } from "react";
 import {
   UserRole,
@@ -23,7 +25,29 @@ interface UserPermissions {
 
 /**
  * Hook to get current user's role and permissions
+ * TEMPORARY: Returns mock admin_staff role for testing
  */
+export function useRole() {
+  // Mock user for testing - returns admin_staff role
+  const mockPermissions: UserPermissions = {
+    role: UserRole.ADMIN_STAFF,
+    tenantId: "tenant-1",
+    departmentId: null,
+  };
+
+  return {
+    isLoaded: true,
+    permissions: mockPermissions,
+    role: mockPermissions.role,
+    tenantId: mockPermissions.tenantId,
+    departmentId: mockPermissions.departmentId,
+    roleName: ROLE_DISPLAY_NAMES[mockPermissions.role],
+    roleColor: ROLE_COLORS[mockPermissions.role],
+  };
+}
+
+/*
+// Original Clerk-based useRole - uncomment when Clerk is configured
 export function useRole() {
   const { user, isLoaded } = useUser();
 
@@ -54,6 +78,7 @@ export function useRole() {
     roleColor: permissions?.role ? ROLE_COLORS[permissions.role] : null,
   };
 }
+*/
 
 /**
  * Hook to check if user has permission for a specific action on a resource

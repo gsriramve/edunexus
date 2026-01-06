@@ -4,9 +4,12 @@ import {
   Post,
   Body,
   Patch,
+  Delete,
   Param,
   Query,
   Headers,
+  HttpCode,
+  HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
 import { StudentsService } from './students.service';
@@ -100,5 +103,17 @@ export class StudentsController {
       throw new BadRequestException('Tenant ID is required');
     }
     return this.studentsService.update(tenantId, id, updateStudentDto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') id: string,
+  ) {
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required');
+    }
+    return this.studentsService.remove(tenantId, id);
   }
 }

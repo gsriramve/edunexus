@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
 
 export class CreateDepartmentDto {
   @IsString()
@@ -13,11 +13,6 @@ export class CreateDepartmentDto {
 
   @IsString()
   @IsOptional()
-  @MaxLength(500)
-  description?: string;
-
-  @IsUUID()
-  @IsOptional()
   hodId?: string;
 }
 
@@ -29,11 +24,6 @@ export class UpdateDepartmentDto {
   name?: string;
 
   @IsString()
-  @IsOptional()
-  @MaxLength(500)
-  description?: string;
-
-  @IsUUID()
   @IsOptional()
   hodId?: string;
 }

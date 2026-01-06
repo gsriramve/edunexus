@@ -2,12 +2,10 @@ import {
   IsString,
   IsEmail,
   IsOptional,
-  IsUUID,
   IsEnum,
   IsDateString,
   MinLength,
   MaxLength,
-  IsPhoneNumber,
 } from 'class-validator';
 
 export enum StaffRole {
@@ -16,13 +14,6 @@ export enum StaffRole {
   ADMIN_STAFF = 'admin_staff',
   TEACHER = 'teacher',
   LAB_ASSISTANT = 'lab_assistant',
-}
-
-export enum StaffStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  ON_LEAVE = 'on_leave',
-  RESIGNED = 'resigned',
 }
 
 export class CreateStaffDto {
@@ -41,7 +32,6 @@ export class CreateStaffDto {
 
   @IsString()
   @IsOptional()
-  @IsPhoneNumber('IN')
   phone?: string;
 
   @IsString()
@@ -57,24 +47,11 @@ export class CreateStaffDto {
   @MaxLength(100)
   designation: string;
 
-  @IsUUID()
+  @IsString()
   departmentId: string;
 
   @IsDateString()
   joiningDate: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(200)
-  qualification?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  specialization?: string;
-
-  @IsOptional()
-  experience?: number; // Years of experience
 }
 
 export class UpdateStaffDto {
@@ -92,7 +69,6 @@ export class UpdateStaffDto {
 
   @IsString()
   @IsOptional()
-  @IsPhoneNumber('IN')
   phone?: string;
 
   @IsString()
@@ -101,33 +77,16 @@ export class UpdateStaffDto {
   @MaxLength(100)
   designation?: string;
 
-  @IsUUID()
+  @IsString()
   @IsOptional()
   departmentId?: string;
-
-  @IsEnum(StaffStatus)
-  @IsOptional()
-  status?: StaffStatus;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(200)
-  qualification?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  specialization?: string;
-
-  @IsOptional()
-  experience?: number;
 }
 
 export class StaffQueryDto {
   @IsOptional()
   search?: string;
 
-  @IsUUID()
+  @IsString()
   @IsOptional()
   departmentId?: string;
 
@@ -135,9 +94,9 @@ export class StaffQueryDto {
   @IsOptional()
   role?: StaffRole;
 
-  @IsEnum(StaffStatus)
+  @IsString()
   @IsOptional()
-  status?: StaffStatus;
+  status?: 'active' | 'inactive';
 
   @IsOptional()
   limit?: number;

@@ -7,32 +7,29 @@ export class TenantsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createTenantDto: CreateTenantDto) {
-    // Check if slug already exists
+    // Check if domain already exists
     const existingTenant = await this.prisma.tenant.findUnique({
-      where: { slug: createTenantDto.slug },
+      where: { domain: createTenantDto.slug },
     });
 
     if (existingTenant) {
-      throw new ConflictException('A college with this slug already exists');
+      throw new ConflictException('A college with this domain already exists');
     }
 
     // Create tenant in database
     const tenant = await this.prisma.tenant.create({
       data: {
         name: createTenantDto.name,
-        slug: createTenantDto.slug,
-        domain: `${createTenantDto.slug}.edunexus.in`,
+        domain: createTenantDto.slug,
+        displayName: createTenantDto.name,
         logo: createTenantDto.logo,
         config: {
           location: createTenantDto.location,
           estimatedStudents: createTenantDto.estimatedStudents,
         },
-        status: 'PENDING',
+        status: 'pending',
       },
     });
-
-    // Create tenant schema in PostgreSQL
-    await this.prisma.createTenantSchema(tenant.slug);
 
     // Create subscription
     const now = new Date();
@@ -46,7 +43,7 @@ export class TenantsService {
         amount: this.calculateAmount(createTenantDto.estimatedStudents || 0, createTenantDto.subscriptionPlan),
         startDate: now,
         endDate: trialEndDate,
-        status: 'ACTIVE',
+        status: 'active',
       },
     });
 
@@ -68,11 +65,7 @@ export class TenantsService {
         skip: offset,
         orderBy: { createdAt: 'desc' },
         include: {
-          subscriptions: {
-            where: { status: 'ACTIVE' },
-            take: 1,
-            orderBy: { createdAt: 'desc' },
-          },
+          subscription: true,
         },
       }),
       this.prisma.tenant.count({ where }),
@@ -90,9 +83,7 @@ export class TenantsService {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id },
       include: {
-        subscriptions: {
-          orderBy: { createdAt: 'desc' },
-        },
+        subscription: true,
       },
     });
 
@@ -103,14 +94,11 @@ export class TenantsService {
     return tenant;
   }
 
-  async findBySlug(slug: string) {
+  async findByDomain(domain: string) {
     const tenant = await this.prisma.tenant.findUnique({
-      where: { slug },
+      where: { domain },
       include: {
-        subscriptions: {
-          where: { status: 'ACTIVE' },
-          take: 1,
-        },
+        subscription: true,
       },
     });
 
@@ -131,15 +119,15 @@ export class TenantsService {
   async getStats() {
     const [totalTenants, activeTenants, trialTenants, totalStudents, totalRevenue] = await Promise.all([
       this.prisma.tenant.count(),
-      this.prisma.tenant.count({ where: { status: 'ACTIVE' } }),
-      this.prisma.tenant.count({ where: { status: 'TRIAL' } }),
+      this.prisma.tenant.count({ where: { status: 'active' } }),
+      this.prisma.tenant.count({ where: { status: 'trial' } }),
       this.prisma.tenantSubscription.aggregate({
         _sum: { studentCount: true },
-        where: { status: 'ACTIVE' },
+        where: { status: 'active' },
       }),
       this.prisma.tenantSubscription.aggregate({
         _sum: { amount: true },
-        where: { status: 'ACTIVE' },
+        where: { status: 'active' },
       }),
     ]);
 
@@ -148,7 +136,7 @@ export class TenantsService {
       activeTenants,
       trialTenants,
       totalStudents: totalStudents._sum.studentCount || 0,
-      monthlyRevenue: (totalRevenue._sum.amount || 0) / 12, // Assuming annual amounts
+      monthlyRevenue: Number(totalRevenue._sum.amount || 0) / 12, // Convert Decimal to number
     };
   }
 

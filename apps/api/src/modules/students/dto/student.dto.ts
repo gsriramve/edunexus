@@ -2,7 +2,6 @@ import {
   IsString,
   IsEmail,
   IsOptional,
-  IsUUID,
   IsEnum,
   IsDateString,
   IsNumber,
@@ -50,22 +49,23 @@ export class CreateStudentDto {
   rollNo: string;
 
   @IsString()
-  @MinLength(10)
-  @MaxLength(15)
-  registrationNo: string;
-
-  @IsUUID()
   departmentId: string;
 
-  @IsNumber()
-  @Min(2020)
-  @Max(2030)
-  batchYear: number;
+  @IsString()
+  @MinLength(4)
+  @MaxLength(20)
+  batch: string; // e.g., "2021-2025"
 
   @IsNumber()
+  @IsOptional()
   @Min(1)
   @Max(8)
-  currentSemester: number;
+  semester?: number;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(10)
+  section?: string;
 
   @IsEnum(Gender)
   @IsOptional()
@@ -84,46 +84,6 @@ export class CreateStudentDto {
   @IsOptional()
   @MaxLength(50)
   nationality?: string;
-
-  // Parent/Guardian info
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  fatherName?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  motherName?: string;
-
-  @IsString()
-  @IsOptional()
-  parentPhone?: string;
-
-  @IsEmail()
-  @IsOptional()
-  parentEmail?: string;
-
-  // Address
-  @IsString()
-  @IsOptional()
-  @MaxLength(500)
-  address?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  city?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  state?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(10)
-  pincode?: string;
 }
 
 export class UpdateStudentDto {
@@ -147,52 +107,29 @@ export class UpdateStudentDto {
   @IsOptional()
   @Min(1)
   @Max(8)
-  currentSemester?: number;
-
-  @IsEnum(StudentStatus)
-  @IsOptional()
-  status?: StudentStatus;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(500)
-  address?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  city?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  state?: string;
+  semester?: number;
 
   @IsString()
   @IsOptional()
   @MaxLength(10)
-  pincode?: string;
+  section?: string;
 
-  @IsString()
+  @IsEnum(StudentStatus)
   @IsOptional()
-  parentPhone?: string;
-
-  @IsEmail()
-  @IsOptional()
-  parentEmail?: string;
+  status?: StudentStatus;
 }
 
 export class StudentQueryDto {
   @IsOptional()
   search?: string;
 
-  @IsUUID()
+  @IsString()
   @IsOptional()
   departmentId?: string;
 
-  @IsNumber()
+  @IsString()
   @IsOptional()
-  batchYear?: number;
+  batch?: string;
 
   @IsNumber()
   @IsOptional()

@@ -12,7 +12,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { StaffService } from './staff.service';
-import { CreateStaffDto, UpdateStaffDto, StaffRole, StaffStatus } from './dto/create-staff.dto';
+import { CreateStaffDto, UpdateStaffDto, StaffRole } from './dto/create-staff.dto';
 
 @Controller('staff')
 export class StaffController {
@@ -33,7 +33,7 @@ export class StaffController {
     @Query('search') search?: string,
     @Query('departmentId') departmentId?: string,
     @Query('role') role?: StaffRole,
-    @Query('status') status?: StaffStatus,
+    @Query('status') status?: 'active' | 'inactive',
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
