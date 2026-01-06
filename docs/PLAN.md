@@ -274,9 +274,9 @@
 │  ┌────────────────────────────────────────────────────────────────────────────┐  │
 │  │                         STORAGE & MESSAGING                                 │  │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │  │
-│  │  │      S3      │  │     SQS      │  │     SNS      │  │   Pinecone   │   │  │
+│  │  │      S3      │  │     SQS      │  │     SNS      │  │   Qdrant     │   │  │
 │  │  │  (Documents, │  │   (Message   │  │   (Push      │  │  (Vector DB  │   │  │
-│  │  │   Media)     │  │   Queues)    │  │   Notifs)    │  │   for AI)    │   │  │
+│  │  │   Media)     │  │   Queues)    │  │   Notifs)    │  │  self-hosted)│   │  │
 │  │  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘   │  │
 │  └────────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                  │
@@ -470,10 +470,10 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                      AI/ML LAYER                             │
 ├─────────────────────────────────────────────────────────────┤
-│  OpenAI/Claude API - Content Generation, Q&A                │
-│  Custom ML Models (PyTorch) - Predictions                   │
-│  LangChain - AI Orchestration                               │
-│  Vector DB (Pinecone/Weaviate) - Semantic Search            │
+│  Claude/OpenAI SDK - Content Generation (direct API)        │
+│  Custom ML Models (PyTorch/XGBoost) - Predictions           │
+│  LlamaIndex - RAG Pipeline & Document Q&A                   │
+│  Qdrant (self-hosted on EKS) - Vector DB, Semantic Search   │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -1137,10 +1137,10 @@ skill_assessments (student_id, skill, score, assessed_at)
 │  │ SCORE PREDICTION│      │   PLACEMENT    │      │   CONTENT      │            │
 │  │     MODEL       │      │   PREDICTION   │      │  GENERATION    │            │
 │  │                 │      │                │      │                │            │
-│  │ • LSTM/GRU     │      │ • XGBoost      │      │ • GPT-4/Claude │            │
-│  │ • Historical   │      │ • Random Forest│      │ • RAG Pipeline │            │
-│  │   patterns     │      │ • Neural Net   │      │ • Fine-tuned   │            │
-│  │ • Subject-wise │      │                │      │   models       │            │
+│  │ • LSTM/GRU     │      │ • XGBoost      │      │ • Claude SDK   │            │
+│  │ • Historical   │      │ • Random Forest│      │ • LlamaIndex   │            │
+│  │   patterns     │      │ • Neural Net   │      │ • Qdrant       │            │
+│  │ • Subject-wise │      │                │      │   (Vector DB)  │            │
 │  └────────────────┘      └────────────────┘      └────────────────┘            │
 │         │                          │                          │                 │
 │         └──────────────────────────┼──────────────────────────┘                 │
@@ -1163,8 +1163,8 @@ skill_assessments (student_id, skill, score, assessed_at)
 | **Weak Topic Identifier** | Find improvement areas | Classification | Topic-wise scores, time spent | Topics list, Priority ranking |
 | **Placement Predictor** | Campus hiring probability | Ensemble | CGPA, skills, certifications, internships | Probability %, Salary band |
 | **Company Matcher** | Student-company fit | Collaborative filtering | Student profile, company requirements | Top 10 companies, Match % |
-| **Question Generator** | Practice papers | GPT-4/Claude + RAG | Syllabus, difficulty level, past papers | Questions, Solutions |
-| **Chatbot** | Support queries | RAG + LLM | User query, Knowledge base | Response |
+| **Question Generator** | Practice papers | Claude SDK + LlamaIndex + Qdrant | Syllabus, difficulty level, past papers | Questions, Solutions |
+| **Chatbot** | Support queries | LlamaIndex + Qdrant + Claude | User query, Knowledge base | Response |
 
 ---
 
@@ -1234,10 +1234,15 @@ edunexus/
 │       │   │   ├── score_predictor/
 │       │   │   ├── placement_predictor/
 │       │   │   └── content_generator/
+│       │   ├── rag/                  # RAG with LlamaIndex
+│       │   │   ├── indexer.py        # Document indexing
+│       │   │   ├── retriever.py      # Qdrant retrieval
+│       │   │   └── generator.py      # Claude response generation
 │       │   ├── routers/              # API routes
 │       │   ├── services/             # Business logic
 │       │   └── utils/                # Utilities
 │       ├── ml_pipeline/              # Training pipelines
+│       ├── qdrant/                   # Qdrant config & collections
 │       ├── data/                     # Training data
 │       └── tests/                    # Tests
 │
@@ -1258,7 +1263,8 @@ edunexus/
 │   │   │   ├── eks/
 │   │   │   ├── rds/
 │   │   │   ├── elasticache/
-│   │   │   └── s3/
+│   │   │   ├── s3/
+│   │   │   └── qdrant/              # Qdrant vector DB on EKS
 │   │   ├── environments/
 │   │   │   ├── dev/
 │   │   │   ├── staging/
