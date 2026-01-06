@@ -31,7 +31,7 @@
 | 1.1 | Initialize Turborepo monorepo | - | ⬜ Pending | |
 | 1.2 | Setup Next.js 14 frontend app | - | ⬜ Pending | |
 | 1.3 | Setup NestJS backend API | - | ⬜ Pending | |
-| 1.4 | Setup Python FastAPI (AI services) | - | ⬜ Pending | |
+| 1.4 | Setup Python FastAPI (ML inference only) | - | ⬜ Pending | Minimal service for score/placement predictions |
 | 1.5 | Configure PostgreSQL with multi-tenant schemas | - | ⬜ Pending | |
 | 1.6 | Setup Redis for caching/sessions | - | ⬜ Pending | |
 | 1.7 | Configure Auth0/Clerk authentication | - | ⬜ Pending | |
@@ -337,11 +337,11 @@
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.3 Application Architecture (Microservices)
+### 1.3 Application Architecture (Hybrid Microservices)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│                            MICROSERVICES ARCHITECTURE                            │
+│                       HYBRID MICROSERVICES ARCHITECTURE                          │
 ├──────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                  │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
@@ -351,19 +351,24 @@
 │  │  • RBAC enforcement            • API versioning                          │   │
 │  └──────────────────────────────────────────────────────────────────────────┘   │
 │                                       │                                          │
-│         ┌─────────────┬───────────────┼───────────────┬─────────────┐           │
-│         ▼             ▼               ▼               ▼             ▼           │
-│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐    │
-│  │   User     │ │  Academic  │ │   Fee      │ │  Placement │ │   AI       │    │
-│  │  Service   │ │  Service   │ │  Service   │ │  Service   │ │  Service   │    │
-│  │            │ │            │ │            │ │            │ │  (Python)  │    │
-│  │ • Auth     │ │ • Students │ │ • Billing  │ │ • Companies│ │ • ML Models│    │
-│  │ • Profiles │ │ • Attendance│ │ • Payments │ │ • Drives   │ │ • Predict  │    │
-│  │ • Roles    │ │ • Exams    │ │ • Receipts │ │ • Analytics│ │ • Generate │    │
-│  │ • Staff    │ │ • Results  │ │ • Reports  │ │ • Matching │ │ • Chatbot  │    │
-│  └────────────┘ └────────────┘ └────────────┘ └────────────┘ └────────────┘    │
-│         │             │               │               │             │           │
-│         └─────────────┴───────────────┴───────────────┴─────────────┘           │
+│     ┌─────────────┬──────────────┬────┴────┬──────────────┬─────────────┐       │
+│     ▼             ▼              ▼         ▼              ▼             ▼       │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ │
+│  │  User    │ │ Academic │ │   Fee    │ │Placement │ │   AI     │ │   ML     │ │
+│  │ Service  │ │ Service  │ │ Service  │ │ Service  │ │ Service  │ │ Inference│ │
+│  │ (NestJS) │ │ (NestJS) │ │ (NestJS) │ │ (NestJS) │ │ (NestJS) │ │ (Python) │ │
+│  │          │ │          │ │          │ │          │ │          │ │          │ │
+│  │ • Auth   │ │ • Students│ │ • Billing│ │• Companies│ │• Claude  │ │• Score   │ │
+│  │ • Profile│ │ • Attend. │ │ • Payments│ │• Drives  │ │  SDK     │ │  Predict │ │
+│  │ • Roles  │ │ • Exams  │ │ • Receipts│ │• Analytics│ │• Llama-  │ │• Place-  │ │
+│  │ • Staff  │ │ • Results│ │ • Reports│ │• Matching│ │  Index.TS│ │  ment    │ │
+│  │          │ │          │ │          │ │          │ │• Qdrant  │ │  Predict │ │
+│  │          │ │          │ │          │ │          │ │• Chatbot │ │          │ │
+│  │          │ │          │ │          │ │          │ │• RAG     │ │(PyTorch/ │ │
+│  │          │ │          │ │          │ │          │ │• Q&A Gen │ │ XGBoost) │ │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘ │
+│     │             │              │           │              │            │      │
+│     └─────────────┴──────────────┴───────────┴──────────────┴────────────┘      │
 │                                       │                                          │
 │                                       ▼                                          │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
@@ -371,6 +376,10 @@
 │  │  • Email queue      • SMS queue       • Report generation                │   │
 │  │  • Push notifications • Bulk operations • AI processing                  │   │
 │  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  HYBRID APPROACH:                                                               │
+│  • NestJS AI Service: LLM calls (Claude SDK), RAG (LlamaIndex.TS), Chatbot     │
+│  • Python ML Service: Score prediction (PyTorch), Placement prediction (XGBoost)│
 │                                                                                  │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -448,10 +457,15 @@
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      BACKEND                                 │
+│                      BACKEND (HYBRID)                        │
 ├─────────────────────────────────────────────────────────────┤
-│  Node.js + NestJS (TypeScript) - Main API                   │
-│  Python + FastAPI - AI/ML Microservices                     │
+│  Node.js + NestJS (TypeScript) - Main API + LLM Integration │
+│  ├── @anthropic-ai/sdk - Claude API calls                   │
+│  ├── llamaindex (TS) - RAG & document Q&A                   │
+│  └── @qdrant/js-client - Vector search                      │
+│  Python + FastAPI - ML Model Inference ONLY                 │
+│  ├── PyTorch - Score prediction model                       │
+│  └── XGBoost - Placement prediction model                   │
 │  GraphQL (Apollo) + REST APIs                               │
 │  Bull MQ - Background Jobs & Queues                         │
 └─────────────────────────────────────────────────────────────┘
@@ -462,18 +476,21 @@
 ├─────────────────────────────────────────────────────────────┤
 │  PostgreSQL - Primary DB (Multi-tenant schemas)             │
 │  Redis - Caching, Sessions, Real-time                       │
-│  MongoDB - AI/ML Data, Logs, Analytics                      │
+│  Qdrant - Vector DB for RAG (self-hosted on EKS)            │
 │  Elasticsearch - Search & Analytics                         │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      AI/ML LAYER                             │
+│                      AI/ML LAYER (HYBRID)                    │
 ├─────────────────────────────────────────────────────────────┤
-│  Claude/OpenAI SDK - Content Generation (direct API)        │
-│  Custom ML Models (PyTorch/XGBoost) - Predictions           │
-│  LlamaIndex - RAG Pipeline & Document Q&A                   │
-│  Qdrant (self-hosted on EKS) - Vector DB, Semantic Search   │
+│  NestJS Service:                                            │
+│  ├── Claude SDK (Node.js) - Content generation, chatbot     │
+│  ├── LlamaIndex.TS - RAG pipeline                           │
+│  └── Qdrant Client - Vector similarity search               │
+│  Python Microservice (minimal):                             │
+│  ├── Score Prediction - PyTorch LSTM model                  │
+│  └── Placement Prediction - XGBoost ensemble                │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -1106,13 +1123,13 @@ skill_assessments (student_id, skill, score, assessed_at)
 
 ---
 
-## 10. AI/ML ARCHITECTURE
+## 10. AI/ML ARCHITECTURE (HYBRID)
 
-### 10.1 AI Pipeline Architecture
+### 10.1 Hybrid AI Pipeline Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│                            AI/ML PIPELINE ARCHITECTURE                           │
+│                         HYBRID AI/ML PIPELINE ARCHITECTURE                       │
 ├──────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                  │
 │  DATA SOURCES                                                                    │
@@ -1123,52 +1140,89 @@ skill_assessments (student_id, skill, score, assessed_at)
 │         │                 │                 │                 │                  │
 │         └─────────────────┴─────────────────┴─────────────────┘                  │
 │                                    │                                             │
-│                                    ▼                                             │
+│  ┌─────────────────────────────────┴─────────────────────────────────┐          │
+│  │                                                                    │          │
+│  ▼                                                                    ▼          │
+│  ┌────────────────────────────────────┐   ┌────────────────────────────────────┐│
+│  │     NestJS AI SERVICE (Primary)    │   │    Python ML SERVICE (Minimal)     ││
+│  │                                    │   │                                    ││
+│  │  ┌──────────────────────────────┐  │   │  ┌──────────────────────────────┐  ││
+│  │  │    CONTENT GENERATION        │  │   │  │     SCORE PREDICTION         │  ││
+│  │  │  • @anthropic-ai/sdk (Claude)│  │   │  │   • PyTorch LSTM model       │  ││
+│  │  │  • Sample paper generation   │  │   │  │   • Time-series analysis     │  ││
+│  │  │  • Explanation generation    │  │   │  │   • Subject-wise patterns    │  ││
+│  │  │  • Resume builder            │  │   │  │   • Historical data          │  ││
+│  │  └──────────────────────────────┘  │   │  └──────────────────────────────┘  ││
+│  │                                    │   │                                    ││
+│  │  ┌──────────────────────────────┐  │   │  ┌──────────────────────────────┐  ││
+│  │  │    RAG PIPELINE              │  │   │  │    PLACEMENT PREDICTION      │  ││
+│  │  │  • LlamaIndex.TS             │  │   │  │   • XGBoost ensemble         │  ││
+│  │  │  • Document indexing         │  │   │  │   • Feature engineering      │  ││
+│  │  │  • @qdrant/js-client         │  │   │  │   • Probability scoring      │  ││
+│  │  │  • Semantic search           │  │   │  │   • Salary band prediction   │  ││
+│  │  └──────────────────────────────┘  │   │  └──────────────────────────────┘  ││
+│  │                                    │   │                                    ││
+│  │  ┌──────────────────────────────┐  │   │  REST API: /predict/score          ││
+│  │  │    CHATBOT & Q&A             │  │   │            /predict/placement      ││
+│  │  │  • Claude for responses      │  │   │                                    ││
+│  │  │  • Qdrant for context        │  │   │  TECH: FastAPI + PyTorch + XGBoost ││
+│  │  │  • Course material Q&A       │  │   │                                    ││
+│  │  └──────────────────────────────┘  │   └────────────────────────────────────┘│
+│  │                                    │                                          │
+│  │  GraphQL/REST API endpoints        │                                          │
+│  │  TECH: NestJS + Claude SDK +       │                                          │
+│  │        LlamaIndex.TS + Qdrant      │                                          │
+│  └────────────────────────────────────┘                                          │
+│                                                                                  │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
-│  │                      DATA PROCESSING LAYER                                │   │
-│  │  • ETL Pipeline (Apache Airflow)                                         │   │
-│  │  • Feature Engineering                                                    │   │
-│  │  • Data Validation & Cleaning                                            │   │
+│  │                         VECTOR DATABASE (Qdrant)                          │   │
+│  │  • Self-hosted on EKS (AWS Mumbai)                                       │   │
+│  │  • Document embeddings for RAG                                           │   │
+│  │  • Course materials, Q&A pairs                                           │   │
+│  │  • Accessed by NestJS via @qdrant/js-client                              │   │
 │  └──────────────────────────────────────────────────────────────────────────┘   │
-│                                    │                                             │
-│         ┌──────────────────────────┼──────────────────────────┐                 │
-│         ▼                          ▼                          ▼                 │
-│  ┌────────────────┐      ┌────────────────┐      ┌────────────────┐            │
-│  │ SCORE PREDICTION│      │   PLACEMENT    │      │   CONTENT      │            │
-│  │     MODEL       │      │   PREDICTION   │      │  GENERATION    │            │
-│  │                 │      │                │      │                │            │
-│  │ • LSTM/GRU     │      │ • XGBoost      │      │ • Claude SDK   │            │
-│  │ • Historical   │      │ • Random Forest│      │ • LlamaIndex   │            │
-│  │   patterns     │      │ • Neural Net   │      │ • Qdrant       │            │
-│  │ • Subject-wise │      │                │      │   (Vector DB)  │            │
-│  └────────────────┘      └────────────────┘      └────────────────┘            │
-│         │                          │                          │                 │
-│         └──────────────────────────┼──────────────────────────┘                 │
-│                                    ▼                                             │
-│  ┌──────────────────────────────────────────────────────────────────────────┐   │
-│  │                         MODEL SERVING (FastAPI)                           │   │
-│  │  • Real-time predictions                                                  │   │
-│  │  • Batch predictions                                                      │   │
-│  │  • A/B testing support                                                    │   │
-│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  ARCHITECTURE BENEFITS:                                                         │
+│  ✓ Single language (TypeScript) for 90% of AI logic                            │
+│  ✓ Python only for specialized ML inference                                     │
+│  ✓ Simpler deployment & debugging                                               │
+│  ✓ Better type safety for API contracts                                         │
+│  ✓ Shared auth/tenant context in NestJS                                         │
 │                                                                                  │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 10.2 AI Model Details
+### 10.2 AI Model Details (Hybrid Architecture)
 
-| Model | Purpose | Algorithm | Input Features | Output |
-|-------|---------|-----------|----------------|--------|
-| **Score Predictor** | Predict exam scores | LSTM + XGBoost | Past scores, attendance, assignments, study hours | Score (0-100), Confidence % |
-| **Weak Topic Identifier** | Find improvement areas | Classification | Topic-wise scores, time spent | Topics list, Priority ranking |
-| **Placement Predictor** | Campus hiring probability | Ensemble | CGPA, skills, certifications, internships | Probability %, Salary band |
-| **Company Matcher** | Student-company fit | Collaborative filtering | Student profile, company requirements | Top 10 companies, Match % |
-| **Question Generator** | Practice papers | Claude SDK + LlamaIndex + Qdrant | Syllabus, difficulty level, past papers | Questions, Solutions |
-| **Chatbot** | Support queries | LlamaIndex + Qdrant + Claude | User query, Knowledge base | Response |
+#### NestJS AI Service (TypeScript)
+| Model | Purpose | Tech Stack | Input | Output |
+|-------|---------|------------|-------|--------|
+| **Question Generator** | Practice papers | Claude SDK + LlamaIndex.TS | Syllabus, difficulty, past papers | Questions, Solutions |
+| **Explanation Generator** | Step-by-step solutions | Claude SDK | Question, Topic | Detailed explanation |
+| **AI Resume Builder** | Career profile | Claude SDK | Student data, job requirements | Formatted resume |
+| **Chatbot** | Support & Q&A | LlamaIndex.TS + Qdrant + Claude | User query, Knowledge base | Response |
+| **Weak Topic Identifier** | Find improvement areas | LlamaIndex.TS + Qdrant | Topic-wise scores, patterns | Topics list, Priority |
+| **Company Matcher** | Student-company fit | Qdrant (vector similarity) | Student profile, company requirements | Top 10 companies, Match % |
+
+#### Python ML Service (Minimal - Inference Only)
+| Model | Purpose | Tech Stack | Input | Output |
+|-------|---------|------------|-------|--------|
+| **Score Predictor** | Predict exam scores | PyTorch LSTM | Past scores, attendance, assignments | Score (0-100), Confidence % |
+| **Placement Predictor** | Campus hiring probability | XGBoost Ensemble | CGPA, skills, certifications, internships | Probability %, Salary band |
+
+#### Service Communication
+```
+NestJS API ──► Python ML Service (HTTP/gRPC)
+    │              │
+    │              └── /predict/score
+    │              └── /predict/placement
+    │
+    └── Direct: Claude SDK, LlamaIndex.TS, Qdrant client
+```
 
 ---
 
-## 11. FOLDER STRUCTURE
+## 11. FOLDER STRUCTURE (HYBRID ARCHITECTURE)
 
 ### 11.1 Monorepo Structure (Turborepo)
 
@@ -1199,7 +1253,7 @@ edunexus/
 │   │   ├── stores/                   # Zustand stores
 │   │   └── styles/                   # Global styles
 │   │
-│   ├── api/                          # NestJS Backend
+│   ├── api/                          # NestJS Backend (Primary AI Host)
 │   │   ├── src/
 │   │   │   ├── modules/
 │   │   │   │   ├── auth/             # Authentication
@@ -1216,7 +1270,28 @@ edunexus/
 │   │   │   │   ├── library/          # Library
 │   │   │   │   ├── sports/           # Sports & activities
 │   │   │   │   ├── notifications/    # Notifications
-│   │   │   │   └── reports/          # Reports
+│   │   │   │   ├── reports/          # Reports
+│   │   │   │   └── ai/               # AI Module (NEW - Primary AI)
+│   │   │   │       ├── ai.module.ts
+│   │   │   │       ├── ai.controller.ts
+│   │   │   │       ├── ai.service.ts
+│   │   │   │       ├── claude/           # Claude SDK integration
+│   │   │   │       │   ├── claude.service.ts
+│   │   │   │       │   └── prompts/      # Prompt templates
+│   │   │   │       ├── rag/              # RAG with LlamaIndex.TS
+│   │   │   │       │   ├── rag.service.ts
+│   │   │   │       │   ├── indexer.ts
+│   │   │   │       │   └── retriever.ts
+│   │   │   │       ├── qdrant/           # Qdrant vector client
+│   │   │   │       │   └── qdrant.service.ts
+│   │   │   │       ├── chatbot/          # AI Chatbot
+│   │   │   │       │   └── chatbot.service.ts
+│   │   │   │       ├── content/          # Content generation
+│   │   │   │       │   ├── question-generator.service.ts
+│   │   │   │       │   ├── explanation.service.ts
+│   │   │   │       │   └── resume-builder.service.ts
+│   │   │   │       └── ml-client/        # Client for Python ML service
+│   │   │   │           └── ml-client.service.ts
 │   │   │   ├── common/
 │   │   │   │   ├── guards/           # Auth guards
 │   │   │   │   ├── interceptors/     # Request interceptors
@@ -1228,23 +1303,29 @@ edunexus/
 │   │   │   └── config/               # Configuration
 │   │   └── test/                     # Tests
 │   │
-│   └── ai-services/                  # Python FastAPI
+│   └── ml-service/                   # Python ML Service (MINIMAL)
 │       ├── app/
-│       │   ├── models/               # ML models
+│       │   ├── main.py               # FastAPI entrypoint
+│       │   ├── models/               # Trained ML models
 │       │   │   ├── score_predictor/
-│       │   │   ├── placement_predictor/
-│       │   │   └── content_generator/
-│       │   ├── rag/                  # RAG with LlamaIndex
-│       │   │   ├── indexer.py        # Document indexing
-│       │   │   ├── retriever.py      # Qdrant retrieval
-│       │   │   └── generator.py      # Claude response generation
-│       │   ├── routers/              # API routes
-│       │   ├── services/             # Business logic
+│       │   │   │   ├── model.py      # PyTorch LSTM model
+│       │   │   │   ├── predictor.py  # Inference logic
+│       │   │   │   └── model.pt      # Trained weights
+│       │   │   └── placement_predictor/
+│       │   │       ├── model.py      # XGBoost model
+│       │   │       ├── predictor.py  # Inference logic
+│       │   │       └── model.pkl     # Trained weights
+│       │   ├── routers/
+│       │   │   ├── score.py          # /predict/score endpoint
+│       │   │   └── placement.py      # /predict/placement endpoint
+│       │   ├── schemas/              # Pydantic schemas
 │       │   └── utils/                # Utilities
-│       ├── ml_pipeline/              # Training pipelines
-│       ├── qdrant/                   # Qdrant config & collections
-│       ├── data/                     # Training data
-│       └── tests/                    # Tests
+│       ├── training/                 # Model training scripts (offline)
+│       │   ├── train_score.py
+│       │   └── train_placement.py
+│       ├── requirements.txt          # Minimal: fastapi, torch, xgboost
+│       ├── Dockerfile
+│       └── tests/
 │
 ├── packages/
 │   ├── ui/                           # Shared UI components
@@ -1339,8 +1420,8 @@ SETUP COMMANDS:
 /edunexus
 ├── apps/
 │   ├── web/                 # Next.js frontend
-│   ├── api/                 # NestJS backend
-│   └── ai-services/         # Python FastAPI
+│   ├── api/                 # NestJS backend (with AI module)
+│   └── ml-service/          # Python ML inference (minimal)
 ├── packages/
 │   ├── ui/                  # Shared components
 │   ├── database/            # Prisma schema

@@ -17,8 +17,20 @@ EduNexus is a comprehensive B2B SaaS platform designed to manage the complete li
 
 - **Frontend**: Next.js 14, TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: NestJS, PostgreSQL, Redis
-- **AI Services**: Python FastAPI, PyTorch, OpenAI/Claude
+- **AI/LLM (NestJS)**: Claude SDK, LlamaIndex.TS, Qdrant (self-hosted)
+- **ML Inference (Python)**: FastAPI, PyTorch, XGBoost (minimal service)
 - **Infrastructure**: AWS (Mumbai), Kubernetes, Terraform
+
+### Hybrid AI Architecture
+
+```
+NestJS (Primary AI)          Python (ML Only)
+├── Claude SDK               ├── Score Prediction (PyTorch)
+├── LlamaIndex.TS (RAG)      └── Placement Prediction (XGBoost)
+├── Qdrant Client
+├── Chatbot
+└── Content Generation
+```
 
 ## Documentation
 
