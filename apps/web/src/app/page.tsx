@@ -222,6 +222,21 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
+          {/* Powered By Section */}
+          <div className="mt-8 pt-8 border-t flex flex-col items-center gap-2">
+            <p className="text-sm text-muted-foreground">
+              Built on Enterprise-Grade Infrastructure
+            </p>
+            <a
+              href="https://www.quantumlayerplatform.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm font-medium text-primary hover:underline transition-colors"
+            >
+              <Zap className="h-4 w-4" />
+              Powered by QuantumLayer Platform
+            </a>
+          </div>
         </div>
       </footer>
     </div>
