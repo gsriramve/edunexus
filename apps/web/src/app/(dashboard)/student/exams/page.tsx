@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FileText,
   Calendar,
@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   BookOpen,
   Target,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,93 +35,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import {
+  useUpcomingExams,
+  useSemesterResults,
+  useStudentCGPA,
+  useExamResultsByStudent,
+} from "@/hooks/use-api";
+import type { Exam, SemesterResult } from "@/lib/api";
 
-// Mock data
-const examStats = {
-  cgpa: 8.5,
-  sgpa: 8.7,
-  totalCredits: 95,
-  earnedCredits: 95,
-  rank: 12,
-  totalStudents: 120,
-};
-
-const upcomingExams = [
-  {
-    id: "exam-001",
-    subject: "Data Structures & Algorithms",
-    code: "CS501",
-    type: "Mid Semester",
-    date: "2026-01-15",
-    time: "10:00 AM - 12:00 PM",
-    venue: "Exam Hall A",
-    totalMarks: 50,
-  },
-  {
-    id: "exam-002",
-    subject: "Computer Networks",
-    code: "CS502",
-    type: "Mid Semester",
-    date: "2026-01-17",
-    time: "10:00 AM - 12:00 PM",
-    venue: "Exam Hall B",
-    totalMarks: 50,
-  },
-  {
-    id: "exam-003",
-    subject: "Operating Systems",
-    code: "CS503",
-    type: "Mid Semester",
-    date: "2026-01-19",
-    time: "10:00 AM - 12:00 PM",
-    venue: "Exam Hall A",
-    totalMarks: 50,
-  },
-  {
-    id: "exam-004",
-    subject: "Software Engineering",
-    code: "CS504",
-    type: "Mid Semester",
-    date: "2026-01-21",
-    time: "2:00 PM - 4:00 PM",
-    venue: "Exam Hall C",
-    totalMarks: 50,
-  },
-];
-
-const semesterResults = [
-  {
-    semester: 4,
-    sgpa: 8.5,
-    credits: 20,
-    year: "2024-25",
-    subjects: [
-      { code: "CS401", name: "Database Systems", credits: 4, grade: "A", marks: 85, total: 100 },
-      { code: "CS402", name: "Theory of Computation", credits: 4, grade: "A+", marks: 92, total: 100 },
-      { code: "CS403", name: "Computer Architecture", credits: 4, grade: "A", marks: 82, total: 100 },
-      { code: "CS404", name: "Discrete Mathematics", credits: 3, grade: "B+", marks: 75, total: 100 },
-      { code: "CS405", name: "Database Lab", credits: 2, grade: "A+", marks: 95, total: 100 },
-      { code: "CS406", name: "Web Development Lab", credits: 2, grade: "A", marks: 88, total: 100 },
-      { code: "HS401", name: "Professional Ethics", credits: 1, grade: "A", marks: 85, total: 100 },
-    ],
-  },
-  {
-    semester: 3,
-    sgpa: 8.3,
-    credits: 22,
-    year: "2024-25",
-    subjects: [
-      { code: "CS301", name: "Object Oriented Programming", credits: 4, grade: "A", marks: 84, total: 100 },
-      { code: "CS302", name: "Data Structures", credits: 4, grade: "A+", marks: 90, total: 100 },
-      { code: "CS303", name: "Digital Logic Design", credits: 4, grade: "B+", marks: 78, total: 100 },
-      { code: "CS304", name: "Computer Organization", credits: 4, grade: "A", marks: 82, total: 100 },
-      { code: "CS305", name: "OOP Lab", credits: 2, grade: "A+", marks: 92, total: 100 },
-      { code: "CS306", name: "Data Structures Lab", credits: 2, grade: "A+", marks: 94, total: 100 },
-      { code: "MA301", name: "Probability & Statistics", credits: 2, grade: "A", marks: 80, total: 100 },
-    ],
-  },
-];
-
+// Grade points mapping
 const gradePoints: Record<string, number> = {
   "A+": 10,
   A: 9,
@@ -132,6 +57,7 @@ const gradePoints: Record<string, number> = {
   F: 0,
 };
 
+// AI Predictions mock data (to be replaced with actual AI service later)
 const aiPredictions = [
   { subject: "Data Structures", predicted: 82, confidence: "High", improvement: "+5% from last" },
   { subject: "Computer Networks", predicted: 75, confidence: "Medium", improvement: "Focus needed" },
@@ -139,8 +65,56 @@ const aiPredictions = [
   { subject: "Software Engineering", predicted: 80, confidence: "High", improvement: "On track" },
 ];
 
+// Helper to get student ID from localStorage (for development)
+function getStudentId(): string | null {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("edunexus_student_id");
+  }
+  return null;
+}
+
 export default function StudentExams() {
+  const tenantId = useTenantId();
+  const [studentId, setStudentId] = useState<string | null>(null);
   const [selectedSemester, setSelectedSemester] = useState("4");
+
+  // Get student ID from localStorage on mount
+  useEffect(() => {
+    const id = getStudentId();
+    setStudentId(id);
+  }, []);
+
+  // API hooks
+  const {
+    data: upcomingExamsData,
+    isLoading: upcomingLoading,
+    error: upcomingError,
+  } = useUpcomingExams(tenantId || "");
+
+  const {
+    data: semesterResultData,
+    isLoading: semesterLoading,
+    error: semesterError,
+  } = useSemesterResults(tenantId || "", studentId || "", parseInt(selectedSemester));
+
+  const {
+    data: cgpa,
+    isLoading: cgpaLoading,
+  } = useStudentCGPA(tenantId || "", studentId || "");
+
+  const {
+    data: allResultsData,
+    isLoading: allResultsLoading,
+  } = useExamResultsByStudent(tenantId || "", studentId || "");
+
+  // Transform API data
+  const upcomingExams = upcomingExamsData || [];
+  const semesterResult = semesterResultData;
+  const studentCGPA = typeof cgpa === "number" ? cgpa : 0;
+
+  // Calculate stats from results
+  const totalCredits = semesterResult?.credits || 0;
+  const latestSGPA = semesterResult?.sgpa || 0;
 
   const getGradeBadge = (grade: string) => {
     const colorMap: Record<string, string> = {
@@ -164,6 +138,53 @@ export default function StudentExams() {
     return diffDays;
   };
 
+  const formatExamType = (type: string) => {
+    const typeMap: Record<string, string> = {
+      internal: "Internal",
+      midterm: "Mid Semester",
+      endsem: "End Semester",
+      practical: "Practical",
+      assignment: "Assignment",
+      lab: "Lab Exam",
+      viva: "Viva",
+    };
+    return typeMap[type] || type;
+  };
+
+  // Loading skeleton for stats
+  const StatsSkeleton = () => (
+    <div className="grid gap-4 md:grid-cols-5">
+      {[...Array(5)].map((_, i) => (
+        <Card key={i}>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-12 w-12 rounded-lg" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-6 w-12" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  // No tenant/student message
+  if (!tenantId) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 space-y-4">
+        <AlertCircle className="h-12 w-12 text-muted-foreground" />
+        <p className="text-lg text-muted-foreground">
+          Please select a tenant to view exam data.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Add <code className="bg-muted px-2 py-1 rounded">?tenantId=your-tenant-id</code> to the URL
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -181,77 +202,81 @@ export default function StudentExams() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-purple-50">
-                <Award className="h-6 w-6 text-purple-600" />
+      {cgpaLoading || semesterLoading ? (
+        <StatsSkeleton />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-5">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-purple-50">
+                  <Award className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">CGPA</p>
+                  <p className="text-2xl font-bold">{studentCGPA.toFixed(2)}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">CGPA</p>
-                <p className="text-2xl font-bold">{examStats.cgpa}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-blue-50">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-blue-50">
+                  <TrendingUp className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Latest SGPA</p>
+                  <p className="text-2xl font-bold">{latestSGPA.toFixed(2)}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Latest SGPA</p>
-                <p className="text-2xl font-bold">{examStats.sgpa}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-green-50">
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-green-50">
+                  <CheckCircle2 className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Credits Earned</p>
+                  <p className="text-2xl font-bold">{totalCredits}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Credits Earned</p>
-                <p className="text-2xl font-bold">{examStats.earnedCredits}/{examStats.totalCredits}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-orange-50">
-                <Target className="h-6 w-6 text-orange-600" />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-orange-50">
+                  <Target className="h-6 w-6 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Exams Taken</p>
+                  <p className="text-2xl font-bold">{allResultsData?.results?.length || 0}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Class Rank</p>
-                <p className="text-2xl font-bold">{examStats.rank}/{examStats.totalStudents}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-red-50">
-                <Calendar className="h-6 w-6 text-red-600" />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-red-50">
+                  <Calendar className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Upcoming Exams</p>
+                  <p className="text-2xl font-bold">{upcomingExams.length}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Upcoming Exams</p>
-                <p className="text-2xl font-bold">{upcomingExams.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="upcoming" className="space-y-4">
@@ -263,61 +288,94 @@ export default function StudentExams() {
 
         {/* Upcoming Exams Tab */}
         <TabsContent value="upcoming" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            {upcomingExams.map((exam) => {
-              const daysLeft = daysUntilExam(exam.date);
-              return (
-                <Card key={exam.id} className={daysLeft <= 3 ? "border-red-200" : ""}>
+          {upcomingLoading ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i}>
                   <CardContent className="pt-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <Badge variant="outline" className="mb-2 font-mono">
-                          {exam.code}
-                        </Badge>
-                        <h3 className="font-semibold">{exam.subject}</h3>
-                        <p className="text-sm text-muted-foreground">{exam.type}</p>
-                      </div>
-                      <Badge
-                        className={
-                          daysLeft <= 3
-                            ? "bg-red-500"
-                            : daysLeft <= 7
-                            ? "bg-orange-500"
-                            : "bg-blue-500"
-                        }
-                      >
-                        {daysLeft} days left
-                      </Badge>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {new Date(exam.date).toLocaleDateString("en-IN", {
-                            weekday: "long",
-                            day: "numeric",
-                            month: "long",
-                          })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>{exam.time}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4 text-muted-foreground" />
-                        <span>{exam.venue}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span>Total Marks: {exam.totalMarks}</span>
-                      </div>
+                    <div className="space-y-4">
+                      <Skeleton className="h-6 w-32" />
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
                     </div>
                   </CardContent>
                 </Card>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : upcomingExams.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="font-semibold text-lg">No Upcoming Exams</h3>
+                  <p className="text-muted-foreground">
+                    You don&apos;t have any exams scheduled in the next 30 days.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {upcomingExams.map((exam: Exam) => {
+                const daysLeft = daysUntilExam(exam.date);
+                return (
+                  <Card key={exam.id} className={daysLeft <= 3 ? "border-red-200" : ""}>
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <Badge variant="outline" className="mb-2 font-mono">
+                            {exam.subject?.code || "N/A"}
+                          </Badge>
+                          <h3 className="font-semibold">{exam.subject?.name || exam.name}</h3>
+                          <p className="text-sm text-muted-foreground">{formatExamType(exam.type)}</p>
+                        </div>
+                        <Badge
+                          className={
+                            daysLeft <= 3
+                              ? "bg-red-500"
+                              : daysLeft <= 7
+                              ? "bg-orange-500"
+                              : "bg-blue-500"
+                          }
+                        >
+                          {daysLeft} days left
+                        </Badge>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>
+                            {new Date(exam.date).toLocaleDateString("en-IN", {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long",
+                            })}
+                          </span>
+                        </div>
+                        {exam.duration && (
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span>{exam.duration} minutes</span>
+                          </div>
+                        )}
+                        {exam.venue && (
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-muted-foreground" />
+                            <span>{exam.venue}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span>Total Marks: {exam.totalMarks}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
 
           {/* Exam Alert */}
           <Card className="border-orange-200 bg-orange-50">
@@ -347,7 +405,7 @@ export default function StudentExams() {
                 <SelectValue placeholder="Select Semester" />
               </SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 4].map((sem) => (
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
                   <SelectItem key={sem} value={sem.toString()}>
                     Semester {sem}
                   </SelectItem>
@@ -356,66 +414,90 @@ export default function StudentExams() {
             </Select>
           </div>
 
-          {semesterResults
-            .filter((r) => r.semester.toString() === selectedSemester)
-            .map((result) => (
-              <Card key={result.semester}>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <CardTitle>Semester {result.semester} Results</CardTitle>
-                      <CardDescription>Academic Year {result.year}</CardDescription>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">SGPA</p>
-                      <p className="text-3xl font-bold text-primary">{result.sgpa}</p>
-                    </div>
+          {semesterLoading ? (
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-32" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : !semesterResult || semesterResult.subjects.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="font-semibold text-lg">No Results Found</h3>
+                  <p className="text-muted-foreground">
+                    No results available for Semester {selectedSemester}.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Semester {semesterResult.semester} Results</CardTitle>
+                    <CardDescription>Academic Performance</CardDescription>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Subject</TableHead>
-                        <TableHead className="text-center">Credits</TableHead>
-                        <TableHead className="text-center">Marks</TableHead>
-                        <TableHead className="text-center">Grade</TableHead>
-                        <TableHead className="text-center">Grade Points</TableHead>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">SGPA</p>
+                    <p className="text-3xl font-bold text-primary">{semesterResult.sgpa.toFixed(2)}</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Code</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead className="text-center">Credits</TableHead>
+                      <TableHead className="text-center">Marks</TableHead>
+                      <TableHead className="text-center">Grade</TableHead>
+                      <TableHead className="text-center">Grade Points</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {semesterResult.subjects.map((subject) => (
+                      <TableRow key={subject.subjectId}>
+                        <TableCell className="font-mono">{subject.subjectCode}</TableCell>
+                        <TableCell className="font-medium">{subject.subjectName}</TableCell>
+                        <TableCell className="text-center">{subject.credits}</TableCell>
+                        <TableCell className="text-center">
+                          {subject.obtainedMarks}/{subject.totalMarks}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getGradeBadge(subject.grade)}
+                        </TableCell>
+                        <TableCell className="text-center font-bold">
+                          {gradePoints[subject.grade] || 0}
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {result.subjects.map((subject) => (
-                        <TableRow key={subject.code}>
-                          <TableCell className="font-mono">{subject.code}</TableCell>
-                          <TableCell className="font-medium">{subject.name}</TableCell>
-                          <TableCell className="text-center">{subject.credits}</TableCell>
-                          <TableCell className="text-center">
-                            {subject.marks}/{subject.total}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getGradeBadge(subject.grade)}
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
-                            {gradePoints[subject.grade]}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  <div className="mt-4 flex justify-between items-center p-4 bg-muted rounded-lg">
-                    <div>
-                      <span className="text-sm text-muted-foreground">Total Credits: </span>
-                      <span className="font-bold">{result.credits}</span>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="mt-4 flex justify-between items-center p-4 bg-muted rounded-lg">
+                  <div>
+                    <span className="text-sm text-muted-foreground">Total Credits: </span>
+                    <span className="font-bold">{semesterResult.credits}</span>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  <Button variant="outline" size="sm">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* AI Predictions Tab */}

@@ -316,3 +316,30 @@ export function useVerifyPayment(tenantId: string) {
     },
   });
 }
+
+// ============ Exams Hooks ============
+// Re-exported from use-exams.ts for convenience
+export {
+  // Query hooks
+  useExams,
+  useExam,
+  useExamStats,
+  useUpcomingExams,
+  useExamsBySubject,
+  // Mutation hooks
+  useCreateExam,
+  useUpdateExam,
+  useDeleteExam,
+  // Exam result query hooks
+  useExamResultsByExam,
+  useExamResultsByStudent,
+  useSemesterResults,
+  useStudentCGPA,
+  // Exam result mutation hooks
+  useCreateExamResult,
+  useBulkCreateExamResults,
+  useUpdateExamResult,
+  // Query keys
+  examKeys,
+  examResultKeys,
+} from './use-exams';

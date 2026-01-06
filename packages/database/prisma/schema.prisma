@@ -299,6 +299,16 @@ model Student {
   parent              Parent[]
   careerProfile       CareerProfile?
   paymentTransactions PaymentTransaction[]
+  transportPasses     TransportPass[]
+  hostelAllocations   HostelAllocation[]
+  hostelFees          HostelFee[]
+  hostelComplaints    HostelComplaint[]
+  libraryCard         LibraryCard?
+  teamMemberships     TeamMember[]
+  clubMemberships     ClubMember[]
+  eventRegistrations  EventRegistration[]
+  achievements        Achievement[]
+  activityCredits     ActivityCredit[]
 
   @@unique([tenantId, rollNo])
   @@index([tenantId])
@@ -578,4 +588,1465 @@ model DeviceToken {
   @@index([tenantId])
   @@index([userId])
   @@map("device_tokens")
+}
+
+// =============================================================================
+// TRANSPORT MANAGEMENT
+// =============================================================================
+
+/// Transport routes
+model TransportRoute {
+  id           String   @id @default(cuid())
+  tenantId     String
+  name         String   // e.g., "Route 1 - North Campus"
+  code         String   // e.g., "R001"
+  description  String?
+  startPoint   String   // Starting location name
+  endPoint     String   // Ending location name
+  totalDistance Decimal? @db.Decimal(6, 2) // Distance in km
+  estimatedTime Int?    // Estimated time in minutes
+  fare         Decimal  @db.Decimal(8, 2) @default(0) // Monthly fare
+  status       String   @default("active") // active, inactive, suspended
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  stops        TransportStop[]
+  vehicles     TransportVehicle[]
+  passes       TransportPass[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("transport_routes")
+}
+
+/// Transport stops along routes
+model TransportStop {
+  id           String   @id @default(cuid())
+  tenantId     String
+  routeId      String
+  name         String   // Stop name
+  address      String?  // Full address
+  latitude     Decimal? @db.Decimal(10, 8) // GPS coordinates
+  longitude    Decimal? @db.Decimal(11, 8)
+  sequence     Int      // Order in route (1, 2, 3...)
+  pickupTime   String?  // Morning pickup time (e.g., "07:30")
+  dropTime     String?  // Evening drop time (e.g., "17:30")
+  landmark     String?  // Nearby landmark
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  route TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@unique([routeId, sequence])
+  @@index([tenantId])
+  @@map("transport_stops")
+}
+
+/// Transport vehicles (buses)
+model TransportVehicle {
+  id             String   @id @default(cuid())
+  tenantId       String
+  routeId        String?  // Assigned route
+  vehicleNumber  String   // Registration number (e.g., "KA-01-AB-1234")
+  vehicleType    String   @default("bus") // bus, mini_bus, van
+  capacity       Int      @default(40) // Seating capacity
+  make           String?  // Manufacturer (e.g., "Tata", "Ashok Leyland")
+  model          String?  // Model name
+  year           Int?     // Manufacturing year
+  color          String?
+  fuelType       String   @default("diesel") // diesel, petrol, cng, electric
+  insuranceExpiry DateTime?
+  fitnessExpiry   DateTime?
+  permitExpiry    DateTime?
+  driverName     String?
+  driverPhone    String?
+  driverLicense  String?
+  conductorName  String?
+  conductorPhone String?
+  gpsDeviceId    String?  // GPS tracker device ID
+  status         String   @default("active") // active, maintenance, inactive
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  route     TransportRoute?     @relation(fields: [routeId], references: [id])
+  tracking  TransportTracking[]
+
+  @@unique([tenantId, vehicleNumber])
+  @@index([tenantId])
+  @@map("transport_vehicles")
+}
+
+/// Student transport passes
+model TransportPass {
+  id           String    @id @default(cuid())
+  tenantId     String
+  studentId    String
+  routeId      String
+  passNumber   String    // Unique pass number
+  stopName     String    // Pickup/drop stop
+  validFrom    DateTime
+  validUntil   DateTime
+  fare         Decimal   @db.Decimal(8, 2)
+  paidAmount   Decimal   @db.Decimal(8, 2) @default(0)
+  paymentStatus String   @default("pending") // pending, paid, partial
+  status       String    @default("active") // active, expired, cancelled, suspended
+  issuedAt     DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  student Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  route   TransportRoute @relation(fields: [routeId], references: [id])
+
+  @@unique([tenantId, passNumber])
+  @@index([tenantId])
+  @@index([studentId])
+  @@map("transport_passes")
+}
+
+/// Real-time vehicle tracking data
+model TransportTracking {
+  id          String   @id @default(cuid())
+  tenantId    String
+  vehicleId   String
+  latitude    Decimal  @db.Decimal(10, 8)
+  longitude   Decimal  @db.Decimal(11, 8)
+  speed       Decimal? @db.Decimal(5, 2) // Speed in km/h
+  heading     Int?     // Direction in degrees (0-360)
+  altitude    Decimal? @db.Decimal(8, 2) // Altitude in meters
+  accuracy    Decimal? @db.Decimal(6, 2) // GPS accuracy in meters
+  recordedAt  DateTime @default(now()) // When the GPS reading was taken
+  createdAt   DateTime @default(now())
+
+  vehicle TransportVehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([vehicleId])
+  @@index([recordedAt])
+  @@map("transport_tracking")
+}
+
+// =============================================================================
+// HOSTEL MANAGEMENT
+// =============================================================================
+
+/// Hostel blocks/buildings
+model HostelBlock {
+  id           String   @id @default(cuid())
+  tenantId     String
+  name         String   // e.g., "Block A", "Boys Hostel 1"
+  code         String   // e.g., "BH1", "GH1"
+  type         String   @default("boys") // boys, girls, mixed
+  totalFloors  Int      @default(4)
+  totalRooms   Int      @default(0)
+  totalCapacity Int     @default(0)
+  wardenId     String?  // Staff ID of warden
+  wardenName   String?
+  wardenPhone  String?
+  address      String?
+  amenities    String[] @default([]) // wifi, laundry, gym, etc.
+  status       String   @default("active") // active, maintenance, closed
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  rooms        HostelRoom[]
+  complaints   HostelComplaint[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("hostel_blocks")
+}
+
+/// Hostel rooms
+model HostelRoom {
+  id           String   @id @default(cuid())
+  tenantId     String
+  blockId      String
+  roomNumber   String   // e.g., "101", "A-201"
+  floor        Int
+  roomType     String   @default("double") // single, double, triple, dormitory
+  capacity     Int      @default(2)
+  occupancy    Int      @default(0) // Current occupants
+  monthlyRent  Decimal  @db.Decimal(8, 2) @default(0)
+  amenities    String[] @default([]) // ac, attached_bath, balcony, etc.
+  status       String   @default("available") // available, occupied, full, maintenance
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  block        HostelBlock         @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  allocations  HostelAllocation[]
+  complaints   HostelComplaint[]
+
+  @@unique([blockId, roomNumber])
+  @@index([tenantId])
+  @@map("hostel_rooms")
+}
+
+/// Student hostel allocations
+model HostelAllocation {
+  id           String    @id @default(cuid())
+  tenantId     String
+  studentId    String
+  roomId       String
+  bedNumber    Int?      // Bed number in room (1, 2, 3...)
+  checkInDate  DateTime
+  checkOutDate DateTime?
+  expectedCheckOut DateTime? // Expected end date
+  status       String    @default("active") // active, checked_out, transferred
+  remarks      String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  student      Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  room         HostelRoom  @relation(fields: [roomId], references: [id])
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([roomId])
+  @@map("hostel_allocations")
+}
+
+/// Hostel fees
+model HostelFee {
+  id              String    @id @default(cuid())
+  tenantId        String
+  studentId       String
+  academicYear    String    // e.g., "2024-25"
+  semester        Int?
+  roomRent        Decimal   @db.Decimal(8, 2) @default(0)
+  messCharges     Decimal   @db.Decimal(8, 2) @default(0)
+  electricityCharges Decimal @db.Decimal(8, 2) @default(0)
+  otherCharges    Decimal   @db.Decimal(8, 2) @default(0)
+  totalAmount     Decimal   @db.Decimal(10, 2)
+  paidAmount      Decimal   @db.Decimal(10, 2) @default(0)
+  dueDate         DateTime
+  paidDate        DateTime?
+  paymentStatus   String    @default("pending") // pending, paid, partial, overdue
+  receiptNumber   String?
+  remarks         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  student         Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@map("hostel_fees")
+}
+
+/// Mess menu
+model MessMenu {
+  id           String   @id @default(cuid())
+  tenantId     String
+  blockId      String?  // Optional: specific block or all hostels
+  dayOfWeek    Int      // 0=Sunday, 1=Monday, ... 6=Saturday
+  mealType     String   // breakfast, lunch, snacks, dinner
+  items        String[] @default([]) // List of food items
+  timing       String?  // e.g., "07:00 - 09:00"
+  isVeg        Boolean  @default(true)
+  specialDay   String?  // Festival/special day name
+  validFrom    DateTime @default(now())
+  validUntil   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tenantId, blockId, dayOfWeek, mealType, validFrom])
+  @@index([tenantId])
+  @@map("mess_menu")
+}
+
+/// Hostel complaints/requests
+model HostelComplaint {
+  id           String    @id @default(cuid())
+  tenantId     String
+  studentId    String
+  blockId      String
+  roomId       String?
+  complaintNumber String @unique
+  category     String    // maintenance, cleanliness, food, security, ragging, other
+  subject      String
+  description  String
+  priority     String    @default("medium") // low, medium, high, urgent
+  status       String    @default("open") // open, in_progress, resolved, closed, escalated
+  assignedTo   String?   // Staff ID handling the complaint
+  resolvedAt   DateTime?
+  resolution   String?   // Resolution details
+  feedback     String?   // Student feedback after resolution
+  rating       Int?      // Rating 1-5 after resolution
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  student      Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  block        HostelBlock @relation(fields: [blockId], references: [id])
+  room         HostelRoom? @relation(fields: [roomId], references: [id])
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([status])
+  @@map("hostel_complaints")
+}
+
+// =============================================================================
+// LIBRARY MANAGEMENT
+// =============================================================================
+
+/// Book categories
+model BookCategory {
+  id           String   @id @default(cuid())
+  tenantId     String
+  name         String   // e.g., "Computer Science", "Fiction", "Reference"
+  code         String   // e.g., "CS", "FIC", "REF"
+  description  String?
+  parentId     String?  // For subcategories
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  parent       BookCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     BookCategory[] @relation("CategoryHierarchy")
+  books        LibraryBook[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("book_categories")
+}
+
+/// Library books catalog
+model LibraryBook {
+  id             String   @id @default(cuid())
+  tenantId       String
+  categoryId     String
+  isbn           String?  // ISBN-10 or ISBN-13
+  title          String
+  author         String
+  publisher      String?
+  publishYear    Int?
+  edition        String?
+  language       String   @default("English")
+  pages          Int?
+  description    String?
+  coverImage     String?  // URL to cover image
+  location       String?  // Shelf/rack location e.g., "A-12-3"
+  totalCopies    Int      @default(1)
+  availableCopies Int     @default(1)
+  price          Decimal? @db.Decimal(8, 2)
+  tags           String[] @default([])
+  status         String   @default("available") // available, limited, unavailable
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  category       BookCategory    @relation(fields: [categoryId], references: [id])
+  issues         BookIssue[]
+  reservations   BookReservation[]
+
+  @@unique([tenantId, isbn])
+  @@index([tenantId])
+  @@index([title])
+  @@index([author])
+  @@map("library_books")
+}
+
+/// Library cards for students/staff
+model LibraryCard {
+  id           String    @id @default(cuid())
+  tenantId     String
+  studentId    String?   @unique // Either student or staff (unique for one-to-one)
+  staffId      String?
+  cardNumber   String    // Unique card number
+  issueDate    DateTime  @default(now())
+  expiryDate   DateTime
+  maxBooks     Int       @default(5) // Maximum books allowed
+  currentBooks Int       @default(0) // Currently issued books
+  status       String    @default("active") // active, suspended, expired, lost
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  student      Student?    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  issues       BookIssue[]
+  reservations BookReservation[]
+
+  @@unique([tenantId, cardNumber])
+  @@index([tenantId])
+  @@map("library_cards")
+}
+
+/// Book issue/return records
+model BookIssue {
+  id            String    @id @default(cuid())
+  tenantId      String
+  bookId        String
+  cardId        String
+  issueDate     DateTime  @default(now())
+  dueDate       DateTime
+  returnDate    DateTime?
+  renewCount    Int       @default(0)
+  maxRenewals   Int       @default(2)
+  fineAmount    Decimal   @db.Decimal(8, 2) @default(0)
+  finePaid      Boolean   @default(false)
+  fineWaived    Boolean   @default(false)
+  status        String    @default("issued") // issued, returned, overdue, lost
+  remarks       String?
+  issuedBy      String?   // Staff who issued
+  returnedTo    String?   // Staff who received return
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  book          LibraryBook  @relation(fields: [bookId], references: [id])
+  card          LibraryCard  @relation(fields: [cardId], references: [id])
+
+  @@index([tenantId])
+  @@index([bookId])
+  @@index([cardId])
+  @@index([status])
+  @@map("book_issues")
+}
+
+/// Book reservations
+model BookReservation {
+  id              String    @id @default(cuid())
+  tenantId        String
+  bookId          String
+  cardId          String
+  reservationDate DateTime  @default(now())
+  expiryDate      DateTime  // Reservation expires if not collected
+  notifiedAt      DateTime?
+  status          String    @default("pending") // pending, ready, collected, expired, cancelled
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  book            LibraryBook  @relation(fields: [bookId], references: [id])
+  card            LibraryCard  @relation(fields: [cardId], references: [id])
+
+  @@index([tenantId])
+  @@index([bookId])
+  @@index([cardId])
+  @@map("book_reservations")
+}
+
+/// E-resources (digital content)
+model EResource {
+  id           String   @id @default(cuid())
+  tenantId     String
+  title        String
+  author       String?
+  type         String   // ebook, journal, paper, video, course
+  category     String?  // Subject category
+  description  String?
+  url          String?  // External URL or file URL
+  fileUrl      String?  // Uploaded file URL (S3)
+  fileSize     Int?     // File size in bytes
+  format       String?  // pdf, epub, mp4, etc.
+  accessType   String   @default("open") // open, restricted, subscription
+  subjectId    String?  // Link to academic subject
+  publisher    String?
+  publishYear  Int?
+  tags         String[] @default([])
+  downloads    Int      @default(0)
+  views        Int      @default(0)
+  status       String   @default("active") // active, inactive, archived
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([type])
+  @@index([category])
+  @@map("e_resources")
+}
+
+/// Library fine settings
+model LibrarySettings {
+  id                String   @id @default(cuid())
+  tenantId          String   @unique
+  finePerDay        Decimal  @db.Decimal(6, 2) @default(5) // Fine per day for overdue
+  maxFineAmount     Decimal  @db.Decimal(8, 2) @default(500) // Max fine cap
+  loanPeriodDays    Int      @default(14) // Default loan period
+  renewalPeriodDays Int      @default(7) // Days added on renewal
+  maxRenewals       Int      @default(2)
+  reservationDays   Int      @default(3) // Days to collect reserved book
+  gracePeriodDays   Int      @default(1) // Grace period before fine
+  lostBookMultiplier Decimal @db.Decimal(3, 1) @default(2) // Fine = price * multiplier
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("library_settings")
+}
+
+// =============================================================================
+// SPORTS & CLUBS MANAGEMENT
+// =============================================================================
+
+/// Sports teams (cricket, football, basketball, etc.)
+model SportsTeam {
+  id           String   @id @default(cuid())
+  tenantId     String
+  name         String   // Team name (e.g., "CS Cricket Team")
+  sport        String   // cricket, football, basketball, volleyball, badminton, etc.
+  category     String   @default("men") // men, women, mixed
+  description  String?
+  logoUrl      String?
+  coachId      String?  // Staff member as coach
+  captainId    String?  // Student captain
+  maxMembers   Int      @default(20)
+  foundedYear  Int?
+  status       String   @default("active") // active, inactive, disbanded
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  members      TeamMember[]
+  events       SportsEvent[] @relation("TeamEvents")
+  homeEvents   SportsEvent[] @relation("HomeTeam")
+  awayEvents   SportsEvent[] @relation("AwayTeam")
+  achievements Achievement[]
+
+  @@index([tenantId])
+  @@index([sport])
+  @@unique([tenantId, name, sport])
+  @@map("sports_teams")
+}
+
+/// Team memberships
+model TeamMember {
+  id          String    @id @default(cuid())
+  tenantId    String
+  teamId      String
+  studentId   String
+  position    String?   // Position in the team (goalkeeper, batsman, etc.)
+  jerseyNo    Int?
+  role        String    @default("member") // captain, vice-captain, member
+  joinedAt    DateTime  @default(now())
+  leftAt      DateTime?
+  status      String    @default("active") // active, inactive, suspended
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  team        SportsTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  student     Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([teamId])
+  @@index([studentId])
+  @@unique([teamId, studentId])
+  @@map("team_members")
+}
+
+/// Clubs and societies (coding, music, drama, photography, etc.)
+model Club {
+  id             String   @id @default(cuid())
+  tenantId       String
+  name           String   // Club name
+  code           String   // Short code (e.g., "GDSC", "IEEE")
+  category       String   // technical, cultural, literary, social, hobby
+  description    String?
+  logoUrl        String?
+  advisorId      String?  // Faculty advisor (Staff)
+  presidentId    String?  // Student president
+  maxMembers     Int?     // Optional member limit
+  meetingSchedule String? // e.g., "Every Saturday 4 PM"
+  roomNo         String?  // Club room allocation
+  foundedYear    Int?
+  website        String?
+  socialLinks    Json?    // { instagram: "...", linkedin: "..." }
+  status         String   @default("active") // active, inactive, suspended
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  members        ClubMember[]
+  events         ClubEvent[]
+  achievements   Achievement[]
+
+  @@index([tenantId])
+  @@index([category])
+  @@unique([tenantId, code])
+  @@map("clubs")
+}
+
+/// Club memberships
+model ClubMember {
+  id          String    @id @default(cuid())
+  tenantId    String
+  clubId      String
+  studentId   String
+  role        String    @default("member") // president, vice-president, secretary, treasurer, member
+  designation String?   // Custom title (e.g., "Technical Lead")
+  joinedAt    DateTime  @default(now())
+  leftAt      DateTime?
+  status      String    @default("active") // active, inactive, alumni
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  club        Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([clubId])
+  @@index([studentId])
+  @@unique([clubId, studentId])
+  @@map("club_members")
+}
+
+/// Sports events (matches, tournaments, practice sessions)
+model SportsEvent {
+  id            String    @id @default(cuid())
+  tenantId      String
+  teamId        String?   // Primary team organizing/participating
+  name          String    // Event name
+  type          String    // match, tournament, practice, training, trials
+  sport         String    // Sport type
+  description   String?
+  venue         String?
+  startDate     DateTime
+  endDate       DateTime?
+  homeTeamId    String?   // For matches
+  awayTeamId    String?   // For matches
+  homeScore     String?   // Score can be "3-2", "156/4", etc.
+  awayScore     String?
+  result        String?   // won, lost, draw, cancelled, upcoming
+  level         String    @default("college") // college, inter-college, state, national, international
+  organizer     String?   // Organizing body
+  registrationDeadline DateTime?
+  maxParticipants Int?
+  entryFee      Decimal?  @db.Decimal(8, 2)
+  status        String    @default("scheduled") // scheduled, ongoing, completed, cancelled, postponed
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  team          SportsTeam? @relation("TeamEvents", fields: [teamId], references: [id])
+  homeTeam      SportsTeam? @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam      SportsTeam? @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  registrations EventRegistration[]
+
+  @@index([tenantId])
+  @@index([teamId])
+  @@index([sport])
+  @@index([startDate])
+  @@map("sports_events")
+}
+
+/// Club events (workshops, competitions, meetups)
+model ClubEvent {
+  id            String    @id @default(cuid())
+  tenantId      String
+  clubId        String
+  name          String    // Event name
+  type          String    // workshop, competition, meetup, seminar, hackathon, cultural
+  description   String?
+  venue         String?
+  startDate     DateTime
+  endDate       DateTime?
+  registrationDeadline DateTime?
+  maxParticipants Int?
+  entryFee      Decimal?  @db.Decimal(8, 2)
+  isPublic      Boolean   @default(true) // Open to non-members?
+  resourceUrl   String?   // Event materials link
+  posterUrl     String?
+  status        String    @default("scheduled") // scheduled, ongoing, completed, cancelled
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  club          Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  registrations EventRegistration[]
+
+  @@index([tenantId])
+  @@index([clubId])
+  @@index([startDate])
+  @@map("club_events")
+}
+
+/// Event registrations (for both sports and club events)
+model EventRegistration {
+  id             String    @id @default(cuid())
+  tenantId       String
+  studentId      String
+  sportsEventId  String?
+  clubEventId    String?
+  registeredAt   DateTime  @default(now())
+  attended       Boolean   @default(false)
+  attendedAt     DateTime?
+  feedback       String?
+  rating         Int?      // 1-5 rating
+  status         String    @default("registered") // registered, confirmed, attended, cancelled, no-show
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  sportsEvent    SportsEvent? @relation(fields: [sportsEventId], references: [id], onDelete: Cascade)
+  clubEvent      ClubEvent?   @relation(fields: [clubEventId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([sportsEventId])
+  @@index([clubEventId])
+  @@map("event_registrations")
+}
+
+/// Achievements (awards, medals, certificates)
+model Achievement {
+  id             String    @id @default(cuid())
+  tenantId       String
+  studentId      String
+  teamId         String?   // If team achievement
+  clubId         String?   // If club achievement
+  title          String    // Achievement title
+  type           String    // medal, trophy, certificate, award, recognition
+  category       String    // sports, academic, cultural, technical, social
+  description    String?
+  awardedDate    DateTime
+  awardedBy      String?   // Awarding organization
+  eventName      String?   // Related event
+  level          String    @default("college") // college, inter-college, state, national, international
+  position       String?   // 1st, 2nd, 3rd, finalist, participant
+  certificateUrl String?   // Certificate/proof document
+  verifiedBy     String?   // Staff who verified
+  verifiedAt     DateTime?
+  creditsAwarded Int       @default(0) // Activity credits
+  status         String    @default("active") // active, revoked
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  student        Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  team           SportsTeam? @relation(fields: [teamId], references: [id])
+  club           Club?       @relation(fields: [clubId], references: [id])
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([category])
+  @@map("achievements")
+}
+
+/// Activity credits tracking
+model ActivityCredit {
+  id             String   @id @default(cuid())
+  tenantId       String
+  studentId      String
+  academicYear   String   // e.g., "2025-26"
+  semester       Int?
+  category       String   // sports, cultural, technical, social, ncc, nss
+  activity       String   // Description of activity
+  credits        Int      // Credits earned
+  maxCredits     Int      @default(10) // Max credits per category
+  awardedDate    DateTime @default(now())
+  awardedBy      String?  // Staff who awarded
+  remarks        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([academicYear])
+  @@map("activity_credits")
+}
+
+// =============================================================================
+// COMMUNICATION & ANNOUNCEMENTS
+// =============================================================================
+
+/// Announcements - college-wide or targeted announcements
+model Announcement {
+  id              String    @id @default(cuid())
+  tenantId        String
+  title           String
+  content         String    @db.Text
+  type            String    // general, academic, event, urgent, holiday, exam, fee, placement
+  priority        String    @default("normal") // low, normal, high, urgent
+  audience        String    // all, students, staff, parents, department, course, batch
+  audienceFilters Json?     // { departmentIds: [], courseIds: [], batchYears: [], roles: [] }
+  attachments     Json?     // [{ name, url, type, size }]
+  publishedAt     DateTime?
+  expiresAt       DateTime?
+  isPinned        Boolean   @default(false)
+  allowComments   Boolean   @default(false)
+  createdById     String    // Staff who created
+  status          String    @default("draft") // draft, published, archived
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  recipients      AnnouncementRecipient[]
+
+  @@index([tenantId])
+  @@index([type])
+  @@index([audience])
+  @@index([status])
+  @@index([publishedAt])
+  @@map("announcements")
+}
+
+/// Announcement recipients - track delivery and read status
+model AnnouncementRecipient {
+  id              String    @id @default(cuid())
+  tenantId        String
+  announcementId  String
+  userId          String
+  userType        String    // student, staff, parent
+  deliveredAt     DateTime  @default(now())
+  readAt          DateTime?
+  acknowledged    Boolean   @default(false)
+  acknowledgedAt  DateTime?
+
+  announcement    Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([tenantId])
+  @@index([userId])
+  @@index([readAt])
+  @@map("announcement_recipients")
+}
+
+/// Message templates for SMS/Email
+model MessageTemplate {
+  id              String   @id @default(cuid())
+  tenantId        String
+  name            String
+  code            String   // Unique code for template
+  type            String   // sms, email, whatsapp, push
+  category        String   // fee_reminder, attendance_alert, exam_notification, general, event, etc.
+  subject         String?  // For email
+  content         String   @db.Text
+  variables       Json?    // [{ name: "studentName", description: "Student's full name" }]
+  isActive        Boolean  @default(true)
+  isSystem        Boolean  @default(false) // System templates can't be deleted
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  communications  BulkCommunication[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([type])
+  @@index([category])
+  @@map("message_templates")
+}
+
+/// Bulk communication campaigns
+model BulkCommunication {
+  id              String    @id @default(cuid())
+  tenantId        String
+  name            String
+  type            String    // sms, email, whatsapp, push
+  templateId      String?
+  subject         String?   // For email
+  content         String    @db.Text
+  audience        String    // all, students, staff, parents, custom
+  audienceFilters Json?     // { departmentIds: [], courseIds: [], batchYears: [], feeDefaulters: true }
+  recipientCount  Int       @default(0)
+  sentCount       Int       @default(0)
+  failedCount     Int       @default(0)
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdById     String
+  status          String    @default("draft") // draft, scheduled, processing, completed, failed, cancelled
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  template        MessageTemplate? @relation(fields: [templateId], references: [id])
+  logs            CommunicationLog[]
+
+  @@index([tenantId])
+  @@index([type])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("bulk_communications")
+}
+
+/// Communication log - track individual messages sent
+model CommunicationLog {
+  id                  String    @id @default(cuid())
+  tenantId            String
+  bulkCommunicationId String?
+  type                String    // sms, email, whatsapp, push
+  recipientId         String?   // User ID
+  recipientType       String?   // student, staff, parent
+  recipientName       String?
+  recipientContact    String    // Phone/Email
+  subject             String?
+  content             String    @db.Text
+  variables           Json?     // Variables used in template
+  status              String    @default("pending") // pending, sent, delivered, failed, bounced
+  errorMessage        String?
+  externalId          String?   // External provider message ID
+  sentAt              DateTime?
+  deliveredAt         DateTime?
+  cost                Decimal?  @db.Decimal(6, 4) // Cost per message
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  bulkCommunication   BulkCommunication? @relation(fields: [bulkCommunicationId], references: [id])
+
+  @@index([tenantId])
+  @@index([bulkCommunicationId])
+  @@index([recipientId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("communication_logs")
+}
+
+/// Feedback/Comments on announcements
+model AnnouncementComment {
+  id              String   @id @default(cuid())
+  tenantId        String
+  announcementId  String
+  userId          String
+  userType        String   // student, staff, parent
+  userName        String
+  content         String   @db.Text
+  parentId        String?  // For replies
+  isHidden        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([announcementId])
+  @@index([parentId])
+  @@map("announcement_comments")
+}
+
+// =============================================================================
+// DOCUMENT MANAGEMENT (S3 Integration)
+// =============================================================================
+
+/// Document folders for organizing files
+model DocumentFolder {
+  id           String   @id @default(cuid())
+  tenantId     String
+  name         String
+  description  String?
+  parentId     String?  // For nested folders
+  ownerId      String   // User who created the folder
+  ownerType    String   // student, staff, admin
+  color        String?  // Folder color for UI
+  icon         String?  // Folder icon name
+  visibility   String   @default("private") // private, shared, public
+  path         String   // Full path e.g., "/documents/academics/semester-1"
+  depth        Int      @default(0) // Nesting level
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  parent       DocumentFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children     DocumentFolder[] @relation("FolderHierarchy")
+  documents    Document[]
+
+  @@unique([tenantId, path])
+  @@index([tenantId])
+  @@index([ownerId])
+  @@index([parentId])
+  @@map("document_folders")
+}
+
+/// Documents stored in S3
+model Document {
+  id              String    @id @default(cuid())
+  tenantId        String
+  folderId        String?   // Optional folder assignment
+  name            String    // Display name
+  originalName    String    // Original uploaded filename
+  description     String?
+
+  // S3 Storage Details
+  s3Key           String    // S3 object key
+  s3Bucket        String    // S3 bucket name
+  s3Region        String    @default("ap-south-1")
+  s3Url           String?   // Public URL (if public)
+
+  // File metadata
+  mimeType        String    // e.g., application/pdf, image/jpeg
+  fileSize        Int       // Size in bytes
+  extension       String    // File extension e.g., pdf, jpg
+  checksum        String?   // MD5 hash for integrity
+
+  // Document classification
+  category        String    // academic, administrative, personal, certificate, identity, financial, etc.
+  subcategory     String?   // More specific categorization
+  tags            String[]  @default([])
+
+  // Ownership and access
+  uploadedById    String    // User who uploaded
+  uploadedByType  String    // student, staff, admin
+  uploadedByName  String
+  visibility      String    @default("private") // private, shared, department, college, public
+
+  // Linked entities (optional - document can be linked to specific entities)
+  studentId       String?   // If document belongs to a student
+  staffId         String?   // If document belongs to staff
+  departmentId    String?   // If document belongs to department
+
+  // Document status
+  status          String    @default("active") // active, archived, deleted, pending_review
+  isVerified      Boolean   @default(false)    // Admin verified document
+  verifiedById    String?
+  verifiedAt      DateTime?
+
+  // Version control
+  version         Int       @default(1)
+  previousVersionId String? // Link to previous version
+
+  // Expiry (for certificates, IDs)
+  expiresAt       DateTime?
+
+  // Statistics
+  downloadCount   Int       @default(0)
+  viewCount       Int       @default(0)
+  lastAccessedAt  DateTime?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  folder          DocumentFolder? @relation(fields: [folderId], references: [id])
+  shares          DocumentShare[]
+  accessLogs      DocumentAccessLog[]
+  versions        Document[]  @relation("DocumentVersions")
+  previousVersion Document?   @relation("DocumentVersions", fields: [previousVersionId], references: [id])
+
+  @@unique([tenantId, s3Key])
+  @@index([tenantId])
+  @@index([folderId])
+  @@index([uploadedById])
+  @@index([studentId])
+  @@index([staffId])
+  @@index([category])
+  @@index([status])
+  @@map("documents")
+}
+
+/// Document sharing with specific users/groups
+model DocumentShare {
+  id            String    @id @default(cuid())
+  tenantId      String
+  documentId    String
+
+  // Share target (one of these will be set)
+  sharedWithUserId   String?    // Specific user
+  sharedWithRole     String?    // Role-based sharing (teacher, student, etc.)
+  sharedWithDeptId   String?    // Department-wide sharing
+
+  // Share permissions
+  permission    String    @default("view") // view, download, edit, admin
+
+  // Share settings
+  expiresAt     DateTime? // Optional expiry
+  password      String?   // Optional password protection
+  maxDownloads  Int?      // Optional download limit
+  downloadCount Int       @default(0)
+
+  // Share link (for external sharing)
+  shareToken    String?   @unique // Unique token for share URL
+  isPublicLink  Boolean   @default(false)
+
+  // Audit
+  sharedById    String    // User who shared
+  sharedByName  String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  document      Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([documentId])
+  @@index([sharedWithUserId])
+  @@index([shareToken])
+  @@map("document_shares")
+}
+
+/// Document access log for audit trail
+model DocumentAccessLog {
+  id          String   @id @default(cuid())
+  tenantId    String
+  documentId  String
+  userId      String
+  userName    String
+  userType    String   // student, staff, admin, external
+  action      String   // view, download, edit, delete, share, restore
+  ipAddress   String?
+  userAgent   String?
+  details     Json?    // Additional action details
+  createdAt   DateTime @default(now())
+
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([documentId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("document_access_logs")
+}
+
+/// Storage quota and settings per tenant
+model DocumentSettings {
+  id                    String   @id @default(cuid())
+  tenantId              String   @unique
+
+  // Storage quotas (in bytes)
+  totalStorageQuota     BigInt   @default(10737418240) // 10 GB default
+  usedStorage           BigInt   @default(0)
+  studentQuota          BigInt   @default(104857600)    // 100 MB per student
+  staffQuota            BigInt   @default(524288000)    // 500 MB per staff
+
+  // File settings
+  maxFileSize           Int      @default(52428800)     // 50 MB max file size
+  allowedMimeTypes      String[] @default(["application/pdf", "image/jpeg", "image/png", "image/gif", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"])
+  blockedExtensions     String[] @default(["exe", "bat", "cmd", "sh", "ps1"])
+
+  // Retention policies
+  autoDeleteDays        Int?     // Auto delete after days (null = never)
+  archiveAfterDays      Int?     // Move to archive after days
+
+  // Features
+  versioningEnabled     Boolean  @default(true)
+  maxVersions           Int      @default(5)
+  publicSharingEnabled  Boolean  @default(false)
+  externalSharingEnabled Boolean @default(false)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("document_settings")
+}
+
+// =============================================================================
+// BULK IMPORT/EXPORT
+// =============================================================================
+
+/// Import job tracking
+model ImportJob {
+  id              String    @id @default(cuid())
+  tenantId        String
+  entityType      String    // students, staff, fees, attendance, marks, etc.
+  fileName        String
+  fileUrl         String?   // S3 URL for the uploaded file
+  fileSize        Int?
+  totalRows       Int       @default(0)
+  processedRows   Int       @default(0)
+  successCount    Int       @default(0)
+  errorCount      Int       @default(0)
+  status          String    @default("pending") // pending, validating, processing, completed, failed, cancelled
+  errorLog        Json?     // Array of { row, field, error }
+  mapping         Json?     // Column to field mapping
+  options         Json?     // Import options (skip headers, update existing, etc.)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdById     String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([entityType])
+  @@index([createdById])
+  @@map("import_jobs")
+}
+
+/// Export job tracking
+model ExportJob {
+  id              String    @id @default(cuid())
+  tenantId        String
+  entityType      String    // students, staff, fees, attendance, marks, etc.
+  fileName        String
+  fileUrl         String?   // S3 URL for the generated file
+  fileSize        Int?
+  format          String    @default("xlsx") // xlsx, csv
+  totalRecords    Int       @default(0)
+  filters         Json?     // Applied filters
+  columns         Json?     // Selected columns to export
+  status          String    @default("pending") // pending, processing, completed, failed
+  expiresAt       DateTime? // When the download link expires
+  downloadCount   Int       @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdById     String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([entityType])
+  @@index([createdById])
+  @@map("export_jobs")
+}
+
+/// Import templates for quick mapping
+model ImportTemplate {
+  id              String   @id @default(cuid())
+  tenantId        String
+  name            String
+  entityType      String
+  mapping         Json     // Column to field mapping
+  options         Json?    // Default options
+  isDefault       Boolean  @default(false)
+  createdById     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tenantId, name, entityType])
+  @@index([tenantId])
+  @@index([entityType])
+  @@map("import_templates")
+}
+
+// =============================================================================
+// AUDIT LOGGING
+// =============================================================================
+
+/// Audit log entries for tracking all system activities
+model AuditLog {
+  id              String    @id @default(cuid())
+  tenantId        String
+
+  // Actor information
+  userId          String?   // Who performed the action (null for system actions)
+  userEmail       String?   // Denormalized for quick display
+  userName        String?   // Denormalized for quick display
+  userRole        String?   // Role at the time of action
+
+  // Action details
+  action          String    // CREATE, UPDATE, DELETE, VIEW, LOGIN, LOGOUT, EXPORT, IMPORT, etc.
+  category        String    // AUTHENTICATION, USER_MANAGEMENT, ACADEMIC, FINANCIAL, SYSTEM, etc.
+  entityType      String?   // Student, Staff, Fee, Exam, etc.
+  entityId        String?   // ID of the affected entity
+  entityName      String?   // Human-readable name of the entity
+
+  // Change tracking
+  oldValue        Json?     // Previous state (for updates/deletes)
+  newValue        Json?     // New state (for creates/updates)
+  changedFields   String[]  // List of fields that were modified
+
+  // Request context
+  ipAddress       String?
+  userAgent       String?
+  requestMethod   String?   // GET, POST, PUT, DELETE, PATCH
+  requestPath     String?   // API endpoint path
+  requestId       String?   // For correlation
+
+  // Status and metadata
+  status          String    @default("success") // success, failure, pending
+  errorMessage    String?   // If action failed
+  duration        Int?      // Request duration in milliseconds
+  metadata        Json?     // Additional context-specific data
+
+  // Timestamps
+  timestamp       DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action])
+  @@index([category])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([timestamp])
+  @@index([status])
+  @@index([tenantId, timestamp])
+  @@index([tenantId, userId, timestamp])
+  @@index([tenantId, entityType, entityId])
+  @@map("audit_logs")
+}
+
+/// Audit log retention settings per tenant
+model AuditLogSettings {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique
+
+  // Retention settings
+  retentionDays   Int      @default(365)   // How long to keep logs
+
+  // What to log (can be configured per tenant)
+  logReads        Boolean  @default(false) // Log VIEW actions
+  logAuthentication Boolean @default(true) // Log LOGIN/LOGOUT
+  logDataChanges  Boolean  @default(true)  // Log CREATE/UPDATE/DELETE
+  logExports      Boolean  @default(true)  // Log data exports
+  logImports      Boolean  @default(true)  // Log data imports
+  logSystemEvents Boolean  @default(true)  // Log system events
+
+  // Excluded entities (e.g., high-frequency low-value logs)
+  excludedEntityTypes String[] @default([])
+  excludedActions     String[] @default([])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("audit_log_settings")
+}
+
+/// Audit log summary for dashboards (aggregated daily)
+model AuditLogSummary {
+  id              String   @id @default(cuid())
+  tenantId        String
+  date            DateTime @db.Date
+
+  // Counts by action
+  createCount     Int      @default(0)
+  updateCount     Int      @default(0)
+  deleteCount     Int      @default(0)
+  viewCount       Int      @default(0)
+  loginCount      Int      @default(0)
+  logoutCount     Int      @default(0)
+  exportCount     Int      @default(0)
+  importCount     Int      @default(0)
+  otherCount      Int      @default(0)
+
+  // Counts by status
+  successCount    Int      @default(0)
+  failureCount    Int      @default(0)
+
+  // Active users
+  uniqueUsers     Int      @default(0)
+
+  // Top entities modified
+  topEntities     Json?    // Array of {entityType, count}
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([tenantId, date])
+  @@index([tenantId])
+  @@index([date])
+  @@map("audit_log_summaries")
+}
+
+// =============================================================================
+// REPORTS ENGINE
+// =============================================================================
+
+model ReportTemplate {
+  id              String   @id @default(cuid())
+  tenantId        String?  // null = system template, available to all
+  name            String
+  description     String?
+  category        String   // academic, financial, attendance, exam, student, staff, transport, hostel, library
+  reportType      String   // summary, detailed, comparison, trend
+
+  // Template definition
+  dataSource      String   // students, staff, fees, attendance, exams, etc.
+  columns         Json     // Array of {field, label, width, format}
+  filters         Json?    // Available filter options
+  groupBy         String[] // Fields to group by
+  sortBy          String?  // Default sort field
+  sortOrder       String   @default("asc")
+
+  // Aggregations
+  aggregations    Json?    // Array of {field, function: sum/avg/count/min/max}
+
+  // Chart configuration (optional)
+  chartType       String?  // bar, line, pie, none
+  chartConfig     Json?    // Chart-specific settings
+
+  // Display options
+  orientation     String   @default("portrait") // portrait, landscape
+  pageSize        String   @default("A4")       // A4, Letter, Legal
+  showHeader      Boolean  @default(true)
+  showFooter      Boolean  @default(true)
+  headerTemplate  String?  // Custom header HTML
+  footerTemplate  String?  // Custom footer HTML
+
+  isSystem        Boolean  @default(false)  // System templates can't be modified
+  isActive        Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdById     String?
+
+  reportJobs      ReportJob[]
+  scheduledReports ScheduledReport[]
+
+  @@index([tenantId])
+  @@index([category])
+  @@index([dataSource])
+  @@map("report_templates")
+}
+
+model ReportJob {
+  id              String    @id @default(cuid())
+  tenantId        String
+  templateId      String?   // null for ad-hoc reports
+  name            String
+  description     String?
+
+  // Report configuration
+  dataSource      String
+  columns         Json
+  filters         Json?     // Applied filters
+  groupBy         String[]
+  sortBy          String?
+  sortOrder       String    @default("asc")
+  aggregations    Json?
+  dateRange       Json?     // {startDate, endDate}
+
+  // Output format
+  format          String    @default("pdf")  // pdf, xlsx, csv
+  orientation     String    @default("portrait")
+  pageSize        String    @default("A4")
+
+  // Status tracking
+  status          String    @default("pending") // pending, processing, completed, failed
+  progress        Int       @default(0)         // 0-100
+  errorMessage    String?
+
+  // Generated file
+  fileUrl         String?
+  fileName        String?
+  fileSize        Int?      // in bytes
+  rowCount        Int?      // number of data rows
+
+  // Metadata
+  generatedAt     DateTime?
+  expiresAt       DateTime? // File expiration
+  executionTime   Int?      // in milliseconds
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdById     String?
+
+  template        ReportTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([tenantId])
+  @@index([templateId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("report_jobs")
+}
+
+model ScheduledReport {
+  id              String    @id @default(cuid())
+  tenantId        String
+  templateId      String
+  name            String
+  description     String?
+
+  // Schedule configuration
+  frequency       String    // daily, weekly, monthly, quarterly, yearly
+  dayOfWeek       Int?      // 0-6 for weekly (0 = Sunday)
+  dayOfMonth      Int?      // 1-31 for monthly
+  monthOfYear     Int?      // 1-12 for yearly
+  time            String    // HH:mm format
+  timezone        String    @default("Asia/Kolkata")
+
+  // Report configuration overrides
+  filters         Json?
+  dateRangeType   String    @default("auto") // auto, fixed, relative
+  dateRangeValue  Json?     // For relative: {unit: 'days', value: 7}
+  format          String    @default("pdf")
+
+  // Delivery options
+  deliveryMethod  String    @default("email") // email, download, both
+  recipients      String[]  // Email addresses
+  emailSubject    String?
+  emailBody       String?
+
+  // Status
+  isActive        Boolean   @default(true)
+  lastRunAt       DateTime?
+  nextRunAt       DateTime?
+  lastStatus      String?   // success, failed
+  runCount        Int       @default(0)
+  failureCount    Int       @default(0)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdById     String?
+
+  template        ReportTemplate @relation(fields: [templateId], references: [id])
+
+  @@index([tenantId])
+  @@index([templateId])
+  @@index([isActive])
+  @@index([nextRunAt])
+  @@map("scheduled_reports")
 }

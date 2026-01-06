@@ -10,6 +10,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum StudentStatus {
   ACTIVE = 'active',
@@ -133,16 +134,25 @@ export class StudentQueryDto {
 
   @IsNumber()
   @IsOptional()
+  @Type(() => Number)
   semester?: number;
+
+  @IsString()
+  @IsOptional()
+  section?: string;
 
   @IsEnum(StudentStatus)
   @IsOptional()
   status?: StudentStatus;
 
+  @IsNumber()
   @IsOptional()
+  @Type(() => Number)
   limit?: number;
 
+  @IsNumber()
   @IsOptional()
+  @Type(() => Number)
   offset?: number;
 }
 

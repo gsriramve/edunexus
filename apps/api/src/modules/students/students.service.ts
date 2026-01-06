@@ -98,7 +98,7 @@ export class StudentsService {
   }
 
   async findAll(tenantId: string, query: StudentQueryDto) {
-    const { search, departmentId, batch, semester, status, limit = 20, offset = 0 } = query;
+    const { search, departmentId, batch, semester, section, status, limit = 20, offset = 0 } = query;
 
     const where: any = { tenantId };
 
@@ -112,6 +112,10 @@ export class StudentsService {
 
     if (semester) {
       where.semester = semester;
+    }
+
+    if (section) {
+      where.section = section;
     }
 
     if (status) {

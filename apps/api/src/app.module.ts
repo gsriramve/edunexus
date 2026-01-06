@@ -10,6 +10,17 @@ import { StaffModule } from './modules/staff/staff.module';
 import { StudentsModule } from './modules/students/students.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ExamsModule } from './modules/exams/exams.module';
+import { ExamResultsModule } from './modules/exam-results/exam-results.module';
+import { TransportModule } from './modules/transport/transport.module';
+import { HostelModule } from './modules/hostel/hostel.module';
+import { LibraryModule } from './modules/library/library.module';
+import { SportsClubsModule } from './modules/sports-clubs/sports-clubs.module';
+import { CommunicationModule } from './modules/communication/communication.module';
+import { DocumentsModule } from './modules/documents/documents.module';
+import { ImportExportModule } from './modules/import-export/import-export.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -38,6 +49,17 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     StudentsModule,
     PaymentsModule,
     NotificationsModule,
+    ExamsModule,
+    ExamResultsModule,
+    TransportModule,
+    HostelModule,
+    LibraryModule,
+    SportsClubsModule,
+    CommunicationModule,
+    DocumentsModule,
+    ImportExportModule,
+    AuditModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
