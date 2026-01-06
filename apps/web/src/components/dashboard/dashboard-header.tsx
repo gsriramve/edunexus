@@ -1,0 +1,46 @@
+"use client";
+
+import { UserButton } from "@clerk/nextjs";
+import { Bell, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+
+export function DashboardHeader() {
+  return (
+    <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
+      <SidebarTrigger className="-ml-2" />
+
+      <div className="flex-1">
+        <form className="hidden md:block">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search..."
+              className="w-full max-w-sm pl-8 bg-muted/50"
+            />
+          </div>
+        </form>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" className="relative">
+          <Bell className="h-5 w-5" />
+          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] font-medium text-white flex items-center justify-center">
+            3
+          </span>
+        </Button>
+
+        <UserButton
+          afterSignOutUrl="/"
+          appearance={{
+            elements: {
+              avatarBox: "h-9 w-9",
+            },
+          }}
+        />
+      </div>
+    </header>
+  );
+}
