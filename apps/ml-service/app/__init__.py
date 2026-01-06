@@ -1,0 +1,1 @@
+"""EduNexus ML Service Application."""

@@ -1,0 +1,28 @@
+{
+  "name": "edunexus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-First College Management Platform for Indian Engineering Colleges",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "clean": "turbo clean && rm -rf node_modules",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  },
+  "packageManager": "npm@11.6.2",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
