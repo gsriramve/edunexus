@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-// TEMPORARY: Commented out for local testing without Clerk keys
-// import { ClerkProvider } from "@clerk/nextjs";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/query-client";
 import "./globals.css";
@@ -97,8 +96,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // TEMPORARY: Removed ClerkProvider for local testing
-    // <ClerkProvider>
+    <ClerkProvider>
       <html lang="en">
         <head>
           {/* PWA Meta Tags */}
@@ -125,6 +123,6 @@ export default function RootLayout({
           </QueryProvider>
         </body>
       </html>
-    // </ClerkProvider>
+    </ClerkProvider>
   );
 }

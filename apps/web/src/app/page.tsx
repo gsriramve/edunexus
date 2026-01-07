@@ -58,8 +58,8 @@ export default function HomePage() {
             <Link href="#pricing" className="text-sm font-medium hover:text-primary">
               Pricing
             </Link>
-            <Link href="#about" className="text-sm font-medium hover:text-primary">
-              About
+            <Link href="/contact" className="text-sm font-medium hover:text-primary">
+              Contact
             </Link>
           </nav>
           <div className="flex items-center gap-4">
@@ -74,7 +74,7 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 md:py-32 bg-gradient-to-b from-background to-muted/30">
+      <section className="py-20 md:py-32 bg-gradient-to-b from-slate-50 to-white">
         <div className="container text-center">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-4xl mx-auto">
             AI-First College Management Platform for{" "}
@@ -140,7 +140,7 @@ export default function HomePage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20">
+      <section id="pricing" className="py-16 bg-background">
         <div className="container">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold">Simple, Transparent Pricing</h2>
@@ -148,7 +148,7 @@ export default function HomePage() {
               Pay per student, scale as you grow.
             </p>
           </div>
-          <div className="max-w-lg mx-auto bg-background rounded-2xl border p-8 shadow-lg">
+          <div className="max-w-lg mx-auto bg-background rounded-2xl border-2 border-primary/20 p-8 shadow-xl shadow-primary/10">
             <div className="text-center">
               <p className="text-sm font-medium text-primary">Per Student / Year</p>
               <div className="mt-4 flex items-baseline justify-center gap-1">
@@ -199,8 +199,32 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* CTA Section */}
+      <section className="py-16 bg-primary text-primary-foreground">
+        <div className="container text-center">
+          <h2 className="text-2xl md:text-3xl font-bold">
+            Ready to Transform Your Institution?
+          </h2>
+          <p className="mt-4 text-primary-foreground/80 max-w-xl mx-auto">
+            Join 12+ colleges already using EduNexus to streamline operations and improve student outcomes.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/sign-up">
+              <Button size="lg" variant="secondary">
+                Get Started Free
+              </Button>
+            </Link>
+            <Link href="/contact">
+              <Button size="lg" variant="secondary">
+                Schedule Demo
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="border-t py-12 mt-auto">
+      <footer className="border-t py-8 bg-muted/30">
         <div className="container">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
@@ -211,29 +235,29 @@ export default function HomePage() {
               © 2026 EduNexus. All rights reserved.
             </p>
             <div className="flex gap-6">
-              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">
+              <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary">
                 Privacy
               </Link>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">
+              <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary">
                 Terms
               </Link>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-primary">
+              <Link href="/contact" className="text-sm text-muted-foreground hover:text-primary">
                 Contact
               </Link>
             </div>
           </div>
           {/* Powered By Section */}
-          <div className="mt-8 pt-8 border-t flex flex-col items-center gap-2">
-            <p className="text-sm text-muted-foreground">
+          <div className="mt-6 pt-6 border-t flex flex-col items-center gap-1">
+            <p className="text-xs text-muted-foreground">
               Built on Enterprise-Grade Infrastructure
             </p>
             <a
               href="https://www.quantumlayerplatform.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm font-medium text-primary hover:underline transition-colors"
+              className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline transition-colors"
             >
-              <Zap className="h-4 w-4" />
+              <Zap className="h-3 w-3" />
               Powered by QuantumLayer Platform
             </a>
           </div>
