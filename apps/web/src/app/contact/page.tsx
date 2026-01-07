@@ -24,7 +24,8 @@ export default function ContactPage() {
       </header>
 
       {/* Content */}
-      <main className="container py-12 max-w-4xl">
+      <main className="container py-12">
+        <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
         <p className="text-muted-foreground mb-12">
           Have questions about EduNexus? We&apos;d love to hear from you. Reach out using any of the methods below.
@@ -148,6 +149,7 @@ export default function ContactPage() {
           <Link href="/" className="text-primary hover:underline">
             &larr; Back to Home
           </Link>
+        </div>
         </div>
       </main>
     </div>

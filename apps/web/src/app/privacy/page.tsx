@@ -24,7 +24,8 @@ export default function PrivacyPage() {
       </header>
 
       {/* Content */}
-      <main className="container py-12 max-w-4xl">
+      <main className="container py-12">
+        <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
         <p className="text-muted-foreground mb-6">Last updated: January 2026</p>
 
@@ -100,6 +101,7 @@ export default function PrivacyPage() {
           <Link href="/" className="text-primary hover:underline">
             &larr; Back to Home
           </Link>
+        </div>
         </div>
       </main>
     </div>
