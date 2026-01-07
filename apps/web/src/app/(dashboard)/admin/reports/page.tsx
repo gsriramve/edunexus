@@ -213,13 +213,13 @@ export default function AdminReportsPage() {
   const fetchTemplates = useCallback(async () => {
     try {
       const data = await reportsApi.listTemplates(TENANT_ID, {
-        category: templateFilter.category || undefined,
-        dataSource: templateFilter.dataSource || undefined,
+        category: (templateFilter.category as ReportCategory) || undefined,
+        dataSource: (templateFilter.dataSource as DataSource) || undefined,
         search: templateFilter.search || undefined,
         limit: PAGE_SIZE,
         offset: templatePage * PAGE_SIZE,
       });
-      setTemplates(data.data);
+      setTemplates(data.templates);
     } catch (err) {
       console.error('Failed to fetch templates:', err);
     }
@@ -233,7 +233,7 @@ export default function AdminReportsPage() {
         limit: PAGE_SIZE,
         offset: jobPage * PAGE_SIZE,
       });
-      setJobs(data.data);
+      setJobs(data.jobs);
     } catch (err) {
       console.error('Failed to fetch jobs:', err);
     }
@@ -247,7 +247,7 @@ export default function AdminReportsPage() {
         limit: PAGE_SIZE,
         offset: scheduledPage * PAGE_SIZE,
       });
-      setScheduledReports(data.data);
+      setScheduledReports(data.reports);
     } catch (err) {
       console.error('Failed to fetch scheduled reports:', err);
     }
@@ -490,9 +490,9 @@ export default function AdminReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Scheduled Reports</p>
-                <p className="text-2xl font-bold">{stats?.totalScheduledReports || 0}</p>
+                <p className="text-2xl font-bold">{stats?.scheduledReports || 0}</p>
                 <p className="text-xs text-muted-foreground">
-                  {stats?.activeScheduledReports || 0} active
+                  {stats?.activeSchedules || 0} active
                 </p>
               </div>
               <Calendar className="h-8 w-8 text-purple-500" />

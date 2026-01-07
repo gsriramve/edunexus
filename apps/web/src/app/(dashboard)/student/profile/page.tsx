@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
   User,
   Mail,
@@ -15,6 +16,7 @@ import {
   Pencil,
   Camera,
   Save,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,50 +25,93 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-
-// Mock data
-const studentProfile = {
-  // Personal Info
-  firstName: "Rahul",
-  lastName: "Sharma",
-  email: "rahul.sharma@college.edu",
-  phone: "+91 98765 43210",
-  dateOfBirth: "2003-05-15",
-  gender: "Male",
-  bloodGroup: "B+",
-  nationality: "Indian",
-
-  // Academic Info
-  rollNo: "21CSE101",
-  registrationNo: "REG2021CSE101",
-  department: "Computer Science & Engineering",
-  departmentCode: "CSE",
-  batchYear: 2021,
-  currentSemester: 5,
-  status: "ACTIVE",
-
-  // Parent Info
-  fatherName: "Rajesh Sharma",
-  motherName: "Sunita Sharma",
-  parentPhone: "+91 98765 12345",
-  parentEmail: "rajesh.sharma@email.com",
-
-  // Address
-  address: "123, MG Road, Sector 15",
-  city: "Gurugram",
-  state: "Haryana",
-  pincode: "122001",
-};
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useStudentByUserId, useUpdateStudent } from "@/hooks/use-api";
 
 export default function StudentProfile() {
+  const { user, isLoaded: userLoaded } = useUser();
+  const tenantId = useTenantId() || '';
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState(studentProfile);
 
-  const handleSave = () => {
-    // TODO: API call to save profile
+  // Fetch student data
+  const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
+  const updateStudentMutation = useUpdateStudent(tenantId);
+
+  // Form state for editable fields
+  const [editedPhone, setEditedPhone] = useState('');
+
+  // Initialize edit state when entering edit mode
+  const startEditing = () => {
+    setEditedPhone(user?.primaryPhoneNumber?.phoneNumber || '');
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    // TODO: Implement profile update when backend supports it
+    // Currently, student profile updates are limited
+    // Phone number updates would go through Clerk
     setIsEditing(false);
   };
+
+  const isLoading = !userLoaded || studentLoading;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-96 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+              <Skeleton className="h-32 w-32 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-8 w-48" />
+                <Skeleton className="h-4 w-64" />
+                <div className="flex gap-2 mt-4">
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-6 w-24" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  // Derive display data from student and Clerk user
+  const firstName = user?.firstName || studentData?.user?.name?.split(' ')[0] || '';
+  const lastName = user?.lastName || studentData?.user?.name?.split(' ').slice(1).join(' ') || '';
+  const fullName = `${firstName} ${lastName}`.trim() || 'Student';
+  const email = user?.primaryEmailAddress?.emailAddress || studentData?.user?.email || '';
+  const phone = user?.primaryPhoneNumber?.phoneNumber || '';
+  const photoUrl = user?.imageUrl || studentData?.user?.profile?.photoUrl || '';
+  const initials = `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase() || 'S';
+
+  // Student academic data
+  const rollNo = studentData?.rollNo || 'N/A';
+  const batch = studentData?.batch || 'N/A';
+  const semester = studentData?.semester || 0;
+  const section = studentData?.section || '';
+  const status = studentData?.status || 'N/A';
+  const admissionDate = studentData?.admissionDate;
+  const departmentName = studentData?.department?.name || 'N/A';
+  const departmentCode = studentData?.department?.code || '';
+
+  // Profile data (from user profile if available)
+  const profile = studentData?.user?.profile;
+  const dob = profile?.dob;
+  const gender = profile?.gender || 'N/A';
+  const bloodGroup = profile?.bloodGroup || 'N/A';
+  const nationality = profile?.nationality || 'Indian';
 
   return (
     <div className="space-y-6">
@@ -83,13 +128,17 @@ export default function StudentProfile() {
             <Button variant="outline" onClick={() => setIsEditing(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              <Save className="mr-2 h-4 w-4" />
+            <Button onClick={handleSave} disabled={updateStudentMutation.isPending}>
+              {updateStudentMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
               Save Changes
             </Button>
           </div>
         ) : (
-          <Button onClick={() => setIsEditing(true)}>
+          <Button onClick={startEditing}>
             <Pencil className="mr-2 h-4 w-4" />
             Edit Profile
           </Button>
@@ -102,9 +151,9 @@ export default function StudentProfile() {
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
             <div className="relative">
               <Avatar className="h-32 w-32">
-                <AvatarImage src="/placeholder-avatar.jpg" />
+                <AvatarImage src={photoUrl} />
                 <AvatarFallback className="text-3xl bg-primary text-primary-foreground">
-                  {formData.firstName[0]}{formData.lastName[0]}
+                  {initials}
                 </AvatarFallback>
               </Avatar>
               {isEditing && (
@@ -118,22 +167,32 @@ export default function StudentProfile() {
               )}
             </div>
             <div className="flex-1 text-center md:text-left">
-              <h2 className="text-2xl font-bold">
-                {formData.firstName} {formData.lastName}
-              </h2>
-              <p className="text-muted-foreground">{formData.email}</p>
+              <h2 className="text-2xl font-bold">{fullName}</h2>
+              <p className="text-muted-foreground">{email}</p>
               <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
-                <Badge variant="default">{formData.rollNo}</Badge>
-                <Badge variant="secondary">{formData.departmentCode}</Badge>
-                <Badge variant="outline">Semester {formData.currentSemester}</Badge>
-                <Badge className="bg-green-500">{formData.status}</Badge>
+                <Badge variant="default">{rollNo}</Badge>
+                {departmentCode && <Badge variant="secondary">{departmentCode}</Badge>}
+                {semester > 0 && <Badge variant="outline">Semester {semester}</Badge>}
+                <Badge className={status === 'enrolled' ? 'bg-green-500' : 'bg-yellow-500'}>
+                  {status.toUpperCase()}
+                </Badge>
               </div>
             </div>
             <div className="text-center md:text-right">
-              <p className="text-sm text-muted-foreground">Registration No.</p>
-              <p className="font-mono font-medium">{formData.registrationNo}</p>
-              <p className="text-sm text-muted-foreground mt-2">Batch Year</p>
-              <p className="font-medium">{formData.batchYear}</p>
+              <p className="text-sm text-muted-foreground">Batch</p>
+              <p className="font-mono font-medium">{batch}</p>
+              {admissionDate && (
+                <>
+                  <p className="text-sm text-muted-foreground mt-2">Admission Date</p>
+                  <p className="font-medium">
+                    {new Date(admissionDate).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </CardContent>
@@ -162,34 +221,18 @@ export default function StudentProfile() {
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
-                  {isEditing ? (
-                    <Input
-                      id="firstName"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{formData.firstName}</p>
-                  )}
+                  <p className="text-sm font-medium">{firstName || 'N/A'}</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
-                  {isEditing ? (
-                    <Input
-                      id="lastName"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{formData.lastName}</p>
-                  )}
+                  <p className="text-sm font-medium">{lastName || 'N/A'}</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Mail className="h-4 w-4" />
                     Email
                   </Label>
-                  <p className="text-sm font-medium">{formData.email}</p>
+                  <p className="text-sm font-medium">{email}</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
@@ -198,11 +241,12 @@ export default function StudentProfile() {
                   </Label>
                   {isEditing ? (
                     <Input
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      value={editedPhone}
+                      onChange={(e) => setEditedPhone(e.target.value)}
+                      placeholder="Enter phone number"
                     />
                   ) : (
-                    <p className="text-sm font-medium">{formData.phone}</p>
+                    <p className="text-sm font-medium">{phone || 'Not provided'}</p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -211,30 +255,34 @@ export default function StudentProfile() {
                     Date of Birth
                   </Label>
                   <p className="text-sm font-medium">
-                    {new Date(formData.dateOfBirth).toLocaleDateString("en-IN", {
+                    {dob ? new Date(dob).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "long",
                       year: "numeric",
-                    })}
+                    }) : 'Not provided'}
                   </p>
                 </div>
                 <div className="space-y-2">
                   <Label>Gender</Label>
-                  <p className="text-sm font-medium">{formData.gender}</p>
+                  <p className="text-sm font-medium">{gender}</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Heart className="h-4 w-4" />
                     Blood Group
                   </Label>
-                  <Badge variant="outline">{formData.bloodGroup}</Badge>
+                  {bloodGroup !== 'N/A' ? (
+                    <Badge variant="outline">{bloodGroup}</Badge>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Not provided</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Globe className="h-4 w-4" />
                     Nationality
                   </Label>
-                  <p className="text-sm font-medium">{formData.nationality}</p>
+                  <p className="text-sm font-medium">{nationality}</p>
                 </div>
               </div>
             </CardContent>
@@ -255,38 +303,62 @@ export default function StudentProfile() {
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Roll Number</Label>
-                  <p className="text-sm font-medium font-mono">{formData.rollNo}</p>
+                  <p className="text-sm font-medium font-mono">{rollNo}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Registration Number</Label>
-                  <p className="text-sm font-medium font-mono">{formData.registrationNo}</p>
+                  <Label>Batch</Label>
+                  <p className="text-sm font-medium font-mono">{batch}</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Building2 className="h-4 w-4" />
                     Department
                   </Label>
-                  <p className="text-sm font-medium">{formData.department}</p>
+                  <p className="text-sm font-medium">{departmentName}</p>
                 </div>
                 <div className="space-y-2">
                   <Label>Department Code</Label>
-                  <Badge variant="secondary">{formData.departmentCode}</Badge>
-                </div>
-                <div className="space-y-2">
-                  <Label>Batch Year</Label>
-                  <p className="text-sm font-medium">{formData.batchYear}</p>
+                  {departmentCode ? (
+                    <Badge variant="secondary">{departmentCode}</Badge>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">N/A</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Current Semester</Label>
-                  <Badge>{formData.currentSemester}</Badge>
+                  {semester > 0 ? (
+                    <Badge>{semester}</Badge>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">N/A</p>
+                  )}
                 </div>
+                {section && (
+                  <div className="space-y-2">
+                    <Label>Section</Label>
+                    <Badge variant="outline">{section}</Badge>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Shield className="h-4 w-4" />
                     Enrollment Status
                   </Label>
-                  <Badge className="bg-green-500">{formData.status}</Badge>
+                  <Badge className={status === 'enrolled' ? 'bg-green-500' : 'bg-yellow-500'}>
+                    {status.toUpperCase()}
+                  </Badge>
                 </div>
+                {admissionDate && (
+                  <div className="space-y-2">
+                    <Label>Admission Date</Label>
+                    <p className="text-sm font-medium">
+                      {new Date(admissionDate).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -300,43 +372,11 @@ export default function StudentProfile() {
               <CardDescription>Emergency contact details</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Father's Name</Label>
-                  <p className="text-sm font-medium">{formData.fatherName}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>Mother's Name</Label>
-                  <p className="text-sm font-medium">{formData.motherName}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    Parent's Phone
-                  </Label>
-                  {isEditing ? (
-                    <Input
-                      value={formData.parentPhone}
-                      onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })}
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{formData.parentPhone}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Parent's Email
-                  </Label>
-                  {isEditing ? (
-                    <Input
-                      value={formData.parentEmail}
-                      onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })}
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{formData.parentEmail}</p>
-                  )}
-                </div>
+              {/* TODO: Fetch parent data from ParentStudent relationship when API is available */}
+              <div className="text-center py-8 text-muted-foreground">
+                <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Parent/Guardian information will be available soon.</p>
+                <p className="text-sm mt-2">Contact your administrator to update this information.</p>
               </div>
             </CardContent>
           </Card>
@@ -353,51 +393,11 @@ export default function StudentProfile() {
               <CardDescription>Your residential address</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Street Address</Label>
-                  {isEditing ? (
-                    <Input
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{formData.address}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>City</Label>
-                  {isEditing ? (
-                    <Input
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{formData.city}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>State</Label>
-                  {isEditing ? (
-                    <Input
-                      value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{formData.state}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Pincode</Label>
-                  {isEditing ? (
-                    <Input
-                      value={formData.pincode}
-                      onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{formData.pincode}</p>
-                  )}
-                </div>
+              {/* TODO: Fetch address from UserProfile when API is available */}
+              <div className="text-center py-8 text-muted-foreground">
+                <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Address information will be available soon.</p>
+                <p className="text-sm mt-2">Contact your administrator to update this information.</p>
               </div>
             </CardContent>
           </Card>

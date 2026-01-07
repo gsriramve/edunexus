@@ -22,6 +22,22 @@ class ApiError extends Error {
   }
 }
 
+// Store for auth context - set by useAuthenticatedApi hook
+let authContext: {
+  userId?: string;
+  role?: string;
+  tenantId?: string | null;
+  name?: string;
+} | null = null;
+
+export function setAuthContext(context: typeof authContext) {
+  authContext = context;
+}
+
+export function getAuthContext() {
+  return authContext;
+}
+
 async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   const { method = 'GET', body, headers = {}, tenantId } = options;
 
@@ -29,6 +45,22 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     'Content-Type': 'application/json',
     ...headers,
   };
+
+  // Add auth headers from context
+  if (authContext) {
+    if (authContext.userId) {
+      requestHeaders['x-user-id'] = authContext.userId;
+    }
+    if (authContext.role) {
+      requestHeaders['x-user-role'] = authContext.role;
+    }
+    if (authContext.name) {
+      requestHeaders['x-user-name'] = authContext.name;
+    }
+    if (authContext.tenantId) {
+      requestHeaders['x-user-tenant-id'] = authContext.tenantId;
+    }
+  }
 
   if (tenantId) {
     requestHeaders['x-tenant-id'] = tenantId;
@@ -136,6 +168,203 @@ export const tenantsApi = {
     api<Tenant>('/tenants', { method: 'POST', body: data }),
 
   stats: () => api<TenantStats>('/tenants/stats'),
+};
+
+// Platform API (Super Admin)
+export interface PlatformTenant {
+  id: string;
+  name: string;
+  domain: string;
+  displayName: string;
+  logo?: string;
+  status: 'trial' | 'active' | 'suspended' | 'cancelled';
+  trialEndsAt?: string;
+  activatedAt?: string;
+  suspendedAt?: string;
+  subscription?: {
+    plan: string;
+    studentCount: number;
+    amount: string;
+  };
+  principal?: {
+    id: string;
+    email: string;
+    name: string;
+    status: string;
+  };
+  pendingInvitation?: {
+    id: string;
+    email: string;
+    expiresAt: string;
+  };
+  trialDaysRemaining?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlatformStats {
+  tenants: {
+    total: number;
+    trial: number;
+    active: number;
+    suspended: number;
+    expiringTrials: number;
+  };
+  users: {
+    total: number;
+    students: number;
+  };
+  invitations: {
+    pending: number;
+  };
+  activity: {
+    last24Hours: number;
+  };
+}
+
+export interface PlatformAuditLog {
+  id: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  performedBy: string;
+  performedByEmail?: string;
+  performedByName?: string;
+  details?: Record<string, unknown>;
+  tenantId?: string;
+  tenant?: {
+    id: string;
+    name: string;
+    displayName: string;
+  };
+  createdAt: string;
+}
+
+export interface CreatePlatformTenantInput {
+  name: string;
+  domain: string;
+  displayName: string;
+  logo?: string;
+  principalEmail?: string;
+  principalName?: string;
+  trialDays?: number;
+}
+
+export interface InvitePrincipalInput {
+  email: string;
+  name?: string;
+  message?: string;
+}
+
+export interface ExtendTrialInput {
+  days?: number;
+}
+
+export interface TenantStatusInput {
+  reason?: string;
+}
+
+export interface PlatformAuditLogQueryParams {
+  action?: string;
+  targetType?: string;
+  targetId?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface TenantQueryParams {
+  status?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export const platformApi = {
+  // Statistics
+  getStats: () => api<PlatformStats>('/platform/stats'),
+
+  // Tenant Management
+  listTenants: (params?: TenantQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.page) searchParams.set('page', params.page.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    const query = searchParams.toString();
+    return api<{
+      tenants: PlatformTenant[];
+      pagination: { page: number; limit: number; total: number; pages: number };
+    }>(`/platform/tenants${query ? `?${query}` : ''}`);
+  },
+
+  getTenant: (id: string) => api<PlatformTenant>(`/platform/tenants/${id}`),
+
+  createTenant: (data: CreatePlatformTenantInput) =>
+    api<PlatformTenant>('/platform/tenants', { method: 'POST', body: data }),
+
+  extendTrial: (id: string, data: ExtendTrialInput) =>
+    api<PlatformTenant>(`/platform/tenants/${id}/extend-trial`, { method: 'PATCH', body: data }),
+
+  activateTenant: (id: string, data?: TenantStatusInput) =>
+    api<PlatformTenant>(`/platform/tenants/${id}/activate`, { method: 'PATCH', body: data || {} }),
+
+  suspendTenant: (id: string, data?: TenantStatusInput) =>
+    api<PlatformTenant>(`/platform/tenants/${id}/suspend`, { method: 'PATCH', body: data || {} }),
+
+  reactivateTenant: (id: string, data?: TenantStatusInput) =>
+    api<PlatformTenant>(`/platform/tenants/${id}/reactivate`, { method: 'PATCH', body: data || {} }),
+
+  // Invitation Management
+  invitePrincipal: (tenantId: string, data: InvitePrincipalInput) =>
+    api<{ id: string; email: string; expiresAt: string }>(
+      `/platform/tenants/${tenantId}/invite-principal`,
+      { method: 'POST', body: data }
+    ),
+
+  resendInvitation: (invitationId: string, message?: string) =>
+    api<{ id: string; email: string; expiresAt: string }>(
+      `/platform/invitations/${invitationId}/resend`,
+      { method: 'POST', body: { message } }
+    ),
+
+  cancelInvitation: (invitationId: string) =>
+    api<{ id: string; status: string }>(
+      `/platform/invitations/${invitationId}`,
+      { method: 'DELETE' }
+    ),
+
+  // Audit Logs
+  getAuditLogs: (params?: PlatformAuditLogQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.action) searchParams.set('action', params.action);
+    if (params?.targetType) searchParams.set('targetType', params.targetType);
+    if (params?.targetId) searchParams.set('targetId', params.targetId);
+    if (params?.startDate) searchParams.set('startDate', params.startDate);
+    if (params?.endDate) searchParams.set('endDate', params.endDate);
+    if (params?.page) searchParams.set('page', params.page.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    const query = searchParams.toString();
+    return api<{
+      logs: PlatformAuditLog[];
+      pagination: { page: number; limit: number; total: number; pages: number };
+    }>(`/platform/audit-logs${query ? `?${query}` : ''}`);
+  },
+
+  getTenantAuditLogs: (tenantId: string, params?: PlatformAuditLogQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.action) searchParams.set('action', params.action);
+    if (params?.startDate) searchParams.set('startDate', params.startDate);
+    if (params?.endDate) searchParams.set('endDate', params.endDate);
+    if (params?.page) searchParams.set('page', params.page.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    const query = searchParams.toString();
+    return api<{
+      logs: PlatformAuditLog[];
+      pagination: { page: number; limit: number; total: number; pages: number };
+    }>(`/platform/tenants/${tenantId}/audit-logs${query ? `?${query}` : ''}`);
+  },
 };
 
 // Types
@@ -3787,6 +4016,1540 @@ export const pushNotificationsApi = {
       body: { userId, tenantId },
       tenantId,
     }),
+};
+
+// =============================================================================
+// TRANSPORT API
+// =============================================================================
+
+export interface TransportRoute {
+  id: string;
+  tenantId: string;
+  name: string;
+  code: string;
+  description?: string;
+  type: 'morning' | 'evening' | 'both';
+  isActive: boolean;
+  startLocation?: string;
+  endLocation?: string;
+  distanceKm?: number;
+  estimatedDurationMinutes?: number;
+  vehicleId?: string;
+  vehicle?: TransportVehicle;
+  stops?: TransportStop[];
+  _count?: { stops: number; passes: number };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransportStop {
+  id: string;
+  tenantId: string;
+  routeId: string;
+  name: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  stopOrder: number;
+  pickupTime?: string;
+  dropTime?: string;
+  landmark?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransportVehicle {
+  id: string;
+  tenantId: string;
+  vehicleNumber: string;
+  type: 'bus' | 'van' | 'minibus';
+  capacity: number;
+  make?: string;
+  model?: string;
+  year?: number;
+  color?: string;
+  insuranceNumber?: string;
+  insuranceExpiry?: string;
+  fitnessExpiry?: string;
+  permitExpiry?: string;
+  driverName?: string;
+  driverPhone?: string;
+  driverLicenseNumber?: string;
+  conductorName?: string;
+  conductorPhone?: string;
+  isActive: boolean;
+  currentRouteId?: string;
+  currentRoute?: TransportRoute;
+  gpsDeviceId?: string;
+  lastLatitude?: number;
+  lastLongitude?: number;
+  lastLocationUpdate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransportPass {
+  id: string;
+  tenantId: string;
+  studentId: string;
+  student?: { id: string; user: { firstName: string; lastName: string }; rollNo: string };
+  routeId: string;
+  route?: TransportRoute;
+  boardingStopId?: string;
+  boardingStop?: TransportStop;
+  dropStopId?: string;
+  dropStop?: TransportStop;
+  passType: 'monthly' | 'quarterly' | 'yearly' | 'one_way';
+  validFrom: string;
+  validTo: string;
+  amount: number;
+  status: 'active' | 'expired' | 'cancelled' | 'pending';
+  paymentStatus: 'paid' | 'pending' | 'partial';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransportTracking {
+  id: string;
+  tenantId: string;
+  vehicleId: string;
+  latitude: number;
+  longitude: number;
+  speed?: number;
+  heading?: number;
+  accuracy?: number;
+  timestamp: string;
+  createdAt: string;
+}
+
+export interface TransportStats {
+  totalRoutes: number;
+  activeRoutes: number;
+  totalVehicles: number;
+  activeVehicles: number;
+  totalPasses: number;
+  activePasses: number;
+  totalStops: number;
+  monthlyRevenue?: number;
+}
+
+export interface RouteQueryParams {
+  search?: string;
+  type?: 'morning' | 'evening' | 'both';
+  isActive?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface VehicleQueryParams {
+  search?: string;
+  type?: 'bus' | 'van' | 'minibus';
+  isActive?: boolean;
+  hasRoute?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface PassQueryParams {
+  search?: string;
+  studentId?: string;
+  routeId?: string;
+  status?: 'active' | 'expired' | 'cancelled' | 'pending';
+  paymentStatus?: 'paid' | 'pending' | 'partial';
+  limit?: number;
+  offset?: number;
+}
+
+export interface CreateRouteInput {
+  name: string;
+  code: string;
+  description?: string;
+  type: 'morning' | 'evening' | 'both';
+  isActive?: boolean;
+  startLocation?: string;
+  endLocation?: string;
+  distanceKm?: number;
+  estimatedDurationMinutes?: number;
+  vehicleId?: string;
+}
+
+export interface UpdateRouteInput {
+  name?: string;
+  description?: string;
+  type?: 'morning' | 'evening' | 'both';
+  isActive?: boolean;
+  startLocation?: string;
+  endLocation?: string;
+  distanceKm?: number;
+  estimatedDurationMinutes?: number;
+  vehicleId?: string;
+}
+
+export interface CreateStopInput {
+  routeId: string;
+  name: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  stopOrder: number;
+  pickupTime?: string;
+  dropTime?: string;
+  landmark?: string;
+}
+
+export interface CreateVehicleInput {
+  vehicleNumber: string;
+  type: 'bus' | 'van' | 'minibus';
+  capacity: number;
+  make?: string;
+  model?: string;
+  year?: number;
+  color?: string;
+  insuranceNumber?: string;
+  insuranceExpiry?: string;
+  fitnessExpiry?: string;
+  permitExpiry?: string;
+  driverName?: string;
+  driverPhone?: string;
+  driverLicenseNumber?: string;
+  conductorName?: string;
+  conductorPhone?: string;
+  isActive?: boolean;
+  gpsDeviceId?: string;
+}
+
+export interface CreatePassInput {
+  studentId: string;
+  routeId: string;
+  boardingStopId?: string;
+  dropStopId?: string;
+  passType: 'monthly' | 'quarterly' | 'yearly' | 'one_way';
+  validFrom: string;
+  validTo: string;
+  amount: number;
+  paymentStatus?: 'paid' | 'pending' | 'partial';
+}
+
+export const transportApi = {
+  // Routes
+  listRoutes: (tenantId: string, params?: RouteQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.type) searchParams.set('type', params.type);
+    if (params?.isActive !== undefined) searchParams.set('isActive', params.isActive.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: TransportRoute[]; total: number }>(`/transport/routes${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getRoute: (tenantId: string, id: string) =>
+    api<TransportRoute>(`/transport/routes/${id}`, { tenantId }),
+
+  createRoute: (tenantId: string, data: CreateRouteInput) =>
+    api<TransportRoute>('/transport/routes', { method: 'POST', body: data, tenantId }),
+
+  updateRoute: (tenantId: string, id: string, data: UpdateRouteInput) =>
+    api<TransportRoute>(`/transport/routes/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  deleteRoute: (tenantId: string, id: string) =>
+    api<void>(`/transport/routes/${id}`, { method: 'DELETE', tenantId }),
+
+  // Stops
+  getRouteStops: (tenantId: string, routeId: string) =>
+    api<TransportStop[]>(`/transport/routes/${routeId}/stops`, { tenantId }),
+
+  createStop: (tenantId: string, data: CreateStopInput) =>
+    api<TransportStop>('/transport/stops', { method: 'POST', body: data, tenantId }),
+
+  bulkCreateStops: (tenantId: string, routeId: string, stops: Omit<CreateStopInput, 'routeId'>[]) =>
+    api<TransportStop[]>('/transport/stops/bulk', { method: 'POST', body: { routeId, stops }, tenantId }),
+
+  updateStop: (tenantId: string, id: string, data: Partial<CreateStopInput>) =>
+    api<TransportStop>(`/transport/stops/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  deleteStop: (tenantId: string, id: string) =>
+    api<void>(`/transport/stops/${id}`, { method: 'DELETE', tenantId }),
+
+  // Vehicles
+  listVehicles: (tenantId: string, params?: VehicleQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.type) searchParams.set('type', params.type);
+    if (params?.isActive !== undefined) searchParams.set('isActive', params.isActive.toString());
+    if (params?.hasRoute !== undefined) searchParams.set('hasRoute', params.hasRoute.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: TransportVehicle[]; total: number }>(`/transport/vehicles${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getVehicle: (tenantId: string, id: string) =>
+    api<TransportVehicle>(`/transport/vehicles/${id}`, { tenantId }),
+
+  getAllVehicleLocations: (tenantId: string) =>
+    api<Array<{ vehicleId: string; latitude: number; longitude: number; updatedAt: string }>>('/transport/vehicles/locations', { tenantId }),
+
+  createVehicle: (tenantId: string, data: CreateVehicleInput) =>
+    api<TransportVehicle>('/transport/vehicles', { method: 'POST', body: data, tenantId }),
+
+  updateVehicle: (tenantId: string, id: string, data: Partial<CreateVehicleInput>) =>
+    api<TransportVehicle>(`/transport/vehicles/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  deleteVehicle: (tenantId: string, id: string) =>
+    api<void>(`/transport/vehicles/${id}`, { method: 'DELETE', tenantId }),
+
+  // Passes
+  listPasses: (tenantId: string, params?: PassQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.studentId) searchParams.set('studentId', params.studentId);
+    if (params?.routeId) searchParams.set('routeId', params.routeId);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.paymentStatus) searchParams.set('paymentStatus', params.paymentStatus);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: TransportPass[]; total: number }>(`/transport/passes${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getPass: (tenantId: string, id: string) =>
+    api<TransportPass>(`/transport/passes/${id}`, { tenantId }),
+
+  getStudentPass: (tenantId: string, studentId: string) =>
+    api<TransportPass>(`/transport/passes/student/${studentId}`, { tenantId }),
+
+  createPass: (tenantId: string, data: CreatePassInput) =>
+    api<TransportPass>('/transport/passes', { method: 'POST', body: data, tenantId }),
+
+  updatePass: (tenantId: string, id: string, data: Partial<CreatePassInput>) =>
+    api<TransportPass>(`/transport/passes/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  cancelPass: (tenantId: string, id: string) =>
+    api<TransportPass>(`/transport/passes/${id}/cancel`, { method: 'PATCH', tenantId }),
+
+  // Tracking
+  getLatestTracking: (tenantId: string, vehicleId: string) =>
+    api<TransportTracking>(`/transport/tracking/vehicle/${vehicleId}`, { tenantId }),
+
+  getTrackingHistory: (tenantId: string, vehicleId: string, params?: { from?: string; to?: string; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    searchParams.set('vehicleId', vehicleId);
+    if (params?.from) searchParams.set('from', params.from);
+    if (params?.to) searchParams.set('to', params.to);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    return api<TransportTracking[]>(`/transport/tracking/history?${searchParams.toString()}`, { tenantId });
+  },
+
+  createTracking: (tenantId: string, data: { vehicleId: string; latitude: number; longitude: number; speed?: number; heading?: number }) =>
+    api<TransportTracking>('/transport/tracking', { method: 'POST', body: data, tenantId }),
+
+  // Stats
+  getStats: (tenantId: string) =>
+    api<TransportStats>('/transport/stats', { tenantId }),
+};
+
+// =============================================================================
+// HOSTEL API
+// =============================================================================
+
+export interface HostelBlock {
+  id: string;
+  tenantId: string;
+  name: string;
+  code: string;
+  description?: string;
+  type: 'boys' | 'girls' | 'mixed';
+  totalFloors: number;
+  wardenName?: string;
+  wardenPhone?: string;
+  wardenEmail?: string;
+  isActive: boolean;
+  address?: string;
+  amenities?: string[];
+  _count?: { rooms: number; allocations: number };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HostelRoom {
+  id: string;
+  tenantId: string;
+  blockId: string;
+  block?: HostelBlock;
+  roomNumber: string;
+  floor: number;
+  type: 'single' | 'double' | 'triple' | 'dormitory';
+  capacity: number;
+  occupancy: number;
+  monthlyRent: number;
+  isAvailable: boolean;
+  amenities?: string[];
+  status: 'available' | 'occupied' | 'maintenance' | 'reserved';
+  _count?: { allocations: number };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HostelAllocation {
+  id: string;
+  tenantId: string;
+  studentId: string;
+  student?: { id: string; user: { firstName: string; lastName: string }; rollNo: string };
+  roomId: string;
+  room?: HostelRoom;
+  bedNumber?: string;
+  allocatedDate: string;
+  vacatedDate?: string;
+  status: 'active' | 'vacated' | 'transferred';
+  remarks?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HostelFee {
+  id: string;
+  tenantId: string;
+  studentId: string;
+  student?: { id: string; user: { firstName: string; lastName: string }; rollNo: string };
+  allocationId?: string;
+  feeType: 'rent' | 'mess' | 'deposit' | 'maintenance' | 'other';
+  amount: number;
+  month?: number;
+  year?: number;
+  dueDate: string;
+  paidDate?: string;
+  status: 'pending' | 'paid' | 'overdue' | 'waived';
+  paymentMethod?: string;
+  transactionId?: string;
+  remarks?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MessMenu {
+  id: string;
+  tenantId: string;
+  blockId?: string;
+  block?: HostelBlock;
+  dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday
+  mealType: 'breakfast' | 'lunch' | 'snacks' | 'dinner';
+  items: string[];
+  timingFrom?: string;
+  timingTo?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HostelComplaint {
+  id: string;
+  tenantId: string;
+  studentId: string;
+  student?: { id: string; user: { firstName: string; lastName: string }; rollNo: string };
+  roomId?: string;
+  room?: HostelRoom;
+  category: 'maintenance' | 'cleanliness' | 'food' | 'security' | 'other';
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  assignedTo?: string;
+  resolvedAt?: string;
+  feedback?: string;
+  rating?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HostelStats {
+  totalBlocks: number;
+  totalRooms: number;
+  occupiedRooms: number;
+  availableRooms: number;
+  totalCapacity: number;
+  currentOccupancy: number;
+  occupancyRate: number;
+  activeAllocations: number;
+  pendingComplaints: number;
+  monthlyRevenue?: number;
+}
+
+export interface BlockQueryParams {
+  search?: string;
+  type?: 'boys' | 'girls' | 'mixed';
+  isActive?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface RoomQueryParams {
+  search?: string;
+  blockId?: string;
+  floor?: number;
+  type?: 'single' | 'double' | 'triple' | 'dormitory';
+  status?: 'available' | 'occupied' | 'maintenance' | 'reserved';
+  isAvailable?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AllocationQueryParams {
+  search?: string;
+  blockId?: string;
+  roomId?: string;
+  status?: 'active' | 'vacated' | 'transferred';
+  limit?: number;
+  offset?: number;
+}
+
+export interface HostelFeeQueryParams {
+  studentId?: string;
+  feeType?: 'rent' | 'mess' | 'deposit' | 'maintenance' | 'other';
+  status?: 'pending' | 'paid' | 'overdue' | 'waived';
+  month?: number;
+  year?: number;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ComplaintQueryParams {
+  studentId?: string;
+  roomId?: string;
+  blockId?: string;
+  category?: 'maintenance' | 'cleanliness' | 'food' | 'security' | 'other';
+  status?: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  limit?: number;
+  offset?: number;
+}
+
+export interface CreateBlockInput {
+  name: string;
+  code: string;
+  description?: string;
+  type: 'boys' | 'girls' | 'mixed';
+  totalFloors: number;
+  wardenName?: string;
+  wardenPhone?: string;
+  wardenEmail?: string;
+  isActive?: boolean;
+  address?: string;
+  amenities?: string[];
+}
+
+export interface CreateRoomInput {
+  blockId: string;
+  roomNumber: string;
+  floor: number;
+  type: 'single' | 'double' | 'triple' | 'dormitory';
+  capacity: number;
+  monthlyRent: number;
+  isAvailable?: boolean;
+  amenities?: string[];
+}
+
+export interface CreateAllocationInput {
+  studentId: string;
+  roomId: string;
+  bedNumber?: string;
+  allocatedDate: string;
+  remarks?: string;
+}
+
+export interface TransferAllocationInput {
+  newRoomId: string;
+  newBedNumber?: string;
+  reason?: string;
+}
+
+export interface CreateHostelFeeInput {
+  studentId: string;
+  allocationId?: string;
+  feeType: 'rent' | 'mess' | 'deposit' | 'maintenance' | 'other';
+  amount: number;
+  month?: number;
+  year?: number;
+  dueDate: string;
+  remarks?: string;
+}
+
+export interface CreateMessMenuInput {
+  blockId?: string;
+  dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  mealType: 'breakfast' | 'lunch' | 'snacks' | 'dinner';
+  items: string[];
+  timingFrom?: string;
+  timingTo?: string;
+  isActive?: boolean;
+}
+
+export interface CreateComplaintInput {
+  studentId: string;
+  roomId?: string;
+  category: 'maintenance' | 'cleanliness' | 'food' | 'security' | 'other';
+  title: string;
+  description: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+}
+
+export const hostelApi = {
+  // Blocks
+  listBlocks: (tenantId: string, params?: BlockQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.type) searchParams.set('type', params.type);
+    if (params?.isActive !== undefined) searchParams.set('isActive', params.isActive.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: HostelBlock[]; total: number }>(`/hostel/blocks${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getBlock: (tenantId: string, id: string) =>
+    api<HostelBlock>(`/hostel/blocks/${id}`, { tenantId }),
+
+  createBlock: (tenantId: string, data: CreateBlockInput) =>
+    api<HostelBlock>('/hostel/blocks', { method: 'POST', body: data, tenantId }),
+
+  updateBlock: (tenantId: string, id: string, data: Partial<CreateBlockInput>) =>
+    api<HostelBlock>(`/hostel/blocks/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  deleteBlock: (tenantId: string, id: string) =>
+    api<void>(`/hostel/blocks/${id}`, { method: 'DELETE', tenantId }),
+
+  // Rooms
+  listRooms: (tenantId: string, params?: RoomQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.blockId) searchParams.set('blockId', params.blockId);
+    if (params?.floor !== undefined) searchParams.set('floor', params.floor.toString());
+    if (params?.type) searchParams.set('type', params.type);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.isAvailable !== undefined) searchParams.set('isAvailable', params.isAvailable.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: HostelRoom[]; total: number }>(`/hostel/rooms${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getRoom: (tenantId: string, id: string) =>
+    api<HostelRoom>(`/hostel/rooms/${id}`, { tenantId }),
+
+  createRoom: (tenantId: string, data: CreateRoomInput) =>
+    api<HostelRoom>('/hostel/rooms', { method: 'POST', body: data, tenantId }),
+
+  bulkCreateRooms: (tenantId: string, blockId: string, rooms: Omit<CreateRoomInput, 'blockId'>[]) =>
+    api<HostelRoom[]>('/hostel/rooms/bulk', { method: 'POST', body: { blockId, rooms }, tenantId }),
+
+  updateRoom: (tenantId: string, id: string, data: Partial<CreateRoomInput>) =>
+    api<HostelRoom>(`/hostel/rooms/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  deleteRoom: (tenantId: string, id: string) =>
+    api<void>(`/hostel/rooms/${id}`, { method: 'DELETE', tenantId }),
+
+  // Allocations
+  listAllocations: (tenantId: string, params?: AllocationQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.blockId) searchParams.set('blockId', params.blockId);
+    if (params?.roomId) searchParams.set('roomId', params.roomId);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: HostelAllocation[]; total: number }>(`/hostel/allocations${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getAllocation: (tenantId: string, id: string) =>
+    api<HostelAllocation>(`/hostel/allocations/${id}`, { tenantId }),
+
+  getStudentAllocation: (tenantId: string, studentId: string) =>
+    api<HostelAllocation>(`/hostel/allocations/student/${studentId}`, { tenantId }),
+
+  createAllocation: (tenantId: string, data: CreateAllocationInput) =>
+    api<HostelAllocation>('/hostel/allocations', { method: 'POST', body: data, tenantId }),
+
+  updateAllocation: (tenantId: string, id: string, data: Partial<CreateAllocationInput>) =>
+    api<HostelAllocation>(`/hostel/allocations/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  transferAllocation: (tenantId: string, id: string, data: TransferAllocationInput) =>
+    api<HostelAllocation>(`/hostel/allocations/${id}/transfer`, { method: 'POST', body: data, tenantId }),
+
+  // Hostel Fees
+  listHostelFees: (tenantId: string, params?: HostelFeeQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.studentId) searchParams.set('studentId', params.studentId);
+    if (params?.feeType) searchParams.set('feeType', params.feeType);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.month !== undefined) searchParams.set('month', params.month.toString());
+    if (params?.year !== undefined) searchParams.set('year', params.year.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: HostelFee[]; total: number }>(`/hostel/fees${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getStudentHostelFees: (tenantId: string, studentId: string) =>
+    api<HostelFee[]>(`/hostel/fees/student/${studentId}`, { tenantId }),
+
+  createHostelFee: (tenantId: string, data: CreateHostelFeeInput) =>
+    api<HostelFee>('/hostel/fees', { method: 'POST', body: data, tenantId }),
+
+  updateHostelFee: (tenantId: string, id: string, data: Partial<CreateHostelFeeInput>) =>
+    api<HostelFee>(`/hostel/fees/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  // Mess Menu
+  listMessMenus: (tenantId: string, params?: { blockId?: string; dayOfWeek?: number; mealType?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.blockId) searchParams.set('blockId', params.blockId);
+    if (params?.dayOfWeek !== undefined) searchParams.set('dayOfWeek', params.dayOfWeek.toString());
+    if (params?.mealType) searchParams.set('mealType', params.mealType);
+    const query = searchParams.toString();
+    return api<{ data: MessMenu[]; total: number }>(`/hostel/menu${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getWeeklyMenu: (tenantId: string, blockId?: string) => {
+    const query = blockId ? `?blockId=${blockId}` : '';
+    return api<MessMenu[]>(`/hostel/menu/weekly${query}`, { tenantId });
+  },
+
+  createMessMenu: (tenantId: string, data: CreateMessMenuInput) =>
+    api<MessMenu>('/hostel/menu', { method: 'POST', body: data, tenantId }),
+
+  updateMessMenu: (tenantId: string, id: string, data: Partial<CreateMessMenuInput>) =>
+    api<MessMenu>(`/hostel/menu/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  deleteMessMenu: (tenantId: string, id: string) =>
+    api<void>(`/hostel/menu/${id}`, { method: 'DELETE', tenantId }),
+
+  // Complaints
+  listComplaints: (tenantId: string, params?: ComplaintQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.studentId) searchParams.set('studentId', params.studentId);
+    if (params?.roomId) searchParams.set('roomId', params.roomId);
+    if (params?.blockId) searchParams.set('blockId', params.blockId);
+    if (params?.category) searchParams.set('category', params.category);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.priority) searchParams.set('priority', params.priority);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: HostelComplaint[]; total: number }>(`/hostel/complaints${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getComplaint: (tenantId: string, id: string) =>
+    api<HostelComplaint>(`/hostel/complaints/${id}`, { tenantId }),
+
+  getStudentComplaints: (tenantId: string, studentId: string) =>
+    api<HostelComplaint[]>(`/hostel/complaints/student/${studentId}`, { tenantId }),
+
+  createComplaint: (tenantId: string, data: CreateComplaintInput) =>
+    api<HostelComplaint>('/hostel/complaints', { method: 'POST', body: data, tenantId }),
+
+  updateComplaint: (tenantId: string, id: string, data: Partial<CreateComplaintInput> & { status?: string; assignedTo?: string }) =>
+    api<HostelComplaint>(`/hostel/complaints/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  addComplaintFeedback: (tenantId: string, id: string, data: { feedback: string; rating?: number }) =>
+    api<HostelComplaint>(`/hostel/complaints/${id}/feedback`, { method: 'POST', body: data, tenantId }),
+
+  // Stats
+  getStats: (tenantId: string) =>
+    api<HostelStats>('/hostel/stats', { tenantId }),
+};
+
+// =============================================================================
+// LIBRARY API
+// =============================================================================
+
+export interface BookCategory {
+  id: string;
+  tenantId: string;
+  name: string;
+  code: string;
+  description?: string;
+  parentId?: string;
+  parent?: BookCategory;
+  children?: BookCategory[];
+  _count?: { books: number };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LibraryBook {
+  id: string;
+  tenantId: string;
+  title: string;
+  isbn?: string;
+  authors: string[];
+  publisher?: string;
+  publishYear?: number;
+  edition?: string;
+  categoryId?: string;
+  category?: BookCategory;
+  language?: string;
+  pages?: number;
+  description?: string;
+  coverImage?: string;
+  location?: string;
+  shelfNumber?: string;
+  totalCopies: number;
+  availableCopies: number;
+  price?: number;
+  tags?: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LibraryCard {
+  id: string;
+  tenantId: string;
+  cardNumber: string;
+  studentId: string;
+  student?: { id: string; user: { firstName: string; lastName: string }; rollNo: string };
+  issueDate: string;
+  expiryDate: string;
+  maxBooks: number;
+  currentIssued: number;
+  status: 'active' | 'expired' | 'suspended' | 'lost';
+  finesDue: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BookIssue {
+  id: string;
+  tenantId: string;
+  cardId: string;
+  card?: LibraryCard;
+  bookId: string;
+  book?: LibraryBook;
+  issueDate: string;
+  dueDate: string;
+  returnDate?: string;
+  renewCount: number;
+  maxRenewals: number;
+  fineAmount: number;
+  finePaid: boolean;
+  status: 'issued' | 'returned' | 'overdue' | 'lost';
+  remarks?: string;
+  issuedBy?: string;
+  returnedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BookReservation {
+  id: string;
+  tenantId: string;
+  cardId: string;
+  card?: LibraryCard;
+  bookId: string;
+  book?: LibraryBook;
+  reservationDate: string;
+  expiryDate: string;
+  status: 'pending' | 'ready' | 'collected' | 'cancelled' | 'expired';
+  notifiedAt?: string;
+  collectedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EResource {
+  id: string;
+  tenantId: string;
+  title: string;
+  type: 'ebook' | 'journal' | 'article' | 'video' | 'audio' | 'other';
+  authors?: string[];
+  publisher?: string;
+  publishYear?: number;
+  description?: string;
+  url?: string;
+  fileUrl?: string;
+  fileSize?: number;
+  thumbnailUrl?: string;
+  categoryId?: string;
+  category?: BookCategory;
+  accessLevel: 'public' | 'students' | 'faculty' | 'restricted';
+  downloadable: boolean;
+  viewCount: number;
+  downloadCount: number;
+  tags?: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LibrarySettings {
+  id: string;
+  tenantId: string;
+  maxBooksPerCard: number;
+  defaultLoanDays: number;
+  maxRenewals: number;
+  renewalDays: number;
+  finePerDay: number;
+  maxFineAmount: number;
+  reservationExpiryDays: number;
+  allowOnlineRenewal: boolean;
+  allowOnlineReservation: boolean;
+  sendDueReminders: boolean;
+  reminderDaysBefore: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LibraryStats {
+  totalBooks: number;
+  availableBooks: number;
+  issuedBooks: number;
+  overdueBooks: number;
+  totalCards: number;
+  activeCards: number;
+  totalReservations: number;
+  pendingReservations: number;
+  totalEResources: number;
+  totalFinesDue: number;
+  totalFinesCollected: number;
+}
+
+export interface BookQueryParams {
+  search?: string;
+  categoryId?: string;
+  author?: string;
+  publisher?: string;
+  language?: string;
+  availableOnly?: boolean;
+  isActive?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface CardQueryParams {
+  search?: string;
+  status?: 'active' | 'expired' | 'suspended' | 'lost';
+  hasFines?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface IssueQueryParams {
+  cardId?: string;
+  bookId?: string;
+  status?: 'issued' | 'returned' | 'overdue' | 'lost';
+  overdueOnly?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ReservationQueryParams {
+  cardId?: string;
+  bookId?: string;
+  status?: 'pending' | 'ready' | 'collected' | 'cancelled' | 'expired';
+  limit?: number;
+  offset?: number;
+}
+
+export interface EResourceQueryParams {
+  search?: string;
+  type?: 'ebook' | 'journal' | 'article' | 'video' | 'audio' | 'other';
+  categoryId?: string;
+  accessLevel?: 'public' | 'students' | 'faculty' | 'restricted';
+  isActive?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface CreateCategoryInput {
+  name: string;
+  code: string;
+  description?: string;
+  parentId?: string;
+}
+
+export interface CreateBookInput {
+  title: string;
+  isbn?: string;
+  authors: string[];
+  publisher?: string;
+  publishYear?: number;
+  edition?: string;
+  categoryId?: string;
+  language?: string;
+  pages?: number;
+  description?: string;
+  coverImage?: string;
+  location?: string;
+  shelfNumber?: string;
+  totalCopies: number;
+  price?: number;
+  tags?: string[];
+  isActive?: boolean;
+}
+
+export interface CreateCardInput {
+  cardNumber: string;
+  studentId: string;
+  issueDate: string;
+  expiryDate: string;
+  maxBooks?: number;
+}
+
+export interface IssueBookInput {
+  cardId: string;
+  bookId: string;
+  dueDate?: string;
+  remarks?: string;
+  issuedBy?: string;
+}
+
+export interface ReturnBookInput {
+  returnedBy?: string;
+  fineAmount?: number;
+  finePaid?: boolean;
+  remarks?: string;
+}
+
+export interface RenewBookInput {
+  newDueDate?: string;
+  remarks?: string;
+}
+
+export interface CreateReservationInput {
+  cardId: string;
+  bookId: string;
+}
+
+export interface CreateEResourceInput {
+  title: string;
+  type: 'ebook' | 'journal' | 'article' | 'video' | 'audio' | 'other';
+  authors?: string[];
+  publisher?: string;
+  publishYear?: number;
+  description?: string;
+  url?: string;
+  fileUrl?: string;
+  fileSize?: number;
+  thumbnailUrl?: string;
+  categoryId?: string;
+  accessLevel?: 'public' | 'students' | 'faculty' | 'restricted';
+  downloadable?: boolean;
+  tags?: string[];
+  isActive?: boolean;
+}
+
+export interface UpdateSettingsInput {
+  maxBooksPerCard?: number;
+  defaultLoanDays?: number;
+  maxRenewals?: number;
+  renewalDays?: number;
+  finePerDay?: number;
+  maxFineAmount?: number;
+  reservationExpiryDays?: number;
+  allowOnlineRenewal?: boolean;
+  allowOnlineReservation?: boolean;
+  sendDueReminders?: boolean;
+  reminderDaysBefore?: number;
+}
+
+export const libraryApi = {
+  // Categories
+  listCategories: (tenantId: string) =>
+    api<BookCategory[]>('/library/categories', { tenantId }),
+
+  getCategory: (tenantId: string, id: string) =>
+    api<BookCategory>(`/library/categories/${id}`, { tenantId }),
+
+  createCategory: (tenantId: string, data: CreateCategoryInput) =>
+    api<BookCategory>('/library/categories', { method: 'POST', body: data, tenantId }),
+
+  updateCategory: (tenantId: string, id: string, data: Partial<CreateCategoryInput>) =>
+    api<BookCategory>(`/library/categories/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  deleteCategory: (tenantId: string, id: string) =>
+    api<void>(`/library/categories/${id}`, { method: 'DELETE', tenantId }),
+
+  // Books
+  listBooks: (tenantId: string, params?: BookQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.categoryId) searchParams.set('categoryId', params.categoryId);
+    if (params?.author) searchParams.set('author', params.author);
+    if (params?.publisher) searchParams.set('publisher', params.publisher);
+    if (params?.language) searchParams.set('language', params.language);
+    if (params?.availableOnly) searchParams.set('availableOnly', 'true');
+    if (params?.isActive !== undefined) searchParams.set('isActive', params.isActive.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: LibraryBook[]; total: number }>(`/library/books${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getBook: (tenantId: string, id: string) =>
+    api<LibraryBook>(`/library/books/${id}`, { tenantId }),
+
+  createBook: (tenantId: string, data: CreateBookInput) =>
+    api<LibraryBook>('/library/books', { method: 'POST', body: data, tenantId }),
+
+  updateBook: (tenantId: string, id: string, data: Partial<CreateBookInput>) =>
+    api<LibraryBook>(`/library/books/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  deleteBook: (tenantId: string, id: string) =>
+    api<void>(`/library/books/${id}`, { method: 'DELETE', tenantId }),
+
+  // Cards
+  listCards: (tenantId: string, params?: CardQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.hasFines) searchParams.set('hasFines', 'true');
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: LibraryCard[]; total: number }>(`/library/cards${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getCard: (tenantId: string, id: string) =>
+    api<LibraryCard>(`/library/cards/${id}`, { tenantId }),
+
+  getStudentCard: (tenantId: string, studentId: string) =>
+    api<LibraryCard>(`/library/cards/student/${studentId}`, { tenantId }),
+
+  createCard: (tenantId: string, data: CreateCardInput) =>
+    api<LibraryCard>('/library/cards', { method: 'POST', body: data, tenantId }),
+
+  updateCard: (tenantId: string, id: string, data: Partial<CreateCardInput> & { status?: string; maxBooks?: number }) =>
+    api<LibraryCard>(`/library/cards/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  // Issues
+  listIssues: (tenantId: string, params?: IssueQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.cardId) searchParams.set('cardId', params.cardId);
+    if (params?.bookId) searchParams.set('bookId', params.bookId);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.overdueOnly) searchParams.set('overdueOnly', 'true');
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: BookIssue[]; total: number }>(`/library/issues${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getIssue: (tenantId: string, id: string) =>
+    api<BookIssue>(`/library/issues/${id}`, { tenantId }),
+
+  getCardIssues: (tenantId: string, cardId: string) =>
+    api<BookIssue[]>(`/library/issues/card/${cardId}`, { tenantId }),
+
+  issueBook: (tenantId: string, data: IssueBookInput) =>
+    api<BookIssue>('/library/issues', { method: 'POST', body: data, tenantId }),
+
+  returnBook: (tenantId: string, id: string, data?: ReturnBookInput) =>
+    api<BookIssue>(`/library/issues/${id}/return`, { method: 'POST', body: data || {}, tenantId }),
+
+  renewBook: (tenantId: string, id: string, data?: RenewBookInput) =>
+    api<BookIssue>(`/library/issues/${id}/renew`, { method: 'POST', body: data || {}, tenantId }),
+
+  // Reservations
+  listReservations: (tenantId: string, params?: ReservationQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.cardId) searchParams.set('cardId', params.cardId);
+    if (params?.bookId) searchParams.set('bookId', params.bookId);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: BookReservation[]; total: number }>(`/library/reservations${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getReservation: (tenantId: string, id: string) =>
+    api<BookReservation>(`/library/reservations/${id}`, { tenantId }),
+
+  createReservation: (tenantId: string, data: CreateReservationInput) =>
+    api<BookReservation>('/library/reservations', { method: 'POST', body: data, tenantId }),
+
+  cancelReservation: (tenantId: string, id: string) =>
+    api<BookReservation>(`/library/reservations/${id}/cancel`, { method: 'POST', tenantId }),
+
+  collectReservation: (tenantId: string, id: string) =>
+    api<BookReservation>(`/library/reservations/${id}/collect`, { method: 'POST', tenantId }),
+
+  // E-Resources
+  listEResources: (tenantId: string, params?: EResourceQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.type) searchParams.set('type', params.type);
+    if (params?.categoryId) searchParams.set('categoryId', params.categoryId);
+    if (params?.accessLevel) searchParams.set('accessLevel', params.accessLevel);
+    if (params?.isActive !== undefined) searchParams.set('isActive', params.isActive.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: EResource[]; total: number }>(`/library/e-resources${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  getEResource: (tenantId: string, id: string) =>
+    api<EResource>(`/library/e-resources/${id}`, { tenantId }),
+
+  createEResource: (tenantId: string, data: CreateEResourceInput) =>
+    api<EResource>('/library/e-resources', { method: 'POST', body: data, tenantId }),
+
+  updateEResource: (tenantId: string, id: string, data: Partial<CreateEResourceInput>) =>
+    api<EResource>(`/library/e-resources/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  deleteEResource: (tenantId: string, id: string) =>
+    api<void>(`/library/e-resources/${id}`, { method: 'DELETE', tenantId }),
+
+  recordView: (tenantId: string, id: string) =>
+    api<{ viewCount: number }>(`/library/e-resources/${id}/view`, { method: 'POST', tenantId }),
+
+  recordDownload: (tenantId: string, id: string) =>
+    api<{ downloadCount: number }>(`/library/e-resources/${id}/download`, { method: 'POST', tenantId }),
+
+  // Settings
+  getSettings: (tenantId: string) =>
+    api<LibrarySettings>('/library/settings', { tenantId }),
+
+  updateSettings: (tenantId: string, data: UpdateSettingsInput) =>
+    api<LibrarySettings>('/library/settings', { method: 'PATCH', body: data, tenantId }),
+
+  // Stats
+  getStats: (tenantId: string) =>
+    api<LibraryStats>('/library/stats', { tenantId }),
+};
+
+// ========================
+// PARENTS API
+// ========================
+
+// Types for Parent module
+export interface ParentChild {
+  id: string;
+  tenantId: string;
+  userId: string | null;
+  rollNo: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  bloodGroup?: string | null;
+  address?: string | null;
+  admissionDate?: string | null;
+  currentSemester?: number | null;
+  enrollmentStatus: string;
+  profileImageUrl?: string | null;
+  departmentId?: string | null;
+  courseId?: string | null;
+  batchId?: string | null;
+  department?: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
+  course?: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
+  batch?: {
+    id: string;
+    name: string;
+    startYear: number;
+    endYear: number;
+  } | null;
+  relation: string; // father, mother, guardian
+  parentId: string; // The Parent record ID
+}
+
+export interface ParentProfile {
+  id: string;
+  tenantId: string;
+  userId: string;
+  studentId: string;
+  relation: string;
+  createdAt: string;
+  updatedAt: string;
+  student: ParentChild;
+}
+
+export const parentsApi = {
+  // Get all children linked to a parent user
+  getChildren: (tenantId: string, userId: string) =>
+    api<ParentChild[]>(`/parents/children/${userId}`, { tenantId }),
+
+  // Get parent profile by user ID
+  getProfile: (tenantId: string, userId: string) =>
+    api<ParentProfile[]>(`/parents/profile/${userId}`, { tenantId }),
+
+  // Get a specific child's details (validates parent has access)
+  getChild: (tenantId: string, userId: string, studentId: string) =>
+    api<ParentChild>(`/parents/children/${userId}/${studentId}`, { tenantId }),
+};
+
+// ========================
+// INVITATIONS API
+// ========================
+
+// Types for Invitations module
+export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'cancelled';
+export type InvitationRole = 'platform_owner' | 'principal' | 'hod' | 'admin_staff' | 'teacher' | 'lab_assistant' | 'student' | 'parent';
+
+export interface Invitation {
+  id: string;
+  tenantId: string;
+  email: string;
+  role: InvitationRole;
+  status: InvitationStatus;
+  token: string;
+  message?: string | null;
+  expiresAt: string;
+  acceptedAt?: string | null;
+  invitedBy: string;
+  invitedByName?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InvitationStats {
+  totalInvitations: number;
+  pendingCount: number;
+  acceptedCount: number;
+  expiredCount: number;
+  cancelledCount: number;
+  acceptedThisMonth: number;
+  byRole: Record<string, number>;
+}
+
+export interface InvitationQueryParams {
+  status?: InvitationStatus;
+  role?: InvitationRole;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface CreateInvitationInput {
+  email: string;
+  role: InvitationRole;
+  message?: string;
+  expiresAt?: string;
+}
+
+export interface ResendInvitationInput {
+  message?: string;
+}
+
+export interface ValidateTokenResponse {
+  valid: boolean;
+  invitation?: {
+    email: string;
+    role: InvitationRole;
+    tenantId: string;
+    tenantName?: string;
+  };
+  error?: string;
+}
+
+export const invitationsApi = {
+  // List all invitations
+  list: (tenantId: string, params?: InvitationQueryParams) => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append('status', params.status);
+    if (params?.role) query.append('role', params.role);
+    if (params?.search) query.append('search', params.search);
+    if (params?.page) query.append('page', params.page.toString());
+    if (params?.limit) query.append('limit', params.limit.toString());
+    const queryString = query.toString();
+    return api<{ data: Invitation[]; total: number; page: number; limit: number }>(
+      `/invitations${queryString ? `?${queryString}` : ''}`,
+      { tenantId }
+    );
+  },
+
+  // Get a single invitation
+  get: (tenantId: string, id: string) =>
+    api<Invitation>(`/invitations/${id}`, { tenantId }),
+
+  // Get invitation statistics
+  getStats: (tenantId: string) =>
+    api<InvitationStats>('/invitations/stats', { tenantId }),
+
+  // Create a new invitation
+  create: (tenantId: string, data: CreateInvitationInput) =>
+    api<Invitation>('/invitations', { method: 'POST', body: data, tenantId }),
+
+  // Resend an invitation
+  resend: (tenantId: string, id: string, data?: ResendInvitationInput) =>
+    api<Invitation>(`/invitations/${id}/resend`, { method: 'POST', body: data || {}, tenantId }),
+
+  // Cancel an invitation
+  cancel: (tenantId: string, id: string) =>
+    api<void>(`/invitations/${id}`, { method: 'DELETE', tenantId }),
+
+  // Validate invitation token (public, no tenant ID needed)
+  validateToken: (token: string) =>
+    api<ValidateTokenResponse>(`/invitations/validate/${token}`),
+};
+
+// ==================== Attendance API ====================
+// Note: Backend attendance module needs to be implemented
+
+export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
+
+export interface StudentAttendance {
+  id: string;
+  tenantId: string;
+  studentId: string;
+  date: string;
+  status: AttendanceStatus;
+  markedBy: string;
+  remarks?: string;
+  createdAt: string;
+  updatedAt: string;
+  student?: {
+    id: string;
+    rollNo: string;
+    user: {
+      name: string;
+      email: string;
+    };
+  };
+}
+
+export interface AttendanceStats {
+  totalDays: number;
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+  percentage: number;
+}
+
+export interface AttendanceListParams {
+  studentId?: string;
+  date?: string;
+  fromDate?: string;
+  toDate?: string;
+  status?: AttendanceStatus;
+  subjectId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AttendanceListResponse {
+  data: StudentAttendance[];
+  total: number;
+}
+
+export interface MarkAttendanceInput {
+  studentId: string;
+  date: string;
+  status: AttendanceStatus;
+  remarks?: string;
+}
+
+export interface BulkMarkAttendanceInput {
+  date: string;
+  subjectId?: string;
+  attendance: Array<{
+    studentId: string;
+    status: AttendanceStatus;
+    remarks?: string;
+  }>;
+}
+
+export interface SubjectAttendance {
+  subjectId: string;
+  subjectCode: string;
+  subjectName: string;
+  totalClasses: number;
+  present: number;
+  absent: number;
+  late: number;
+  percentage: number;
+}
+
+export const attendanceApi = {
+  // Get attendance records
+  list: (tenantId: string, params?: AttendanceListParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.studentId) searchParams.set('studentId', params.studentId);
+    if (params?.date) searchParams.set('date', params.date);
+    if (params?.fromDate) searchParams.set('fromDate', params.fromDate);
+    if (params?.toDate) searchParams.set('toDate', params.toDate);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.subjectId) searchParams.set('subjectId', params.subjectId);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<AttendanceListResponse>(`/attendance${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  // Get attendance for a specific student
+  getStudentAttendance: (tenantId: string, studentId: string, params?: { fromDate?: string; toDate?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.fromDate) searchParams.set('fromDate', params.fromDate);
+    if (params?.toDate) searchParams.set('toDate', params.toDate);
+    const query = searchParams.toString();
+    return api<AttendanceListResponse>(`/attendance/student/${studentId}${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  // Get attendance statistics for a student
+  getStudentStats: (tenantId: string, studentId: string, params?: { fromDate?: string; toDate?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.fromDate) searchParams.set('fromDate', params.fromDate);
+    if (params?.toDate) searchParams.set('toDate', params.toDate);
+    const query = searchParams.toString();
+    return api<AttendanceStats>(`/attendance/student/${studentId}/stats${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  // Get subject-wise attendance for a student
+  getStudentSubjectAttendance: (tenantId: string, studentId: string) =>
+    api<SubjectAttendance[]>(`/attendance/student/${studentId}/subjects`, { tenantId }),
+
+  // Mark attendance for a single student
+  mark: (tenantId: string, data: MarkAttendanceInput) =>
+    api<StudentAttendance>('/attendance', { method: 'POST', body: data, tenantId }),
+
+  // Bulk mark attendance
+  bulkMark: (tenantId: string, data: BulkMarkAttendanceInput) =>
+    api<{ marked: number; failed: number }>('/attendance/bulk', { method: 'POST', body: data, tenantId }),
+
+  // Update attendance record
+  update: (tenantId: string, id: string, data: { status: AttendanceStatus; remarks?: string }) =>
+    api<StudentAttendance>(`/attendance/${id}`, { method: 'PATCH', body: data, tenantId }),
+
+  // Delete attendance record
+  delete: (tenantId: string, id: string) =>
+    api<void>(`/attendance/${id}`, { method: 'DELETE', tenantId }),
+
+  // Get attendance for a date (for teacher marking)
+  getByDate: (tenantId: string, date: string, params?: { departmentId?: string; section?: string; subjectId?: string }) => {
+    const searchParams = new URLSearchParams();
+    searchParams.set('date', date);
+    if (params?.departmentId) searchParams.set('departmentId', params.departmentId);
+    if (params?.section) searchParams.set('section', params.section);
+    if (params?.subjectId) searchParams.set('subjectId', params.subjectId);
+    return api<AttendanceListResponse>(`/attendance/by-date?${searchParams}`, { tenantId });
+  },
+
+  // Get overall stats (for admin dashboard)
+  getOverallStats: (tenantId: string, params?: { date?: string; departmentId?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.date) searchParams.set('date', params.date);
+    if (params?.departmentId) searchParams.set('departmentId', params.departmentId);
+    const query = searchParams.toString();
+    return api<{
+      totalStudents: number;
+      present: number;
+      absent: number;
+      late: number;
+      excused: number;
+      averagePercentage: number;
+      lowAttendanceCount: number;
+    }>(`/attendance/stats${query ? `?${query}` : ''}`, { tenantId });
+  },
 };
 
 export { ApiError };

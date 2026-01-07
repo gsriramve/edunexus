@@ -13,92 +13,139 @@ import {
   IndianRupee,
   RefreshCw,
   User,
+  Loader2,
 } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// Mock data - to be replaced with API calls
-const mockPass = {
-  id: "1",
-  passNumber: "TP000001",
-  routeName: "Route 1 - North Campus",
-  routeCode: "R001",
-  stopName: "Koramangala",
-  pickupTime: "07:15",
-  dropTime: "17:15",
-  validFrom: "2026-01-01",
-  validUntil: "2026-06-30",
-  fare: 2500,
-  paidAmount: 2500,
-  paymentStatus: "paid",
-  status: "active",
-};
-
-const mockRoute = {
-  id: "1",
-  name: "Route 1 - North Campus",
-  code: "R001",
-  startPoint: "Main Gate",
-  endPoint: "North Campus",
-  totalDistance: 15.5,
-  estimatedTime: 45,
-  stops: [
-    { id: "1", name: "Main Gate", pickupTime: "07:00", dropTime: "17:30", sequence: 1 },
-    { id: "2", name: "Koramangala", pickupTime: "07:15", dropTime: "17:15", sequence: 2 },
-    { id: "3", name: "HSR Layout", pickupTime: "07:30", dropTime: "17:00", sequence: 3 },
-    { id: "4", name: "BTM Layout", pickupTime: "07:45", dropTime: "16:45", sequence: 4 },
-    { id: "5", name: "Jayanagar", pickupTime: "08:00", dropTime: "16:30", sequence: 5 },
-    { id: "6", name: "JP Nagar", pickupTime: "08:15", dropTime: "16:15", sequence: 6 },
-    { id: "7", name: "Banashankari", pickupTime: "08:30", dropTime: "16:00", sequence: 7 },
-    { id: "8", name: "North Campus", pickupTime: "08:45", dropTime: "15:45", sequence: 8 },
-  ],
-};
-
-const mockVehicle = {
-  id: "1",
-  vehicleNumber: "KA-01-AB-1234",
-  vehicleType: "bus",
-  make: "Tata",
-  model: "Starbus",
-  driverName: "Rajesh Kumar",
-  driverPhone: "9876543210",
-  conductorName: "Suresh",
-  conductorPhone: "9876543211",
-  lastLocation: {
-    latitude: 12.9352,
-    longitude: 77.6245,
-    speed: 35,
-    recordedAt: new Date().toISOString(),
-    nearestStop: "Koramangala",
-    eta: "5 min",
-  },
-};
+import { useTenantId } from "@/hooks/use-tenant";
+import { useStudentByUserId } from "@/hooks/use-api";
+import {
+  useStudentPass,
+  useRoute,
+  useRouteStops,
+  useVehicle,
+  useLatestTracking,
+} from "@/hooks/use-transport";
 
 export default function StudentTransportPage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasPass, setHasPass] = useState(true);
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const tenantId = useTenantId();
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  useEffect(() => {
-    // Simulate API loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+  // Get student data
+  const { data: studentData, isLoading: studentLoading } = useStudentByUserId(
+    tenantId || '',
+    user?.id || ''
+  );
+  const studentId = studentData?.id || '';
 
-    // Update current time every minute
+  // Get transport pass
+  const { data: passData, isLoading: passLoading, refetch: refetchPass } = useStudentPass(
+    tenantId || '',
+    studentId
+  );
+
+  // Get route details (if pass exists)
+  const { data: routeData, isLoading: routeLoading } = useRoute(
+    tenantId || '',
+    passData?.routeId || ''
+  );
+
+  // Get route stops
+  const { data: stopsData, isLoading: stopsLoading } = useRouteStops(
+    tenantId || '',
+    passData?.routeId || ''
+  );
+
+  // Get vehicle details (if pass exists) - vehicleId comes from route, not pass
+  const vehicleId = routeData?.vehicleId || '';
+  const { data: vehicleData, isLoading: vehicleLoading } = useVehicle(
+    tenantId || '',
+    vehicleId
+  );
+
+  // Get live tracking
+  const { data: trackingData, isLoading: trackingLoading } = useLatestTracking(
+    tenantId || '',
+    vehicleId
+  );
+
+  // Update current time every minute
+  useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000);
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, []);
+
+  // Derived state
+  const isLoading = !isUserLoaded || studentLoading || passLoading;
+  const hasPass = !!passData;
+
+  // Build pass display data - using correct TransportPass properties
+  const pass = passData ? {
+    id: passData.id,
+    passNumber: `TP${passData.id.slice(-6).toUpperCase()}`,
+    routeName: routeData?.name || 'Loading...',
+    routeCode: routeData?.code || '',
+    stopName: passData.boardingStop?.name || 'N/A',
+    pickupTime: passData.boardingStop?.pickupTime || 'N/A',
+    dropTime: passData.dropStop?.dropTime || 'N/A',
+    validFrom: passData.validFrom,
+    validUntil: passData.validTo, // validTo not validUntil
+    fare: Number(passData.amount || 0), // amount not fare
+    paidAmount: passData.paymentStatus === 'paid' ? Number(passData.amount || 0) : 0,
+    paymentStatus: passData.paymentStatus || 'pending',
+    status: passData.status || 'active',
+  } : null;
+
+  // Build route display data - using correct TransportRoute properties
+  const route = routeData ? {
+    id: routeData.id,
+    name: routeData.name,
+    code: routeData.code,
+    startPoint: routeData.startLocation || 'Start',
+    endPoint: routeData.endLocation || 'End',
+    totalDistance: routeData.distanceKm || 0,
+    estimatedTime: routeData.estimatedDurationMinutes || 0,
+    stops: (stopsData || []).map((stop: any, index: number) => ({
+      id: stop.id,
+      name: stop.name,
+      pickupTime: stop.pickupTime || 'N/A',
+      dropTime: stop.dropTime || 'N/A',
+      sequence: stop.sequence || index + 1,
+    })),
+  } : null;
+
+  // Build vehicle display data - using correct TransportVehicle and TransportTracking properties
+  const vehicle = vehicleData ? {
+    id: vehicleData.id,
+    vehicleNumber: vehicleData.vehicleNumber || 'N/A',
+    vehicleType: vehicleData.type || 'bus',
+    make: vehicleData.make || 'N/A',
+    model: vehicleData.model || 'N/A',
+    driverName: vehicleData.driverName || 'N/A',
+    driverPhone: vehicleData.driverPhone || 'N/A',
+    conductorName: vehicleData.conductorName || 'N/A',
+    conductorPhone: vehicleData.conductorPhone || 'N/A',
+    lastLocation: trackingData ? {
+      latitude: trackingData.latitude,
+      longitude: trackingData.longitude,
+      speed: trackingData.speed || 0,
+      recordedAt: trackingData.timestamp, // timestamp not recordedAt
+      nearestStop: 'En route', // Not available in API, using placeholder
+      eta: 'Calculating...', // Not available in API, using placeholder
+    } : null,
+  } : null;
+
+  const handleRefresh = () => {
+    refetchPass();
+  };
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -134,7 +181,7 @@ export default function StudentTransportPage() {
     return diffDays;
   };
 
-  const daysRemaining = calculateDaysRemaining(mockPass.validUntil);
+  const daysRemaining = pass ? calculateDaysRemaining(pass.validUntil) : 0;
   const validityProgress = Math.max(
     0,
     Math.min(100, (daysRemaining / 180) * 100)
@@ -160,7 +207,7 @@ export default function StudentTransportPage() {
     );
   }
 
-  if (!hasPass) {
+  if (!hasPass || !pass) {
     return (
       <div className="space-y-6">
         <div>
@@ -194,7 +241,7 @@ export default function StudentTransportPage() {
             View your pass details and track your bus
           </p>
         </div>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={handleRefresh}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
@@ -211,16 +258,16 @@ export default function StudentTransportPage() {
               </div>
               <div>
                 <p className="text-blue-100 text-sm">Pass Number</p>
-                <p className="text-2xl font-bold font-mono">{mockPass.passNumber}</p>
+                <p className="text-2xl font-bold font-mono">{pass.passNumber}</p>
               </div>
               <div className="flex gap-6">
                 <div>
                   <p className="text-blue-100 text-sm">Route</p>
-                  <p className="font-medium">{mockPass.routeName}</p>
+                  <p className="font-medium">{pass.routeName}</p>
                 </div>
                 <div>
                   <p className="text-blue-100 text-sm">Stop</p>
-                  <p className="font-medium">{mockPass.stopName}</p>
+                  <p className="font-medium">{pass.stopName}</p>
                 </div>
               </div>
             </div>
@@ -228,13 +275,13 @@ export default function StudentTransportPage() {
             <div className="space-y-4 text-right">
               <div className="flex items-center justify-end gap-2">
                 <Badge className="bg-white/20 text-white hover:bg-white/30">
-                  {mockPass.status.toUpperCase()}
+                  {pass.status.toUpperCase()}
                 </Badge>
               </div>
               <div>
                 <p className="text-blue-100 text-sm">Valid Until</p>
                 <p className="text-xl font-bold">
-                  {new Date(mockPass.validUntil).toLocaleDateString("en-IN", {
+                  {new Date(pass.validUntil).toLocaleDateString("en-IN", {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
@@ -263,8 +310,8 @@ export default function StudentTransportPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pickup Time</p>
-                <p className="text-2xl font-bold">{mockPass.pickupTime}</p>
-                <p className="text-xs text-muted-foreground">{mockPass.stopName}</p>
+                <p className="text-2xl font-bold">{pass.pickupTime}</p>
+                <p className="text-xs text-muted-foreground">{pass.stopName}</p>
               </div>
             </div>
           </CardContent>
@@ -278,8 +325,8 @@ export default function StudentTransportPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Drop Time</p>
-                <p className="text-2xl font-bold">{mockPass.dropTime}</p>
-                <p className="text-xs text-muted-foreground">{mockPass.stopName}</p>
+                <p className="text-2xl font-bold">{pass.dropTime}</p>
+                <p className="text-xs text-muted-foreground">{pass.stopName}</p>
               </div>
             </div>
           </CardContent>
@@ -293,8 +340,8 @@ export default function StudentTransportPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Payment</p>
-                <p className="text-2xl font-bold">₹{mockPass.paidAmount}</p>
-                <div className="mt-1">{getPaymentBadge(mockPass.paymentStatus)}</div>
+                <p className="text-2xl font-bold">₹{pass.paidAmount}</p>
+                <div className="mt-1">{getPaymentBadge(pass.paymentStatus)}</div>
               </div>
             </div>
           </CardContent>
@@ -333,6 +380,15 @@ export default function StudentTransportPage() {
               </div>
 
               {/* Bus Status */}
+              {vehicleLoading || trackingLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : !vehicle ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Vehicle tracking not available
+                </div>
+              ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 <Card className="border-green-200 bg-green-50">
                   <CardContent className="pt-4">
@@ -342,11 +398,13 @@ export default function StudentTransportPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <p className="font-medium">{mockVehicle.vehicleNumber}</p>
-                          <Badge className="bg-green-500 text-white">Online</Badge>
+                          <p className="font-medium">{vehicle.vehicleNumber}</p>
+                          <Badge className={vehicle.lastLocation ? "bg-green-500 text-white" : "bg-gray-500 text-white"}>
+                            {vehicle.lastLocation ? 'Online' : 'Offline'}
+                          </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {mockVehicle.make} {mockVehicle.model}
+                          {vehicle.make} {vehicle.model}
                         </p>
                       </div>
                     </div>
@@ -355,27 +413,34 @@ export default function StudentTransportPage() {
 
                 <Card>
                   <CardContent className="pt-4">
+                    {vehicle.lastLocation ? (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">Current Location</span>
-                        <span className="font-medium">{mockVehicle.lastLocation.nearestStop}</span>
+                        <span className="font-medium">{vehicle.lastLocation.nearestStop}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">Speed</span>
-                        <span className="font-medium">{mockVehicle.lastLocation.speed} km/h</span>
+                        <span className="font-medium">{vehicle.lastLocation.speed} km/h</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">ETA to your stop</span>
-                        <span className="font-medium text-green-600">{mockVehicle.lastLocation.eta}</span>
+                        <span className="font-medium text-green-600">{vehicle.lastLocation.eta}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-muted-foreground">Last updated</span>
                         <span className="text-sm">Just now</span>
                       </div>
                     </div>
+                    ) : (
+                      <div className="text-center py-4 text-muted-foreground">
+                        Live tracking data not available
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -384,15 +449,24 @@ export default function StudentTransportPage() {
         <TabsContent value="route" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>{mockRoute.name}</CardTitle>
+              <CardTitle>{route?.name || 'Route Details'}</CardTitle>
               <CardDescription>
-                {mockRoute.startPoint} → {mockRoute.endPoint} • {mockRoute.totalDistance} km • {mockRoute.estimatedTime} min
+                {route ? `${route.startPoint} → ${route.endPoint} • ${route.totalDistance} km • ${route.estimatedTime} min` : 'Loading route details...'}
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {routeLoading || stopsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : !route?.stops?.length ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No stops information available
+                </div>
+              ) : (
               <div className="space-y-4">
-                {mockRoute.stops.map((stop, index) => {
-                  const isMyStop = stop.name === mockPass.stopName;
+                {route.stops.map((stop, index) => {
+                  const isMyStop = stop.name === pass?.stopName;
                   return (
                     <div key={stop.id} className="flex items-start gap-4">
                       <div className="flex flex-col items-center">
@@ -405,7 +479,7 @@ export default function StudentTransportPage() {
                         >
                           {index + 1}
                         </div>
-                        {index < mockRoute.stops.length - 1 && (
+                        {index < route.stops.length - 1 && (
                           <div className="w-0.5 h-8 bg-muted" />
                         )}
                       </div>
@@ -439,12 +513,27 @@ export default function StudentTransportPage() {
                   );
                 })}
               </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Driver Info Tab */}
         <TabsContent value="driver" className="space-y-4">
+          {vehicleLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : !vehicle ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-8 text-muted-foreground">
+                  Vehicle information not available
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+          <>
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
@@ -459,13 +548,13 @@ export default function StudentTransportPage() {
                     <User className="h-8 w-8 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="text-lg font-semibold">{mockVehicle.driverName}</p>
+                    <p className="text-lg font-semibold">{vehicle.driverName}</p>
                     <p className="text-sm text-muted-foreground">Driver</p>
                   </div>
                 </div>
-                <Button className="w-full" variant="outline">
+                <Button className="w-full" variant="outline" disabled={vehicle.driverPhone === 'N/A'}>
                   <Phone className="h-4 w-4 mr-2" />
-                  Call Driver: {mockVehicle.driverPhone}
+                  Call Driver: {vehicle.driverPhone}
                 </Button>
               </CardContent>
             </Card>
@@ -483,13 +572,13 @@ export default function StudentTransportPage() {
                     <User className="h-8 w-8 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="text-lg font-semibold">{mockVehicle.conductorName}</p>
+                    <p className="text-lg font-semibold">{vehicle.conductorName}</p>
                     <p className="text-sm text-muted-foreground">Conductor</p>
                   </div>
                 </div>
-                <Button className="w-full" variant="outline">
+                <Button className="w-full" variant="outline" disabled={vehicle.conductorPhone === 'N/A'}>
                   <Phone className="h-4 w-4 mr-2" />
-                  Call Conductor: {mockVehicle.conductorPhone}
+                  Call Conductor: {vehicle.conductorPhone}
                 </Button>
               </CardContent>
             </Card>
@@ -506,23 +595,25 @@ export default function StudentTransportPage() {
               <div className="grid gap-4 md:grid-cols-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Vehicle Number</p>
-                  <p className="font-medium">{mockVehicle.vehicleNumber}</p>
+                  <p className="font-medium">{vehicle.vehicleNumber}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Type</p>
-                  <p className="font-medium capitalize">{mockVehicle.vehicleType}</p>
+                  <p className="font-medium capitalize">{vehicle.vehicleType}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Make</p>
-                  <p className="font-medium">{mockVehicle.make}</p>
+                  <p className="font-medium">{vehicle.make}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Model</p>
-                  <p className="font-medium">{mockVehicle.model}</p>
+                  <p className="font-medium">{vehicle.model}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
+          </>
+          )}
 
           {/* Emergency Contact */}
           <Card className="border-red-200 bg-red-50">

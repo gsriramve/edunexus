@@ -30,21 +30,27 @@ model PlatformAdmin {
 
 /// Tenant (College) registration
 model Tenant {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   name         String
-  domain       String   @unique // e.g., "abc-college"
+  domain       String    @unique // e.g., "abc-college"
   displayName  String
   logo         String?
-  theme        Json     @default("{}")
-  config       Json     @default("{}")
-  status       String   @default("active") // active, suspended, trial
-  onboardedAt  DateTime @default(now())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  theme        Json      @default("{}")
+  config       Json      @default("{}")
+  status       String    @default("trial") // trial, active, suspended, cancelled
+  onboardedAt  DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  subscription TenantSubscription?
-  invoices     PlatformInvoice[]
-  tickets      PlatformSupportTicket[]
+  // Trial management fields
+  trialEndsAt  DateTime? // When the trial period ends (null = no trial / converted to active)
+  activatedAt  DateTime? // When trial was converted to active
+  suspendedAt  DateTime? // When tenant was suspended
+
+  subscription      TenantSubscription?
+  invoices          PlatformInvoice[]
+  tickets           PlatformSupportTicket[]
+  platformAuditLogs PlatformAuditLog[]
 
   @@map("tenants")
 }
@@ -103,22 +109,49 @@ model PlatformSupportTicket {
   @@map("platform_support_tickets")
 }
 
+/// Platform-level audit log (separate from tenant audit logs)
+/// Tracks Super Admin actions like tenant creation, trial management, invitations
+model PlatformAuditLog {
+  id          String   @id @default(cuid())
+  action      String   // TENANT_CREATED, INVITATION_SENT, TRIAL_EXTENDED, TENANT_ACTIVATED, TENANT_SUSPENDED, etc.
+  targetType  String   // tenant, invitation, user
+  targetId    String
+  performedBy String   // Super Admin user ID
+  performedByEmail String? // Denormalized for display
+  performedByName  String? // Denormalized for display
+  details     Json?    // Additional context
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  tenantId    String?
+
+  @@index([action])
+  @@index([targetType])
+  @@index([targetId])
+  @@index([performedBy])
+  @@index([createdAt])
+  @@map("platform_audit_logs")
+}
+
 // =============================================================================
 // TENANT LEVEL (Per-tenant Schema) - Isolated per college
 // =============================================================================
 
 /// User accounts (all personas)
 model User {
-  id           String   @id @default(cuid())
-  tenantId     String
+  id           String    @id @default(cuid())
+  tenantId     String?   // Nullable for platform_owner role
+  clerkUserId  String?   @unique // Clerk authentication user ID
   email        String
   passwordHash String?
   name         String
   role         UserRole
-  status       String   @default("active") // active, inactive, suspended
+  status       String    @default("active") // active, inactive, suspended
   lastLoginAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   profile       UserProfile?
   student       Student?
@@ -129,10 +162,12 @@ model User {
 
   @@unique([tenantId, email])
   @@index([tenantId])
+  @@index([clerkUserId])
   @@map("users")
 }
 
 enum UserRole {
+  platform_owner
   principal
   hod
   admin_staff
@@ -140,6 +175,29 @@ enum UserRole {
   lab_assistant
   student
   parent
+}
+
+/// User invitations - track pending user invitations
+model Invitation {
+  id          String   @id @default(cuid())
+  tenantId    String
+  email       String
+  role        UserRole
+  invitedById String   // User ID of who sent the invitation
+  invitedByName String? // Name of who sent the invitation
+  token       String   @unique @default(uuid())
+  status      String   @default("pending") // pending, accepted, expired, cancelled
+  message     String?  // Optional welcome message
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, email])
+  @@index([token])
+  @@index([tenantId])
+  @@index([status])
+  @@map("invitations")
 }
 
 /// User profile details

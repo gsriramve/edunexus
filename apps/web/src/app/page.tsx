@@ -66,8 +66,8 @@ export default function HomePage() {
             <Link href="/sign-in">
               <Button variant="ghost">Sign In</Button>
             </Link>
-            <Link href="/sign-up">
-              <Button>Get Started</Button>
+            <Link href="/contact">
+              <Button>Contact Us</Button>
             </Link>
           </div>
         </div>
@@ -77,7 +77,7 @@ export default function HomePage() {
       <section className="py-20 md:py-32 bg-gradient-to-b from-slate-50 to-white">
         <div className="container text-center">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight max-w-4xl mx-auto">
-            AI-First College Management Platform for{" "}
+            Enterprise College Management Platform for{" "}
             <span className="text-primary">Indian Engineering Colleges</span>
           </h1>
           <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -85,9 +85,9 @@ export default function HomePage() {
             comprehensive campus management. Built for scale, designed for students.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/sign-up">
+            <Link href="/contact">
               <Button size="lg" className="w-full sm:w-auto">
-                Start Free Trial
+                Schedule a Demo
               </Button>
             </Link>
             <Link href="#features">
@@ -190,9 +190,9 @@ export default function HomePage() {
                 </li>
               ))}
             </ul>
-            <Link href="/sign-up" className="block mt-8">
+            <Link href="/contact" className="block mt-8">
               <Button className="w-full" size="lg">
-                Start 30-Day Free Trial
+                Request a Quote
               </Button>
             </Link>
           </div>
@@ -209,14 +209,9 @@ export default function HomePage() {
             Join 12+ colleges already using EduNexus to streamline operations and improve student outcomes.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/sign-up">
-              <Button size="lg" variant="secondary">
-                Get Started Free
-              </Button>
-            </Link>
             <Link href="/contact">
               <Button size="lg" variant="secondary">
-                Schedule Demo
+                Schedule a Demo
               </Button>
             </Link>
           </div>

@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import * as compression from 'compression';
+import compression from 'compression';
 import helmet from 'helmet';
 
 async function bootstrap() {
@@ -30,7 +30,15 @@ async function bootstrap() {
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'x-tenant-id',
+      'x-user-id',
+      'x-user-role',
+      'x-user-name',
+      'x-user-tenant-id',
+    ],
   });
 
   // Global validation pipe with performance optimizations

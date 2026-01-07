@@ -9,6 +9,8 @@ const isPublicRoute = createRouteMatcher([
   "/terms",
   "/contact",
   "/api/webhooks(.*)",
+  "/unauthorized",
+  "/setup-pending",
 ]);
 
 // Define routes by role
@@ -31,48 +33,62 @@ interface SessionClaimsWithMetadata {
 }
 
 export default clerkMiddleware(async (auth, req) => {
+  const { userId } = await auth();
+
+  // Redirect authenticated users from home page to their dashboard
+  if (req.nextUrl.pathname === "/" && userId) {
+    return Response.redirect(new URL("/redirect", req.url));
+  }
+
   // Allow public routes
   if (isPublicRoute(req)) {
     return;
   }
 
   // Protect all other routes - require authentication
-  const { userId, sessionClaims } = await auth.protect();
+  const { sessionClaims } = await auth.protect();
 
   // Get user role from session claims (set via Clerk metadata)
+  // Role is ONLY set through Clerk metadata by administrators - no self-selection
   const claims = sessionClaims as SessionClaimsWithMetadata | undefined;
   const userRole = claims?.metadata?.role;
+
+  // If no role is set in Clerk metadata, redirect to setup-pending
+  // Users cannot self-assign roles - they must wait for admin to assign
+  if (!userRole) {
+    return Response.redirect(new URL("/setup-pending", req.url));
+  }
 
   // Role-based route protection
   if (isPlatformOwnerRoute(req) && userRole !== "platform_owner") {
     return Response.redirect(new URL("/unauthorized", req.url));
   }
 
-  if (isPrincipalRoute(req) && !["platform_owner", "principal"].includes(userRole || "")) {
+  if (isPrincipalRoute(req) && !["platform_owner", "principal"].includes(userRole)) {
     return Response.redirect(new URL("/unauthorized", req.url));
   }
 
-  if (isHodRoute(req) && !["platform_owner", "principal", "hod"].includes(userRole || "")) {
+  if (isHodRoute(req) && !["platform_owner", "principal", "hod"].includes(userRole)) {
     return Response.redirect(new URL("/unauthorized", req.url));
   }
 
-  if (isAdminStaffRoute(req) && !["platform_owner", "principal", "admin_staff"].includes(userRole || "")) {
+  if (isAdminStaffRoute(req) && !["platform_owner", "principal", "admin_staff"].includes(userRole)) {
     return Response.redirect(new URL("/unauthorized", req.url));
   }
 
-  if (isTeacherRoute(req) && !["platform_owner", "principal", "hod", "teacher"].includes(userRole || "")) {
+  if (isTeacherRoute(req) && !["platform_owner", "principal", "hod", "teacher"].includes(userRole)) {
     return Response.redirect(new URL("/unauthorized", req.url));
   }
 
-  if (isLabAssistantRoute(req) && !["platform_owner", "principal", "hod", "lab_assistant"].includes(userRole || "")) {
+  if (isLabAssistantRoute(req) && !["platform_owner", "principal", "hod", "lab_assistant"].includes(userRole)) {
     return Response.redirect(new URL("/unauthorized", req.url));
   }
 
-  if (isStudentRoute(req) && !["platform_owner", "principal", "hod", "teacher", "student"].includes(userRole || "")) {
+  if (isStudentRoute(req) && !["platform_owner", "principal", "hod", "teacher", "student"].includes(userRole)) {
     return Response.redirect(new URL("/unauthorized", req.url));
   }
 
-  if (isParentRoute(req) && !["platform_owner", "principal", "parent"].includes(userRole || "")) {
+  if (isParentRoute(req) && !["platform_owner", "principal", "parent"].includes(userRole)) {
     return Response.redirect(new URL("/unauthorized", req.url));
   }
 });

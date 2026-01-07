@@ -14,6 +14,7 @@ import {
   FileText,
   Loader2,
 } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,17 +45,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useParentChildren } from "@/hooks/use-parents";
 import { useStudentFees, usePaymentHistory, useCreatePaymentOrder, useVerifyPayment } from "@/hooks/use-api";
 import { usePaymentFlow } from "@/hooks/use-razorpay";
-
-// Mock data for children - In production, this would come from parent's profile API
-const mockChildren = [
-  { id: "cmk2ep9br0004vi0sh885uqda", name: "Rahul Sharma", rollNo: "21CSE101", department: "Computer Science", semester: 5 },
-  // Add more children as needed
-];
-
-// Hardcoded tenant ID - In production, this would come from auth context
-const TENANT_ID = "cmk2emocr0000vintzzjc52nb";
 
 interface Fee {
   id: string;
@@ -83,18 +77,35 @@ interface PaymentTransaction {
 
 export default function ParentFees() {
   const { toast } = useToast();
-  const [selectedChild, setSelectedChild] = useState(mockChildren[0]?.id || "");
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const tenantId = useTenantId();
+
+  // Fetch parent's children
+  const { data: children, isLoading: childrenLoading, error: childrenError } = useParentChildren(
+    tenantId || '',
+    user?.id || ''
+  );
+
+  const [selectedChild, setSelectedChild] = useState<string>("");
   const [selectedFees, setSelectedFees] = useState<string[]>([]);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const currentChild = mockChildren.find((c) => c.id === selectedChild);
+  // Set default selected child when children are loaded
+  useEffect(() => {
+    if (children && children.length > 0 && !selectedChild) {
+      setSelectedChild(children[0].id);
+    }
+  }, [children, selectedChild]);
 
-  // API hooks
-  const { data: feesData, isLoading: feesLoading, error: feesError, refetch: refetchFees } = useStudentFees(TENANT_ID, selectedChild);
-  const { data: historyData, isLoading: historyLoading, refetch: refetchHistory } = usePaymentHistory(TENANT_ID, selectedChild);
-  const createOrderMutation = useCreatePaymentOrder(TENANT_ID, selectedChild);
-  const verifyPaymentMutation = useVerifyPayment(TENANT_ID);
+  const currentChild = children?.find((c) => c.id === selectedChild);
+
+  // API hooks - use safe tenantId and selectedChild
+  const effectiveTenantId = tenantId || '';
+  const { data: feesData, isLoading: feesLoading, error: feesError, refetch: refetchFees } = useStudentFees(effectiveTenantId, selectedChild);
+  const { data: historyData, isLoading: historyLoading, refetch: refetchHistory } = usePaymentHistory(effectiveTenantId, selectedChild);
+  const createOrderMutation = useCreatePaymentOrder(effectiveTenantId, selectedChild);
+  const verifyPaymentMutation = useVerifyPayment(effectiveTenantId);
 
   // Razorpay hooks
   const { isRazorpayLoaded, initiatePayment, paymentStatus, resetPayment } = usePaymentFlow();
@@ -200,16 +211,17 @@ export default function ParentFees() {
       });
 
       // Open Razorpay checkout
+      const childName = currentChild ? `${currentChild.firstName} ${currentChild.lastName}`.trim() : 'Student';
       initiatePayment({
         orderId: orderResponse.orderId,
         amount: amountInPaise,
         currency: "INR",
         name: "EduNexus",
-        description: `Fee payment for ${currentChild?.name || 'Student'}`,
+        description: `Fee payment for ${childName}`,
         prefill: {
-          name: currentChild?.name || "",
-          email: "",
-          contact: "",
+          name: childName,
+          email: currentChild?.email || "",
+          contact: currentChild?.phone || "",
         },
         onSuccess: async (response) => {
           try {
@@ -278,13 +290,40 @@ export default function ParentFees() {
     { type: "Hostel Fee", amount: 80000, frequency: "Per Year", description: "Accommodation (if applicable)" },
   ];
 
-  if (!currentChild) {
+  // Show loading state while fetching user or children
+  if (!isUserLoaded || childrenLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">No children found.</p>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-muted-foreground">Loading...</span>
       </div>
     );
   }
+
+  // Show error state if children fetch failed
+  if (childrenError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-2" />
+        <p className="text-lg font-medium">Error Loading Data</p>
+        <p className="text-muted-foreground">Unable to load your children's information. Please try again later.</p>
+      </div>
+    );
+  }
+
+  if (!children || children.length === 0 || !currentChild) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">No children found linked to your account.</p>
+      </div>
+    );
+  }
+
+  // Build child name from first and last name
+  const getChildName = (child: typeof currentChild) =>
+    `${child.firstName} ${child.lastName}`.trim();
+  const getChildDepartment = (child: typeof currentChild) =>
+    child.department?.name || 'N/A';
 
   return (
     <div className="space-y-6">
@@ -302,9 +341,9 @@ export default function ParentFees() {
               <SelectValue placeholder="Select Child" />
             </SelectTrigger>
             <SelectContent>
-              {mockChildren.map((child) => (
+              {children.map((child) => (
                 <SelectItem key={child.id} value={child.id}>
-                  {child.name} ({child.rollNo})
+                  {getChildName(child)} ({child.rollNo})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -320,9 +359,9 @@ export default function ParentFees() {
               <Building2 className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">{currentChild.name}</h2>
+              <h2 className="text-xl font-semibold">{getChildName(currentChild)}</h2>
               <p className="text-sm text-muted-foreground">
-                {currentChild.rollNo} • {currentChild.department} • Semester {currentChild.semester}
+                {currentChild.rollNo} • {getChildDepartment(currentChild)} • Semester {currentChild.currentSemester || 'N/A'}
               </p>
             </div>
           </div>
@@ -415,7 +454,7 @@ export default function ParentFees() {
       <Card>
         <CardHeader>
           <CardTitle>Payment Progress</CardTitle>
-          <CardDescription>Annual fee payment status for {currentChild.name}</CardDescription>
+          <CardDescription>Annual fee payment status for {getChildName(currentChild)}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -516,7 +555,7 @@ export default function ParentFees() {
                 <div className="text-center py-8">
                   <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-2" />
                   <p className="text-lg font-medium">All Fees Paid!</p>
-                  <p className="text-muted-foreground">No pending fees for {currentChild.name}</p>
+                  <p className="text-muted-foreground">No pending fees for {getChildName(currentChild)}</p>
                 </div>
               )}
             </CardContent>
@@ -604,7 +643,7 @@ export default function ParentFees() {
             <CardHeader>
               <CardTitle>Fee Structure</CardTitle>
               <CardDescription>
-                Annual fee breakdown for {currentChild.department} - Academic Year 2025-26
+                Annual fee breakdown for {getChildDepartment(currentChild)} - Academic Year 2025-26
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -650,7 +689,7 @@ export default function ParentFees() {
             <DialogTitle>Confirm Payment</DialogTitle>
             <DialogDescription>
               You are about to pay <span className="font-bold text-foreground">₹{calculateSelectedTotal().toLocaleString()}</span> for{" "}
-              <span className="font-bold text-foreground">{selectedFees.length}</span> item(s) for {currentChild.name}.
+              <span className="font-bold text-foreground">{selectedFees.length}</span> item(s) for {getChildName(currentChild)}.
             </DialogDescription>
           </DialogHeader>
 
@@ -717,7 +756,7 @@ export default function ParentFees() {
               <div>
                 <h3 className="font-semibold text-red-800">Overdue Payment Alert</h3>
                 <p className="text-sm text-red-700 mt-1">
-                  {currentChild.name} has overdue fees. Late payment may incur additional fines
+                  {getChildName(currentChild)} has overdue fees. Late payment may incur additional fines
                   and could affect exam eligibility. Please clear dues at the earliest.
                 </p>
                 <Button

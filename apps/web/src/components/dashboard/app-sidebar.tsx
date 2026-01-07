@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   Building2,
   Users,
-  CreditCard,
   BarChart3,
   Settings,
   HelpCircle,
@@ -41,10 +40,6 @@ import { useRole, UserRole } from "@/lib/auth";
 const platformOwnerNav = [
   { title: "Dashboard", href: "/platform", icon: LayoutDashboard },
   { title: "Colleges", href: "/platform/colleges", icon: Building2 },
-  { title: "Users", href: "/platform/users", icon: Users },
-  { title: "Billing", href: "/platform/billing", icon: CreditCard },
-  { title: "Analytics", href: "/platform/analytics", icon: BarChart3 },
-  { title: "Settings", href: "/platform/settings", icon: Settings },
 ];
 
 const principalNav = [

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
   BookOpen,
   Download,
   FileText,
   GraduationCap,
-  Clock,
   User,
   Video,
   File,
@@ -30,8 +30,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useStudentByUserId } from "@/hooks/use-api";
+import { useStudentCGPA } from "@/hooks/use-exams";
 
-// Mock data
+// TODO: Implement course enrollment and curriculum API for subjects and materials
+// Mock data - Replace with API calls when course/curriculum endpoints are available
 const currentSemester = 5;
 
 const subjects = [
@@ -142,7 +147,48 @@ const timetable = [
 const timeSlots = ["9:00-10:00", "10:00-11:00", "11:00-12:00", "2:00-3:00", "3:00-4:00"];
 
 export default function StudentAcademics() {
+  const { user } = useUser();
+  const tenantId = useTenantId() || '';
   const [selectedSemester, setSelectedSemester] = useState(currentSemester.toString());
+
+  // Get student data for context
+  const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
+  const studentId = studentData?.id || '';
+
+  // Fetch CGPA - this is real data from the API (returns a number)
+  const { data: cgpaData, isLoading: cgpaLoading } = useStudentCGPA(tenantId, studentId);
+
+  // TODO: Replace with actual API hooks when available:
+  // const { data: enrolledCourses } = useStudentCourses(tenantId, studentId, selectedSemester);
+  // const { data: timetableData } = useStudentTimetable(tenantId, studentId, selectedSemester);
+  // const { data: courseMaterials } = useCourseMaterials(tenantId, studentId);
+
+  // Use real CGPA if available (API returns a single number for cgpa)
+  const actualCgpa = cgpaData ?? semesterProgress.cgpa;
+  // SGPA would need a separate endpoint or semester results call
+  const actualSgpa = semesterProgress.sgpa;
+
+  // Loading state
+  if (studentLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-96 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-44" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+        <Skeleton className="h-64" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -207,7 +253,9 @@ export default function StudentAcademics() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Current SGPA</p>
-                <p className="text-2xl font-bold">{semesterProgress.sgpa}</p>
+                <p className="text-2xl font-bold">
+                  {cgpaLoading ? <Skeleton className="h-8 w-12" /> : actualSgpa}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -220,7 +268,9 @@ export default function StudentAcademics() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Overall CGPA</p>
-                <p className="text-2xl font-bold">{semesterProgress.cgpa}</p>
+                <p className="text-2xl font-bold">
+                  {cgpaLoading ? <Skeleton className="h-8 w-12" /> : actualCgpa}
+                </p>
               </div>
             </div>
           </CardContent>

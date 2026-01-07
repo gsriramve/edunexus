@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -39,62 +41,19 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
-
-// Mock data
-const mockAllocation = {
-  block: {
-    name: 'Boys Hostel Block A',
-    code: 'BH-A',
-    wardenName: 'Mr. Sharma',
-    wardenPhone: '9876543210',
-    amenities: ['wifi', 'laundry', 'gym', 'reading_room'],
-  },
-  room: {
-    number: '101',
-    floor: 1,
-    type: 'Double',
-    capacity: 2,
-  },
-  bedNumber: 1,
-  checkInDate: '2024-07-15',
-  expectedCheckOut: '2026-05-31',
-  status: 'active',
-  roommates: [
-    { name: 'Bob Smith', rollNo: 'CS2021002', department: 'Computer Science' },
-  ],
-};
-
-const mockFees = [
-  { id: '1', academicYear: '2025-26', semester: 1, roomRent: 30000, messCharges: 20000, electricity: 2000, other: 500, total: 52500, paid: 52500, status: 'paid', dueDate: '2025-07-15' },
-  { id: '2', academicYear: '2025-26', semester: 2, roomRent: 30000, messCharges: 20000, electricity: 2000, other: 500, total: 52500, paid: 0, status: 'pending', dueDate: '2026-01-15' },
-];
-
-const mockComplaints = [
-  { id: '1', number: 'HC000001', category: 'maintenance', subject: 'AC not working', status: 'in_progress', priority: 'high', createdAt: '2026-01-05', resolution: null },
-  { id: '2', number: 'HC000002', category: 'cleanliness', subject: 'Bathroom cleaning', status: 'resolved', priority: 'medium', createdAt: '2025-12-20', resolution: 'Bathroom has been deep cleaned. Regular schedule updated.' },
-];
-
-const mockMenu = {
-  Monday: [
-    { mealType: 'Breakfast', items: ['Idli', 'Sambar', 'Chutney', 'Coffee/Tea'], timing: '07:00 - 09:00', isVeg: true },
-    { mealType: 'Lunch', items: ['Rice', 'Dal', 'Sabzi', 'Roti', 'Curd'], timing: '12:30 - 14:00', isVeg: true },
-    { mealType: 'Snacks', items: ['Samosa', 'Tea'], timing: '16:30 - 17:30', isVeg: true },
-    { mealType: 'Dinner', items: ['Chapati', 'Paneer Curry', 'Dal', 'Rice', 'Salad'], timing: '19:30 - 21:00', isVeg: true },
-  ],
-  Tuesday: [
-    { mealType: 'Breakfast', items: ['Poha', 'Jalebi', 'Tea'], timing: '07:00 - 09:00', isVeg: true },
-    { mealType: 'Lunch', items: ['Rice', 'Rajma', 'Roti', 'Salad', 'Buttermilk'], timing: '12:30 - 14:00', isVeg: true },
-    { mealType: 'Snacks', items: ['Bread Pakoda', 'Tea'], timing: '16:30 - 17:30', isVeg: true },
-    { mealType: 'Dinner', items: ['Dosa', 'Sambar', 'Chutney', 'Kesari'], timing: '19:30 - 21:00', isVeg: true },
-  ],
-  Wednesday: [
-    { mealType: 'Breakfast', items: ['Paratha', 'Curd', 'Pickle', 'Tea'], timing: '07:00 - 09:00', isVeg: true },
-    { mealType: 'Lunch', items: ['Rice', 'Chole', 'Roti', 'Onion Salad'], timing: '12:30 - 14:00', isVeg: true },
-    { mealType: 'Snacks', items: ['Bhel Puri', 'Tea'], timing: '16:30 - 17:30', isVeg: true },
-    { mealType: 'Dinner', items: ['Roti', 'Mixed Veg', 'Dal Tadka', 'Rice'], timing: '19:30 - 21:00', isVeg: true },
-  ],
-};
+import { useTenantId } from '@/hooks/use-tenant';
+import { useStudentByUserId } from '@/hooks/use-api';
+import {
+  useStudentHostelAllocation,
+  useStudentHostelFees,
+  useStudentHostelComplaints,
+  useWeeklyMenu,
+  useCreateComplaint,
+  useHostelBlock,
+} from '@/hooks/use-hostel';
+import { useToast } from '@/hooks/use-toast';
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const today = days[new Date().getDay()];
@@ -103,6 +62,63 @@ export default function StudentHostelPage() {
   const [activeTab, setActiveTab] = useState('room');
   const [selectedDay, setSelectedDay] = useState(today);
   const [isComplaintOpen, setIsComplaintOpen] = useState(false);
+  const [complaintForm, setComplaintForm] = useState({
+    category: '',
+    subject: '',
+    description: '',
+    priority: 'medium',
+  });
+
+  // API hooks
+  const { user } = useUser();
+  const tenantId = useTenantId() || '';
+  const { toast } = useToast();
+  const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
+  const studentId = studentData?.id || '';
+
+  const { data: allocation, isLoading: allocationLoading } = useStudentHostelAllocation(tenantId, studentId);
+  const { data: fees, isLoading: feesLoading } = useStudentHostelFees(tenantId, studentId);
+  const { data: complaints, isLoading: complaintsLoading } = useStudentHostelComplaints(tenantId, studentId);
+  const { data: menuData, isLoading: menuLoading } = useWeeklyMenu(tenantId, allocation?.room?.blockId);
+  const { data: blockData } = useHostelBlock(tenantId, allocation?.room?.blockId || '');
+  const createComplaint = useCreateComplaint(tenantId);
+
+  // Transform menu data into day-indexed format (dayOfWeek is 0-6, map to day names)
+  const menu: Record<string, Array<{ mealType: string; timing: string; items: string[] }>> = {};
+  if (menuData) {
+    menuData.forEach((item) => {
+      const dayName = days[item.dayOfWeek];
+      if (!menu[dayName]) menu[dayName] = [];
+      menu[dayName].push({
+        mealType: item.mealType.charAt(0).toUpperCase() + item.mealType.slice(1),
+        timing: item.timingFrom && item.timingTo ? `${item.timingFrom} - ${item.timingTo}` : item.timingFrom || '',
+        items: item.items || [],
+      });
+    });
+  }
+
+  const handleSubmitComplaint = async () => {
+    if (!complaintForm.category || !complaintForm.subject || !complaintForm.description) {
+      toast({ title: 'Error', description: 'Please fill all required fields', variant: 'destructive' });
+      return;
+    }
+    try {
+      await createComplaint.mutateAsync({
+        studentId,
+        category: complaintForm.category as 'maintenance' | 'cleanliness' | 'food' | 'security' | 'other',
+        title: complaintForm.subject,
+        description: complaintForm.description,
+        priority: complaintForm.priority as 'low' | 'medium' | 'high' | 'urgent',
+      });
+      toast({ title: 'Success', description: 'Complaint submitted successfully' });
+      setIsComplaintOpen(false);
+      setComplaintForm({ category: '', subject: '', description: '', priority: 'medium' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to submit complaint', variant: 'destructive' });
+    }
+  };
+
+  const isLoading = studentLoading || allocationLoading;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -147,7 +163,46 @@ export default function StudentHostelPage() {
     }
   };
 
-  const pendingFee = mockFees.find(f => f.status === 'pending');
+  const pendingFee = fees?.find((f: { status: string }) => f.status === 'pending');
+
+  // Show loading skeleton while initial data loads
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-6 space-y-6">
+        <div>
+          <Skeleton className="h-9 w-48 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <div className="grid md:grid-cols-3 gap-4">
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+        </div>
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  // Show message if no hostel allocation
+  if (!allocation) {
+    return (
+      <div className="container mx-auto py-6 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Hostel</h1>
+          <p className="text-muted-foreground">View your room details, mess menu, fees, and complaints</p>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Building2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-lg font-semibold mb-2">No Hostel Allocation</h3>
+            <p className="text-muted-foreground">You are not currently allocated to any hostel room.</p>
+            <p className="text-sm text-muted-foreground mt-2">Contact the hostel office for allocation details.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -163,8 +218,8 @@ export default function StudentHostelPage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Room Number</p>
-                <p className="text-2xl font-bold">{mockAllocation.room.number}</p>
-                <p className="text-sm text-muted-foreground">{mockAllocation.block.name}</p>
+                <p className="text-2xl font-bold">{allocation.room?.roomNumber || 'N/A'}</p>
+                <p className="text-sm text-muted-foreground">{blockData?.name || allocation.room?.block?.name || ''}</p>
               </div>
               <DoorOpen className="h-8 w-8 text-blue-500" />
             </div>
@@ -176,8 +231,8 @@ export default function StudentHostelPage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Warden Contact</p>
-                <p className="text-lg font-semibold">{mockAllocation.block.wardenName}</p>
-                <p className="text-sm text-muted-foreground">{mockAllocation.block.wardenPhone}</p>
+                <p className="text-lg font-semibold">{blockData?.wardenName || 'Not assigned'}</p>
+                <p className="text-sm text-muted-foreground">{blockData?.wardenPhone || ''}</p>
               </div>
               <Phone className="h-8 w-8 text-green-500" />
             </div>
@@ -190,8 +245,8 @@ export default function StudentHostelPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Pending Fee</p>
-                  <p className="text-2xl font-bold">₹{(pendingFee.total - pendingFee.paid).toLocaleString()}</p>
-                  <p className="text-sm text-red-500">Due: {new Date(pendingFee.dueDate).toLocaleDateString()}</p>
+                  <p className="text-2xl font-bold">₹{pendingFee.amount.toLocaleString()}</p>
+                  <p className="text-sm text-red-500">Due: {pendingFee.dueDate ? new Date(pendingFee.dueDate).toLocaleDateString() : 'N/A'}</p>
                 </div>
                 <CreditCard className="h-8 w-8 text-yellow-500" />
               </div>
@@ -235,27 +290,27 @@ export default function StudentHostelPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Room Number</p>
-                    <p className="font-semibold">{mockAllocation.room.number}</p>
+                    <p className="font-semibold">{allocation.room?.roomNumber || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Floor</p>
-                    <p className="font-semibold">{mockAllocation.room.floor}</p>
+                    <p className="font-semibold">{allocation.room?.floor ?? 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Room Type</p>
-                    <p className="font-semibold">{mockAllocation.room.type}</p>
+                    <p className="font-semibold capitalize">{allocation.room?.type || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Bed Number</p>
-                    <p className="font-semibold">{mockAllocation.bedNumber}</p>
+                    <p className="font-semibold">{allocation.bedNumber || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Check-in Date</p>
-                    <p className="font-semibold">{new Date(mockAllocation.checkInDate).toLocaleDateString()}</p>
+                    <p className="text-sm text-muted-foreground">Allocated Date</p>
+                    <p className="font-semibold">{new Date(allocation.allocatedDate).toLocaleDateString()}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Status</p>
-                    <Badge className={getStatusColor(mockAllocation.status)}>{mockAllocation.status}</Badge>
+                    <Badge className={getStatusColor(allocation.status)}>{allocation.status}</Badge>
                   </div>
                 </div>
               </CardContent>
@@ -272,56 +327,32 @@ export default function StudentHostelPage() {
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm text-muted-foreground">Block Name</p>
-                    <p className="font-semibold">{mockAllocation.block.name}</p>
+                    <p className="font-semibold">{blockData?.name || allocation.room?.block?.name || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Block Code</p>
-                    <p className="font-semibold">{mockAllocation.block.code}</p>
+                    <p className="font-semibold">{blockData?.code || allocation.room?.block?.code || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Warden</p>
-                    <p className="font-semibold">{mockAllocation.block.wardenName}</p>
-                    <p className="text-sm text-muted-foreground">{mockAllocation.block.wardenPhone}</p>
+                    <p className="font-semibold">{blockData?.wardenName || 'Not assigned'}</p>
+                    <p className="text-sm text-muted-foreground">{blockData?.wardenPhone || ''}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Amenities</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {mockAllocation.block.amenities.map((amenity) => (
-                        <Badge key={amenity} variant="outline" className="capitalize">
-                          {amenity.replace('_', ' ')}
-                        </Badge>
-                      ))}
+                  {blockData?.amenities && blockData.amenities.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Amenities</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {blockData.amenities.map((amenity: string) => (
+                          <Badge key={amenity} variant="outline" className="capitalize">
+                            {amenity.replace('_', ' ')}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
-
-            {mockAllocation.roommates.length > 0 && (
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Roommates
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {mockAllocation.roommates.map((roommate, index) => (
-                      <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <User className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-semibold">{roommate.name}</p>
-                          <p className="text-sm text-muted-foreground">{roommate.rollNo} - {roommate.department}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </TabsContent>
 
@@ -348,17 +379,12 @@ export default function StudentHostelPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {(mockMenu[selectedDay as keyof typeof mockMenu] || []).map((meal) => (
+                {(menu[selectedDay as keyof typeof menu] || []).map((meal) => (
                   <div key={meal.mealType} className="border-b pb-4 last:border-0 last:pb-0">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <UtensilsCrossed className="h-5 w-5 text-primary" />
                         <span className="font-semibold text-lg">{meal.mealType}</span>
-                        {meal.isVeg && (
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                            Veg
-                          </Badge>
-                        )}
                       </div>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
@@ -374,7 +400,7 @@ export default function StudentHostelPage() {
                     </div>
                   </div>
                 ))}
-                {!mockMenu[selectedDay as keyof typeof mockMenu] && (
+                {!menu[selectedDay as keyof typeof menu] && (
                   <p className="text-center text-muted-foreground py-8">
                     Menu not available for {selectedDay}
                   </p>
@@ -386,69 +412,67 @@ export default function StudentHostelPage() {
 
         {/* Fees Tab */}
         <TabsContent value="fees" className="space-y-4">
+          {feesLoading ? (
+            <div className="grid gap-4">
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
+            </div>
+          ) : !fees || fees.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No hostel fees found</p>
+              </CardContent>
+            </Card>
+          ) : (
           <div className="grid gap-4">
-            {mockFees.map((fee) => (
+            {fees.map((fee) => (
               <Card key={fee.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between mb-4">
                     <div>
-                      <CardTitle>
-                        {fee.academicYear} - Semester {fee.semester}
-                      </CardTitle>
-                      <CardDescription>
-                        Due Date: {new Date(fee.dueDate).toLocaleDateString()}
-                      </CardDescription>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold capitalize">{fee.feeType} Fee</span>
+                        {fee.month && fee.year && (
+                          <span className="text-sm text-muted-foreground">
+                            ({new Date(fee.year, fee.month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})
+                          </span>
+                        )}
+                      </div>
+                      {fee.dueDate && (
+                        <p className="text-sm text-muted-foreground">
+                          Due: {new Date(fee.dueDate).toLocaleDateString()}
+                        </p>
+                      )}
                     </div>
-                    <Badge className={getStatusColor(fee.status)}>{fee.status}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-5 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Room Rent</p>
-                      <p className="font-semibold">₹{fee.roomRent.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Mess Charges</p>
-                      <p className="font-semibold">₹{fee.messCharges.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Electricity</p>
-                      <p className="font-semibold">₹{fee.electricity.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Other</p>
-                      <p className="font-semibold">₹{fee.other.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total</p>
-                      <p className="font-bold text-lg">₹{fee.total.toLocaleString()}</p>
+                    <div className="text-right">
+                      <p className="text-xl font-bold">₹{fee.amount.toLocaleString()}</p>
+                      <Badge className={getStatusColor(fee.status)}>{fee.status}</Badge>
                     </div>
                   </div>
                   <div className="flex items-center justify-between pt-4 border-t">
                     <div>
-                      <span className="text-muted-foreground">Paid: </span>
-                      <span className="font-semibold text-green-600">₹{fee.paid.toLocaleString()}</span>
-                      {fee.total > fee.paid && (
-                        <>
-                          <span className="text-muted-foreground"> | Due: </span>
-                          <span className="font-semibold text-red-600">
-                            ₹{(fee.total - fee.paid).toLocaleString()}
-                          </span>
-                        </>
+                      {fee.paidDate && (
+                        <span className="text-sm text-muted-foreground">
+                          Paid on: {new Date(fee.paidDate).toLocaleDateString()}
+                        </span>
                       )}
                     </div>
                     {fee.status === 'pending' && (
-                      <Button>Pay Now</Button>
+                      <Button size="sm">Pay Now</Button>
+                    )}
+                    {fee.status === 'overdue' && (
+                      <Button size="sm" variant="destructive">Pay Now</Button>
                     )}
                     {fee.status === 'paid' && (
-                      <Button variant="outline">Download Receipt</Button>
+                      <Button size="sm" variant="outline">Download Receipt</Button>
                     )}
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
+          )}
         </TabsContent>
 
         {/* Complaints Tab */}
@@ -471,7 +495,7 @@ export default function StudentHostelPage() {
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
                     <Label>Category</Label>
-                    <Select>
+                    <Select value={complaintForm.category} onValueChange={(value) => setComplaintForm(prev => ({ ...prev, category: value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
@@ -486,18 +510,24 @@ export default function StudentHostelPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Subject</Label>
-                    <Input placeholder="Brief description of the issue" />
+                    <Input
+                      placeholder="Brief description of the issue"
+                      value={complaintForm.subject}
+                      onChange={(e) => setComplaintForm(prev => ({ ...prev, subject: e.target.value }))}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Description</Label>
                     <Textarea
                       placeholder="Provide detailed information about your complaint..."
                       rows={4}
+                      value={complaintForm.description}
+                      onChange={(e) => setComplaintForm(prev => ({ ...prev, description: e.target.value }))}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Priority</Label>
-                    <Select>
+                    <Select value={complaintForm.priority} onValueChange={(value) => setComplaintForm(prev => ({ ...prev, priority: value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select priority" />
                       </SelectTrigger>
@@ -514,15 +544,27 @@ export default function StudentHostelPage() {
                   <Button variant="outline" onClick={() => setIsComplaintOpen(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={() => setIsComplaintOpen(false)}>
-                    Submit Complaint
+                  <Button onClick={handleSubmitComplaint} disabled={createComplaint.isPending}>
+                    {createComplaint.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      'Submit Complaint'
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
 
-          {mockComplaints.length === 0 ? (
+          {complaintsLoading ? (
+            <div className="grid gap-4">
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
+            </div>
+          ) : !complaints || complaints.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -531,16 +573,16 @@ export default function StudentHostelPage() {
             </Card>
           ) : (
             <div className="grid gap-4">
-              {mockComplaints.map((complaint) => (
+              {complaints.map((complaint) => (
                 <Card key={complaint.id}>
                   <CardContent className="pt-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-start gap-3">
                         {getComplaintStatusIcon(complaint.status)}
                         <div>
-                          <p className="font-semibold">{complaint.subject}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {complaint.number} | {complaint.category}
+                          <p className="font-semibold">{complaint.title}</p>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {complaint.category} | Priority: {complaint.priority}
                           </p>
                         </div>
                       </div>
@@ -553,10 +595,13 @@ export default function StudentHostelPage() {
                         </p>
                       </div>
                     </div>
-                    {complaint.resolution && (
+                    {complaint.description && (
+                      <p className="text-sm text-muted-foreground mb-3">{complaint.description}</p>
+                    )}
+                    {complaint.feedback && (
                       <div className="mt-3 p-3 bg-green-50 rounded-lg">
-                        <p className="text-sm font-medium text-green-800">Resolution:</p>
-                        <p className="text-sm text-green-700">{complaint.resolution}</p>
+                        <p className="text-sm font-medium text-green-800">Feedback:</p>
+                        <p className="text-sm text-green-700">{complaint.feedback}</p>
                       </div>
                     )}
                   </CardContent>

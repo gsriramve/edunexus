@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
   MessageSquare,
   Bell,
@@ -16,6 +17,7 @@ import {
   Filter,
   PlusCircle,
   Paperclip,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,15 +43,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useParentChildren } from "@/hooks/use-parents";
+import { useUserAnnouncements } from "@/hooks/use-communication";
 
-// Mock data for children
-const children = [
-  { id: "child-1", name: "Rahul Sharma", rollNo: "21CSE101", department: "Computer Science", semester: 5 },
-  { id: "child-2", name: "Priya Sharma", rollNo: "23ECE045", department: "Electronics", semester: 3 },
-];
-
-// Mock teachers data
-const teachers = [
+// TODO: Replace with real API when teacher contact endpoints are available
+const mockTeachers = [
   { id: "t1", name: "Dr. Ramesh Kumar", subject: "Data Structures", email: "ramesh.k@college.edu", phone: "+91 98765 43210" },
   { id: "t2", name: "Dr. Priya Sharma", subject: "Computer Networks", email: "priya.s@college.edu", phone: "+91 98765 43211" },
   { id: "t3", name: "Dr. Arun Menon", subject: "Operating Systems", email: "arun.m@college.edu", phone: "+91 98765 43212" },
@@ -57,131 +57,147 @@ const teachers = [
   { id: "t5", name: "Prof. Mentor", subject: "Class Mentor", email: "mentor@college.edu", phone: "+91 98765 43214" },
 ];
 
-// Mock communication data
-const announcements = [
-  {
-    id: "ann-1",
-    title: "Semester 5 Exam Schedule Released",
-    content: "The end-semester examination schedule for Semester 5 has been released. Students are advised to check the exam portal for detailed timetable. Exams will commence from March 15, 2026.",
-    date: "Jan 5, 2026",
-    type: "exam",
-    priority: "high",
-  },
-  {
-    id: "ann-2",
-    title: "Annual Day Celebration - Jan 26",
-    content: "Annual Day celebrations will be held on January 26, 2026. Parents are cordially invited to attend. Please confirm your attendance at the office by January 20.",
-    date: "Jan 3, 2026",
-    type: "event",
-    priority: "medium",
-  },
-  {
-    id: "ann-3",
-    title: "Fee Payment Deadline Extended",
-    content: "Due to technical issues with the payment gateway, the fee payment deadline has been extended to January 31, 2026. Students with pending fees are requested to clear dues before the new deadline.",
-    date: "Jan 2, 2026",
-    type: "fee",
-    priority: "high",
-  },
-  {
-    id: "ann-4",
-    title: "Campus Placement Drive - TechCorp",
-    content: "TechCorp will be conducting campus placements on February 10, 2026. Eligible students can register through the placement portal. Minimum CGPA requirement: 7.5",
-    date: "Dec 28, 2025",
-    type: "placement",
-    priority: "medium",
-  },
-  {
-    id: "ann-5",
-    title: "Library Hours Extended",
-    content: "The library will remain open until 10 PM during the exam period (March 1 - March 30). Students can use this facility for extended study hours.",
-    date: "Dec 26, 2025",
-    type: "general",
-    priority: "low",
-  },
-];
+// TODO: Replace with real messaging API when available
+const mockMessages: Array<{
+  id: string;
+  from: string;
+  subject: string;
+  message: string;
+  date: string;
+  time: string;
+  read: boolean;
+  child: string;
+}> = [];
 
-const messages = [
-  {
-    id: "msg-1",
-    from: "Dr. Ramesh Kumar",
-    subject: "Data Structures",
-    message: "Rahul has shown excellent improvement in the recent assignments. His problem-solving approach has become more structured. Keep encouraging this progress!",
-    date: "Jan 5, 2026",
-    time: "10:30 AM",
-    read: false,
-    child: "child-1",
-  },
-  {
-    id: "msg-2",
-    from: "Dr. Priya Sharma",
-    subject: "Computer Networks",
-    message: "I'd like to discuss Rahul's attendance in my class. He has missed several sessions recently. Please ensure he attends regularly as we have important labs coming up.",
-    date: "Jan 3, 2026",
-    time: "2:15 PM",
-    read: true,
-    child: "child-1",
-  },
-  {
-    id: "msg-3",
-    from: "Prof. Mentor",
-    subject: "Class Mentor",
-    message: "Reminder: Parent-Teacher Meeting is scheduled for January 15, 2026 at 3:00 PM. Please confirm your availability.",
-    date: "Jan 1, 2026",
-    time: "11:00 AM",
-    read: true,
-    child: "child-1",
-  },
-  {
-    id: "msg-4",
-    from: "Dr. Meera Nair",
-    subject: "Digital Electronics",
-    message: "Priya has been doing exceptionally well in both theory and lab sessions. She secured the highest marks in the recent internal exam. Great work!",
-    date: "Jan 4, 2026",
-    time: "4:00 PM",
-    read: false,
-    child: "child-2",
-  },
-];
-
-const sentMessages = [
-  {
-    id: "sent-1",
-    to: "Dr. Priya Sharma",
-    subject: "Re: Attendance Concern",
-    message: "Thank you for bringing this to my notice. I will ensure Rahul attends all classes regularly. Could you please share the lab schedule so we can plan accordingly?",
-    date: "Jan 3, 2026",
-    time: "5:30 PM",
-    status: "delivered",
-  },
-  {
-    id: "sent-2",
-    to: "Prof. Mentor",
-    subject: "PTM Confirmation",
-    message: "I confirm my attendance for the Parent-Teacher Meeting on January 15, 2026 at 3:00 PM. Looking forward to discussing my child's progress.",
-    date: "Jan 1, 2026",
-    time: "12:30 PM",
-    status: "read",
-  },
-];
+const mockSentMessages: Array<{
+  id: string;
+  to: string;
+  subject: string;
+  message: string;
+  date: string;
+  time: string;
+  status: string;
+}> = [];
 
 export default function ParentCommunication() {
-  const [selectedChild, setSelectedChild] = useState(children[0].id);
+  const { user } = useUser();
+  const tenantId = useTenantId() || '';
+  const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState<typeof messages[0] | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<typeof mockMessages[0] | null>(null);
   const [newMessage, setNewMessage] = useState({ to: "", subject: "", content: "" });
 
-  const currentChild = children.find((c) => c.id === selectedChild)!;
+  // Fetch parent's children
+  const { data: childrenData, isLoading: childrenLoading } = useParentChildren(tenantId, user?.id || '');
+  const children = childrenData || [];
+
+  // Set first child as default when children load
+  useEffect(() => {
+    if (children.length > 0 && !selectedChildId) {
+      setSelectedChildId(children[0].id);
+    }
+  }, [children, selectedChildId]);
+
+  // Get selected child info
+  const currentChild = useMemo(() => {
+    const childRecord = children.find((c) => c.id === selectedChildId);
+    if (!childRecord) return null;
+    return {
+      id: childRecord.id,
+      name: `${childRecord.firstName} ${childRecord.lastName}`.trim() || 'Unknown',
+      rollNo: childRecord.rollNo || 'N/A',
+      department: 'N/A',
+      semester: childRecord.currentSemester || 0,
+    };
+  }, [children, selectedChildId]);
+
+  // Fetch announcements for parent
+  const { data: announcementsData, isLoading: announcementsLoading } = useUserAnnouncements(
+    tenantId,
+    user?.id || '',
+    'parent'
+  );
+
+  // Derive announcements list
+  const announcements = useMemo(() => {
+    if (announcementsData && Array.isArray(announcementsData)) {
+      return announcementsData.map((ann) => ({
+        id: ann.id,
+        title: ann.title || 'Announcement',
+        content: ann.content || '',
+        date: ann.publishedAt ? new Date(ann.publishedAt).toLocaleDateString('en-IN', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        }) : 'N/A',
+        type: ann.priority === 'urgent' ? 'exam' : ann.priority === 'high' ? 'fee' : 'general',
+        priority: ann.priority || 'low',
+      }));
+    }
+    return [];
+  }, [announcementsData]);
+
+  // Use mock data for messages (would need separate API)
+  const messages = mockMessages;
+  const sentMessages = mockSentMessages;
+  const teachers = mockTeachers;
 
   // Filter messages by selected child
   const filteredMessages = messages.filter(
-    (msg) => msg.child === selectedChild &&
+    (msg) => msg.child === selectedChildId &&
     (msg.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
      msg.message.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const unreadCount = filteredMessages.filter((m) => !m.read).length;
+
+  // Loading state
+  if (childrenLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-48" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  // No children state
+  if (children.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Communication</h1>
+          <p className="text-muted-foreground">
+            Messages, announcements, and teacher contact
+          </p>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="h-16 w-16 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">No Children Linked</h3>
+              <p>No children are currently linked to your account.</p>
+              <p className="text-sm mt-2">Please contact the school administration.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!currentChild) return null;
 
   const getAnnouncementBadge = (type: string) => {
     const badges: Record<string, { color: string; label: string }> = {
@@ -212,16 +228,19 @@ export default function ParentCommunication() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <Select value={selectedChild} onValueChange={setSelectedChild}>
+          <Select value={selectedChildId} onValueChange={setSelectedChildId}>
             <SelectTrigger className="w-[220px]">
               <SelectValue placeholder="Select Child" />
             </SelectTrigger>
             <SelectContent>
-              {children.map((child) => (
-                <SelectItem key={child.id} value={child.id}>
-                  {child.name} ({child.rollNo})
-                </SelectItem>
-              ))}
+              {children.map((childRecord) => {
+                const childName = `${childRecord.firstName} ${childRecord.lastName}`.trim() || 'Unknown';
+                return (
+                  <SelectItem key={childRecord.id} value={childRecord.id}>
+                    {childName} ({childRecord.rollNo || 'N/A'})
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
           <Dialog open={composeOpen} onOpenChange={setComposeOpen}>

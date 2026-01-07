@@ -14,6 +14,14 @@ export interface EmailTemplateData {
   paymentMethod?: string;
   semester?: string;
   academicYear?: string;
+  attendancePercentage?: string | number;
+  // Principal invitation fields
+  principalName?: string;
+  customMessage?: string;
+  invitationLink?: string;
+  expiresAt?: string;
+  daysRemaining?: string | number;
+  reason?: string;
   [key: string]: unknown;
 }
 
@@ -392,6 +400,196 @@ export const attendanceAlertTemplate = (data: EmailTemplateData): string => {
   return baseLayout(content, 'Attendance Alert - EduNexus');
 };
 
+// Principal Invitation Template
+export const principalInvitationTemplate = (data: EmailTemplateData): string => {
+  const content = `
+    <div class="content">
+      <h2>You're Invited!</h2>
+      <p>Hello${data.principalName ? ` ${data.principalName}` : ''},</p>
+      <p>You have been invited to join <strong>EduNexus</strong> as the Principal Administrator for <strong>${data.collegeName || 'a new college'}</strong>.</p>
+
+      ${data.customMessage ? `
+      <div class="info-box">
+        <p style="margin: 0; font-style: italic;">"${data.customMessage}"</p>
+      </div>
+      ` : ''}
+
+      <div class="info-box">
+        <h3 style="margin-top: 0;">As Principal, you will be able to:</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+          <li>Manage departments and staff</li>
+          <li>Oversee student records and academics</li>
+          <li>Monitor attendance and fee collections</li>
+          <li>Access comprehensive reports and analytics</li>
+          <li>Configure college settings and branding</li>
+        </ul>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="${data.invitationLink || '#'}" class="btn">Accept Invitation</a>
+      </p>
+
+      <div class="warning-box">
+        <span class="icon">⏰</span>
+        <span>This invitation will expire on <strong>${data.expiresAt || '7 days from now'}</strong>. Please accept before it expires.</span>
+      </div>
+
+      <p>If you did not expect this invitation or believe it was sent in error, you can safely ignore this email.</p>
+
+      <p>
+        Best regards,<br>
+        <strong>EduNexus Team</strong>
+      </p>
+    </div>
+  `;
+
+  return baseLayout(content, `You're Invited to Manage ${data.collegeName || 'a College'} on EduNexus`);
+};
+
+// Invitation Resent Template
+export const invitationResentTemplate = (data: EmailTemplateData): string => {
+  const content = `
+    <div class="content">
+      <h2>Invitation Reminder</h2>
+      <p>Hello${data.principalName ? ` ${data.principalName}` : ''},</p>
+      <p>This is a reminder that you have a pending invitation to join <strong>EduNexus</strong> as the Principal Administrator for <strong>${data.collegeName || 'a college'}</strong>.</p>
+
+      ${data.customMessage ? `
+      <div class="info-box">
+        <p style="margin: 0; font-style: italic;">"${data.customMessage}"</p>
+      </div>
+      ` : ''}
+
+      <p style="text-align: center;">
+        <a href="${data.invitationLink || '#'}" class="btn">Accept Invitation</a>
+      </p>
+
+      <div class="warning-box">
+        <span class="icon">⏰</span>
+        <span>This invitation will expire on <strong>${data.expiresAt || '7 days from now'}</strong>.</span>
+      </div>
+
+      <p>If you have any questions, please contact our support team.</p>
+
+      <p>
+        Best regards,<br>
+        <strong>EduNexus Team</strong>
+      </p>
+    </div>
+  `;
+
+  return baseLayout(content, `Reminder: Accept Your EduNexus Invitation`);
+};
+
+// Tenant Activated Notification Template
+export const tenantActivatedTemplate = (data: EmailTemplateData): string => {
+  const content = `
+    <div class="content">
+      <div class="success-icon"></div>
+      <h2 style="text-align: center;">Your Account is Now Active!</h2>
+      <p>Dear ${data.principalName || 'Administrator'},</p>
+      <p>Great news! <strong>${data.collegeName || 'Your college'}</strong> has been activated on EduNexus. Your trial period has ended and you now have full access to all features.</p>
+
+      <div class="info-box">
+        <h3 style="margin-top: 0;">What's Next?</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+          <li>Complete your college profile and branding</li>
+          <li>Set up departments and invite staff members</li>
+          <li>Import student data or start enrolling students</li>
+          <li>Configure fee structures and academic calendars</li>
+        </ul>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="#" class="btn">Go to Dashboard</a>
+      </p>
+
+      <p>If you have any questions or need assistance, our support team is here to help.</p>
+
+      <p>
+        Best regards,<br>
+        <strong>EduNexus Team</strong>
+      </p>
+    </div>
+  `;
+
+  return baseLayout(content, `${data.collegeName || 'Your College'} is Now Active on EduNexus`);
+};
+
+// Tenant Suspended Notification Template
+export const tenantSuspendedTemplate = (data: EmailTemplateData): string => {
+  const content = `
+    <div class="content">
+      <h2 style="color: #DC2626;">Account Suspended</h2>
+      <p>Dear ${data.principalName || 'Administrator'},</p>
+      <p>We regret to inform you that <strong>${data.collegeName || 'your college'}</strong>'s access to EduNexus has been suspended.</p>
+
+      ${data.reason ? `
+      <div class="info-box" style="border-left-color: #DC2626;">
+        <p style="margin: 0;"><strong>Reason:</strong> ${data.reason}</p>
+      </div>
+      ` : ''}
+
+      <div class="warning-box" style="background-color: #FEE2E2; border-color: #DC2626;">
+        <span class="icon">⚠️</span>
+        <span>During suspension, users will not be able to access the platform. Data remains intact.</span>
+      </div>
+
+      <p>To resolve this issue and restore access, please contact our support team.</p>
+
+      <p style="text-align: center;">
+        <a href="mailto:support@edunexus.io" class="btn" style="background: #DC2626;">Contact Support</a>
+      </p>
+
+      <p>
+        Regards,<br>
+        <strong>EduNexus Team</strong>
+      </p>
+    </div>
+  `;
+
+  return baseLayout(content, `Important: Account Suspended - EduNexus`);
+};
+
+// Trial Expiring Warning Template
+export const trialExpiringTemplate = (data: EmailTemplateData): string => {
+  const content = `
+    <div class="content">
+      <h2>Your Trial is Ending Soon</h2>
+      <p>Dear ${data.principalName || 'Administrator'},</p>
+      <p>Your free trial for <strong>${data.collegeName || 'your college'}</strong> on EduNexus will expire in <strong>${data.daysRemaining || 'a few'} days</strong>.</p>
+
+      <div class="info-box">
+        <h3 style="margin-top: 0;">Don't lose access to:</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+          <li>All your student and staff data</li>
+          <li>Academic records and attendance history</li>
+          <li>Fee management and payment records</li>
+          <li>Reports and analytics</li>
+        </ul>
+      </div>
+
+      <div class="warning-box">
+        <span class="icon">⏰</span>
+        <span>Trial expires on: <strong>${data.expiresAt || 'Soon'}</strong></span>
+      </div>
+
+      <p>To continue using EduNexus without interruption, please contact our sales team to activate your subscription.</p>
+
+      <p style="text-align: center;">
+        <a href="mailto:sales@edunexus.io" class="btn">Contact Sales</a>
+      </p>
+
+      <p>
+        Best regards,<br>
+        <strong>EduNexus Team</strong>
+      </p>
+    </div>
+  `;
+
+  return baseLayout(content, `Your EduNexus Trial is Ending Soon`);
+};
+
 // Plain text versions for fallback
 export const getPlainTextVersion = (type: string, data: EmailTemplateData): string => {
   switch (type) {
@@ -429,6 +627,95 @@ Amount: ${data.currency || '₹'}${Number(data.amount || 0).toLocaleString('en-I
 Due Date: ${data.dueDate || 'N/A'}
 
 Please make the payment by the due date to avoid late fees.
+
+Best regards,
+EduNexus Team
+      `.trim();
+
+    case 'principal_invitation':
+      return `
+You're Invited to EduNexus!
+
+Hello${data.principalName ? ` ${data.principalName}` : ''},
+
+You have been invited to join EduNexus as the Principal Administrator for ${data.collegeName || 'a new college'}.
+
+${data.customMessage ? `Message: "${data.customMessage}"` : ''}
+
+As Principal, you will be able to:
+- Manage departments and staff
+- Oversee student records and academics
+- Monitor attendance and fee collections
+- Access comprehensive reports and analytics
+- Configure college settings and branding
+
+Accept your invitation by clicking this link:
+${data.invitationLink || '[Invitation Link]'}
+
+This invitation will expire on ${data.expiresAt || '7 days from now'}.
+
+If you did not expect this invitation, you can safely ignore this email.
+
+Best regards,
+EduNexus Team
+      `.trim();
+
+    case 'invitation_resent':
+      return `
+Invitation Reminder - EduNexus
+
+Hello${data.principalName ? ` ${data.principalName}` : ''},
+
+This is a reminder that you have a pending invitation to join EduNexus as the Principal Administrator for ${data.collegeName || 'a college'}.
+
+Accept your invitation by clicking this link:
+${data.invitationLink || '[Invitation Link]'}
+
+This invitation will expire on ${data.expiresAt || '7 days from now'}.
+
+Best regards,
+EduNexus Team
+      `.trim();
+
+    case 'tenant_activated':
+      return `
+Your College is Now Active on EduNexus!
+
+Dear ${data.principalName || 'Administrator'},
+
+Great news! ${data.collegeName || 'Your college'} has been activated on EduNexus. Your trial period has ended and you now have full access to all features.
+
+Best regards,
+EduNexus Team
+      `.trim();
+
+    case 'tenant_suspended':
+      return `
+Account Suspended - EduNexus
+
+Dear ${data.principalName || 'Administrator'},
+
+We regret to inform you that ${data.collegeName || 'your college'}'s access to EduNexus has been suspended.
+
+${data.reason ? `Reason: ${data.reason}` : ''}
+
+To resolve this issue and restore access, please contact our support team.
+
+Regards,
+EduNexus Team
+      `.trim();
+
+    case 'trial_expiring':
+      return `
+Your EduNexus Trial is Ending Soon
+
+Dear ${data.principalName || 'Administrator'},
+
+Your free trial for ${data.collegeName || 'your college'} on EduNexus will expire in ${data.daysRemaining || 'a few'} days.
+
+Trial expires on: ${data.expiresAt || 'Soon'}
+
+To continue using EduNexus without interruption, please contact our sales team.
 
 Best regards,
 EduNexus Team

@@ -21,6 +21,9 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { ImportExportModule } from './modules/import-export/import-export.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { InvitationsModule } from './modules/invitations/invitations.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { PlatformModule } from './modules/platform/platform.module';
 
 @Module({
   imports: [
@@ -60,6 +63,9 @@ import { ReportsModule } from './modules/reports/reports.module';
     ImportExportModule,
     AuditModule,
     ReportsModule,
+    InvitationsModule,
+    AuthModule,
+    PlatformModule,
   ],
   controllers: [AppController],
   providers: [AppService],

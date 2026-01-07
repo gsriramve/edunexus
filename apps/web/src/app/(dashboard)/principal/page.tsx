@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import {
   Building2,
   Users,
@@ -15,105 +15,15 @@ import {
   Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useDepartments, useDepartmentStats, useStaffStats, useStudentStats } from "@/hooks/use-api";
-import { useTenantId, setTenantId } from "@/hooks/use-tenant";
+import { useTenantId } from "@/hooks/use-tenant";
 
-// Mock data for activities and events (would be separate APIs)
-const recentActivities = [
-  {
-    id: 1,
-    type: "admission",
-    message: "45 new students admitted to CSE department",
-    time: "2 hours ago",
-  },
-  {
-    id: 2,
-    type: "staff",
-    message: "Dr. Priya Sharma appointed as HOD - ECE",
-    time: "1 day ago",
-  },
-  {
-    id: 3,
-    type: "exam",
-    message: "Mid-semester exams scheduled for Nov 15-25",
-    time: "2 days ago",
-  },
-  {
-    id: 4,
-    type: "fee",
-    message: "Fee payment deadline extended to Dec 15",
-    time: "3 days ago",
-  },
-];
-
-const upcomingEvents = [
-  {
-    id: 1,
-    title: "Faculty Meeting",
-    date: "Jan 10, 2026",
-    time: "10:00 AM",
-    type: "meeting",
-  },
-  {
-    id: 2,
-    title: "Annual Day Preparations",
-    date: "Jan 15, 2026",
-    time: "All Day",
-    type: "event",
-  },
-  {
-    id: 3,
-    title: "Placement Drive - TCS",
-    date: "Jan 20, 2026",
-    time: "9:00 AM",
-    type: "placement",
-  },
-];
-
-const alerts = [
-  {
-    id: 1,
-    title: "Low Attendance Alert",
-    description: "15 students in CSE have attendance below 75%",
-    severity: "warning",
-  },
-  {
-    id: 2,
-    title: "Fee Defaulters",
-    description: "32 students have pending fees beyond due date",
-    severity: "error",
-  },
-  {
-    id: 3,
-    title: "AICTE Report Due",
-    description: "Annual report submission deadline: Jan 31",
-    severity: "info",
-  },
-];
+// Note: Activities, events, and alerts will be loaded from API when available
 
 export default function PrincipalDashboard() {
+  const { isLoaded: clerkLoaded } = useUser();
   const tenantId = useTenantId();
-  const [showTenantDialog, setShowTenantDialog] = useState(false);
-  const [inputTenantId, setInputTenantId] = useState('');
-
-  // Check if we need to prompt for tenant ID
-  useEffect(() => {
-    if (!tenantId) {
-      setShowTenantDialog(true);
-    }
-  }, [tenantId]);
 
   // Fetch data with tenant ID
   const { data: deptStats, isLoading: deptStatsLoading } = useDepartmentStats(tenantId || '');
@@ -121,7 +31,7 @@ export default function PrincipalDashboard() {
   const { data: studentStats, isLoading: studentStatsLoading } = useStudentStats(tenantId || '');
   const { data: departmentsData, isLoading: deptsLoading } = useDepartments(tenantId || '', { limit: 10 });
 
-  const isLoading = deptStatsLoading || staffStatsLoading || studentStatsLoading || deptsLoading;
+  const isLoading = !clerkLoaded || deptStatsLoading || staffStatsLoading || studentStatsLoading || deptsLoading;
 
   // Build stats from API data
   const stats = [
@@ -164,42 +74,26 @@ export default function PrincipalDashboard() {
     placement: 0, // Would come from placement API
   })) || [];
 
-  const handleSetTenantId = () => {
-    if (inputTenantId.trim()) {
-      setTenantId(inputTenantId.trim());
-      setShowTenantDialog(false);
-      window.location.reload();
-    }
-  };
-
-  if (!tenantId && showTenantDialog) {
+  // Show loading while Clerk is loading
+  if (!clerkLoaded) {
     return (
-      <Dialog open={showTenantDialog} onOpenChange={setShowTenantDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Enter Tenant ID</DialogTitle>
-            <DialogDescription>
-              Enter your college tenant ID to access the dashboard. You can find this in the Platform dashboard.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="tenantId">Tenant ID</Label>
-              <Input
-                id="tenantId"
-                placeholder="e.g., cmk2emocr0000vintzzjc52nb"
-                value={inputTenantId}
-                onChange={(e) => setInputTenantId(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={handleSetTenantId} disabled={!inputTenantId.trim()}>
-              Continue
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Show error if no tenant ID is available after Clerk loaded
+  if (!tenantId) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <AlertCircle className="h-12 w-12 text-orange-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">College Not Assigned</h2>
+        <p className="text-muted-foreground max-w-md">
+          Your account is not associated with a college yet. Please contact your administrator
+          to complete your account setup.
+        </p>
+      </div>
     );
   }
 
@@ -315,33 +209,14 @@ export default function PrincipalDashboard() {
             <CardTitle>Alerts</CardTitle>
             <CardDescription>Items requiring attention</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {alerts.map((alert) => (
-              <div
-                key={alert.id}
-                className={`flex items-start gap-3 p-3 rounded-lg border ${
-                  alert.severity === "error"
-                    ? "border-red-200 bg-red-50"
-                    : alert.severity === "warning"
-                    ? "border-yellow-200 bg-yellow-50"
-                    : "border-blue-200 bg-blue-50"
-                }`}
-              >
-                <AlertCircle
-                  className={`h-5 w-5 mt-0.5 ${
-                    alert.severity === "error"
-                      ? "text-red-500"
-                      : alert.severity === "warning"
-                      ? "text-yellow-500"
-                      : "text-blue-500"
-                  }`}
-                />
-                <div>
-                  <p className="font-medium text-sm">{alert.title}</p>
-                  <p className="text-xs text-muted-foreground">{alert.description}</p>
-                </div>
-              </div>
-            ))}
+          <CardContent>
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <AlertCircle className="h-10 w-10 text-muted-foreground/50 mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">No alerts</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Alerts will appear here when there are items requiring your attention
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -355,16 +230,12 @@ export default function PrincipalDashboard() {
             <CardDescription>Latest updates from your college</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-3">
-                  <div className="h-2 w-2 mt-2 rounded-full bg-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm">{activity.message}</p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Bell className="h-10 w-10 text-muted-foreground/50 mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">No recent activities</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Activity feed coming soon
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -376,26 +247,12 @@ export default function PrincipalDashboard() {
             <CardDescription>Scheduled events this month</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {upcomingEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="flex items-center justify-between p-3 rounded-lg border"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{event.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {event.date} • {event.time}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="outline">{event.type}</Badge>
-                </div>
-              ))}
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Calendar className="h-10 w-10 text-muted-foreground/50 mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">No upcoming events</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Event calendar coming soon
+              </p>
             </div>
           </CardContent>
         </Card>

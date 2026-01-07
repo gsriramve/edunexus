@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
   Calendar,
   CheckCircle2,
@@ -12,6 +13,7 @@ import {
   BookOpen,
   CalendarDays,
   FileText,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,98 +35,178 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-// Mock data for children
-const children = [
-  { id: "child-1", name: "Rahul Sharma", rollNo: "21CSE101", department: "Computer Science", semester: 5 },
-  { id: "child-2", name: "Priya Sharma", rollNo: "23ECE045", department: "Electronics", semester: 3 },
-];
-
-// Mock attendance data per child
-const childAttendanceData: Record<string, {
-  overview: { overall: number; present: number; absent: number; late: number; totalClasses: number; trend: string; change: number };
-  subjectWise: Array<{ code: string; name: string; teacher: string; attended: number; total: number; percentage: number; lastUpdated: string }>;
-  monthlyData: Array<{ date: number; status: "present" | "absent" | "late" | "holiday" | "weekend" | null }>;
-  leaveHistory: Array<{ id: string; type: string; from: string; to: string; days: number; reason: string; status: string; appliedOn: string }>;
-}> = {
-  "child-1": {
-    overview: {
-      overall: 82,
-      present: 156,
-      absent: 28,
-      late: 6,
-      totalClasses: 190,
-      trend: "up",
-      change: 3,
-    },
-    subjectWise: [
-      { code: "CS501", name: "Data Structures & Algorithms", teacher: "Dr. Ramesh Kumar", attended: 28, total: 30, percentage: 93, lastUpdated: "Jan 5, 2026" },
-      { code: "CS502", name: "Computer Networks", teacher: "Dr. Priya Sharma", attended: 22, total: 28, percentage: 78, lastUpdated: "Jan 5, 2026" },
-      { code: "CS503", name: "Operating Systems", teacher: "Dr. Arun Menon", attended: 27, total: 30, percentage: 90, lastUpdated: "Jan 4, 2026" },
-      { code: "CS504", name: "Software Engineering", teacher: "Prof. Kavitha Nair", attended: 20, total: 24, percentage: 83, lastUpdated: "Jan 4, 2026" },
-      { code: "CS505", name: "Data Structures Lab", teacher: "Dr. Ramesh Kumar", attended: 14, total: 15, percentage: 93, lastUpdated: "Jan 3, 2026" },
-      { code: "CS506", name: "Computer Networks Lab", teacher: "Dr. Priya Sharma", attended: 11, total: 14, percentage: 78, lastUpdated: "Jan 3, 2026" },
-    ],
-    monthlyData: [
-      { date: 1, status: "present" }, { date: 2, status: "present" }, { date: 3, status: "late" },
-      { date: 4, status: "weekend" }, { date: 5, status: "weekend" }, { date: 6, status: "present" },
-      { date: 7, status: "absent" }, { date: 8, status: "present" }, { date: 9, status: "present" },
-      { date: 10, status: "present" }, { date: 11, status: "weekend" }, { date: 12, status: "weekend" },
-      { date: 13, status: "present" }, { date: 14, status: "present" }, { date: 15, status: "holiday" },
-      { date: 16, status: "present" }, { date: 17, status: "absent" }, { date: 18, status: "weekend" },
-      { date: 19, status: "weekend" }, { date: 20, status: "present" }, { date: 21, status: "present" },
-      { date: 22, status: "present" }, { date: 23, status: "late" }, { date: 24, status: "present" },
-      { date: 25, status: "weekend" }, { date: 26, status: "holiday" }, { date: 27, status: "present" },
-      { date: 28, status: "present" }, { date: 29, status: "present" }, { date: 30, status: "present" },
-      { date: 31, status: null },
-    ],
-    leaveHistory: [
-      { id: "leave-1", type: "Medical", from: "Dec 15, 2025", to: "Dec 17, 2025", days: 3, reason: "Fever and cold", status: "approved", appliedOn: "Dec 14, 2025" },
-      { id: "leave-2", type: "Personal", from: "Nov 20, 2025", to: "Nov 21, 2025", days: 2, reason: "Family function", status: "approved", appliedOn: "Nov 15, 2025" },
-      { id: "leave-3", type: "Medical", from: "Oct 5, 2025", to: "Oct 6, 2025", days: 2, reason: "Doctor appointment", status: "approved", appliedOn: "Oct 3, 2025" },
-    ],
-  },
-  "child-2": {
-    overview: {
-      overall: 91,
-      present: 138,
-      absent: 10,
-      late: 4,
-      totalClasses: 152,
-      trend: "up",
-      change: 5,
-    },
-    subjectWise: [
-      { code: "EC301", name: "Analog Circuits", teacher: "Dr. Suresh Pillai", attended: 26, total: 28, percentage: 93, lastUpdated: "Jan 5, 2026" },
-      { code: "EC302", name: "Digital Electronics", teacher: "Dr. Meera Nair", attended: 28, total: 30, percentage: 93, lastUpdated: "Jan 5, 2026" },
-      { code: "EC303", name: "Signals & Systems", teacher: "Prof. Vijay Kumar", attended: 25, total: 28, percentage: 89, lastUpdated: "Jan 4, 2026" },
-      { code: "EC304", name: "Electromagnetic Theory", teacher: "Dr. Rajan Menon", attended: 24, total: 26, percentage: 92, lastUpdated: "Jan 4, 2026" },
-    ],
-    monthlyData: [
-      { date: 1, status: "present" }, { date: 2, status: "present" }, { date: 3, status: "present" },
-      { date: 4, status: "weekend" }, { date: 5, status: "weekend" }, { date: 6, status: "present" },
-      { date: 7, status: "present" }, { date: 8, status: "present" }, { date: 9, status: "present" },
-      { date: 10, status: "late" }, { date: 11, status: "weekend" }, { date: 12, status: "weekend" },
-      { date: 13, status: "present" }, { date: 14, status: "present" }, { date: 15, status: "holiday" },
-      { date: 16, status: "present" }, { date: 17, status: "present" }, { date: 18, status: "weekend" },
-      { date: 19, status: "weekend" }, { date: 20, status: "present" }, { date: 21, status: "present" },
-      { date: 22, status: "present" }, { date: 23, status: "present" }, { date: 24, status: "present" },
-      { date: 25, status: "weekend" }, { date: 26, status: "holiday" }, { date: 27, status: "present" },
-      { date: 28, status: "absent" }, { date: 29, status: "present" }, { date: 30, status: "present" },
-      { date: 31, status: null },
-    ],
-    leaveHistory: [
-      { id: "leave-1", type: "Medical", from: "Dec 28, 2025", to: "Dec 28, 2025", days: 1, reason: "Not feeling well", status: "approved", appliedOn: "Dec 27, 2025" },
-    ],
-  },
-};
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useParentChildren } from "@/hooks/use-parents";
+import {
+  useStudentAttendance,
+  useStudentAttendanceStats,
+  useStudentSubjectAttendance,
+} from "@/hooks/use-attendance";
 
 export default function ParentAttendance() {
-  const [selectedChild, setSelectedChild] = useState(children[0].id);
+  const { user } = useUser();
+  const tenantId = useTenantId() || '';
+  const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState("january");
 
-  const currentChild = children.find((c) => c.id === selectedChild)!;
-  const attendanceData = childAttendanceData[selectedChild];
+  // Fetch parent's children
+  const { data: childrenData, isLoading: childrenLoading } = useParentChildren(tenantId, user?.id || '');
+  const children = childrenData || [];
+
+  // Set first child as default when children load
+  useEffect(() => {
+    if (children.length > 0 && !selectedChildId) {
+      setSelectedChildId(children[0].id);
+    }
+  }, [children, selectedChildId]);
+
+  // Get selected child info
+  const currentChild = useMemo(() => {
+    const childRecord = children.find((c) => c.id === selectedChildId);
+    if (!childRecord) return null;
+    return {
+      id: childRecord.id,
+      name: `${childRecord.firstName} ${childRecord.lastName}`.trim() || 'Unknown',
+      rollNo: childRecord.rollNo || 'N/A',
+      department: 'N/A', // ParentChild doesn't have department info
+      semester: childRecord.currentSemester || 0,
+    };
+  }, [children, selectedChildId]);
+
+  // Fetch attendance data for selected child
+  const { data: attendanceRecords, isLoading: attendanceLoading } = useStudentAttendance(tenantId, selectedChildId);
+  const { data: attendanceStats, isLoading: statsLoading } = useStudentAttendanceStats(tenantId, selectedChildId);
+  const { data: subjectAttendance, isLoading: subjectLoading } = useStudentSubjectAttendance(tenantId, selectedChildId);
+
+  // Derive attendance overview from API data
+  const attendanceOverview = useMemo(() => {
+    if (attendanceStats) {
+      return {
+        overall: attendanceStats.percentage || 0,
+        present: attendanceStats.present || 0,
+        absent: attendanceStats.absent || 0,
+        late: attendanceStats.late || 0,
+        totalClasses: attendanceStats.totalDays || 0,
+        trend: 'up' as const, // Would need historical data to determine
+        change: 0,
+      };
+    }
+    return {
+      overall: 0,
+      present: 0,
+      absent: 0,
+      late: 0,
+      totalClasses: 0,
+      trend: 'up' as const,
+      change: 0,
+    };
+  }, [attendanceStats]);
+
+  // Derive subject-wise data from API
+  const subjectWiseData = useMemo(() => {
+    if (subjectAttendance && Array.isArray(subjectAttendance)) {
+      return subjectAttendance.map((subject) => ({
+        code: subject.subjectCode || 'N/A',
+        name: subject.subjectName || 'Unknown',
+        teacher: 'N/A', // SubjectAttendance doesn't have teacher info
+        attended: subject.present || 0,
+        total: subject.totalClasses || 0,
+        percentage: subject.percentage || 0,
+        lastUpdated: 'N/A', // SubjectAttendance doesn't have lastUpdated
+      }));
+    }
+    return [];
+  }, [subjectAttendance]);
+
+  // Derive monthly calendar data from attendance records
+  const monthlyData = useMemo(() => {
+    if (!attendanceRecords || !Array.isArray(attendanceRecords)) return [];
+
+    // Create a map of dates in the current month
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+    const dailyStatus: Array<{ date: number; status: 'present' | 'absent' | 'late' | 'holiday' | 'weekend' | null }> = [];
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      const date = new Date(currentYear, currentMonth, i);
+      const dayOfWeek = date.getDay();
+
+      // Check if weekend
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        dailyStatus.push({ date: i, status: 'weekend' });
+        continue;
+      }
+
+      // Find attendance record for this date
+      const record = attendanceRecords.find((r) => {
+        const recordDate = new Date(r.date);
+        return recordDate.getDate() === i && recordDate.getMonth() === currentMonth;
+      });
+
+      if (record) {
+        dailyStatus.push({ date: i, status: record.status as 'present' | 'absent' | 'late' });
+      } else {
+        dailyStatus.push({ date: i, status: null });
+      }
+    }
+
+    return dailyStatus;
+  }, [attendanceRecords]);
+
+  // Leave history would need its own API - using empty for now
+  const leaveHistory: Array<{ id: string; type: string; from: string; to: string; days: number; reason: string; status: string; appliedOn: string }> = [];
+
+  const isLoading = childrenLoading || (selectedChildId && (attendanceLoading || statsLoading || subjectLoading));
+
+  // Loading state
+  if (childrenLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-48" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-5">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  // No children state
+  if (children.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Attendance Tracking</h1>
+          <p className="text-muted-foreground">
+            Monitor your child's attendance and leave history
+          </p>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="h-16 w-16 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">No Children Linked</h3>
+              <p>No children are currently linked to your account.</p>
+              <p className="text-sm mt-2">Please contact the school administration.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!currentChild) return null;
 
   const getStatusColor = (status: string | null) => {
     switch (status) {
@@ -162,7 +244,7 @@ export default function ParentAttendance() {
     }
   };
 
-  const lowAttendanceSubjects = attendanceData.subjectWise.filter(
+  const lowAttendanceSubjects = subjectWiseData.filter(
     (subject) => subject.percentage < 75
   );
 
@@ -177,16 +259,19 @@ export default function ParentAttendance() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <Select value={selectedChild} onValueChange={setSelectedChild}>
+          <Select value={selectedChildId} onValueChange={setSelectedChildId}>
             <SelectTrigger className="w-[220px]">
               <SelectValue placeholder="Select Child" />
             </SelectTrigger>
             <SelectContent>
-              {children.map((child) => (
-                <SelectItem key={child.id} value={child.id}>
-                  {child.name} ({child.rollNo})
-                </SelectItem>
-              ))}
+              {children.map((childRecord) => {
+                const childName = `${childRecord.firstName} ${childRecord.lastName}`.trim() || 'Unknown';
+                return (
+                  <SelectItem key={childRecord.id} value={childRecord.id}>
+                    {childName} ({childRecord.rollNo || 'N/A'})
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -222,8 +307,8 @@ export default function ParentAttendance() {
               <div>
                 <p className="text-sm text-muted-foreground">Overall</p>
                 <div className="flex items-center gap-2">
-                  <p className="text-2xl font-bold">{attendanceData.overview.overall}%</p>
-                  {attendanceData.overview.trend === "up" ? (
+                  <p className="text-2xl font-bold">{attendanceOverview.overall}%</p>
+                  {attendanceOverview.trend === "up" ? (
                     <TrendingUp className="h-4 w-4 text-green-500" />
                   ) : (
                     <TrendingDown className="h-4 w-4 text-red-500" />
@@ -241,7 +326,7 @@ export default function ParentAttendance() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Present</p>
-                <p className="text-2xl font-bold text-green-600">{attendanceData.overview.present}</p>
+                <p className="text-2xl font-bold text-green-600">{attendanceOverview.present}</p>
               </div>
             </div>
           </CardContent>
@@ -254,7 +339,7 @@ export default function ParentAttendance() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Absent</p>
-                <p className="text-2xl font-bold text-red-600">{attendanceData.overview.absent}</p>
+                <p className="text-2xl font-bold text-red-600">{attendanceOverview.absent}</p>
               </div>
             </div>
           </CardContent>
@@ -267,7 +352,7 @@ export default function ParentAttendance() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Late</p>
-                <p className="text-2xl font-bold text-yellow-600">{attendanceData.overview.late}</p>
+                <p className="text-2xl font-bold text-yellow-600">{attendanceOverview.late}</p>
               </div>
             </div>
           </CardContent>
@@ -280,7 +365,7 @@ export default function ParentAttendance() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Classes</p>
-                <p className="text-2xl font-bold">{attendanceData.overview.totalClasses}</p>
+                <p className="text-2xl font-bold">{attendanceOverview.totalClasses}</p>
               </div>
             </div>
           </CardContent>
@@ -318,42 +403,50 @@ export default function ParentAttendance() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {attendanceData.subjectWise.map((subject) => (
-                    <TableRow key={subject.code}>
-                      <TableCell>
-                        <div>
-                          <Badge variant="outline" className="font-mono mb-1">
-                            {subject.code}
-                          </Badge>
-                          <p className="font-medium">{subject.name}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">{subject.teacher}</TableCell>
-                      <TableCell className="text-center font-medium">{subject.attended}</TableCell>
-                      <TableCell className="text-center">{subject.total}</TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <Progress
-                            value={subject.percentage}
-                            className={`h-2 ${
-                              subject.percentage < 75 ? "[&>div]:bg-red-500" : ""
-                            }`}
-                          />
-                          {subject.percentage < 75 && (
-                            <p className="text-xs text-red-600">
-                              Need {Math.ceil((0.75 * subject.total - subject.attended) / 0.25)} more classes
-                            </p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {getAttendanceBadge(subject.percentage)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {subject.lastUpdated}
+                  {subjectWiseData.length > 0 ? (
+                    subjectWiseData.map((subject) => (
+                      <TableRow key={subject.code}>
+                        <TableCell>
+                          <div>
+                            <Badge variant="outline" className="font-mono mb-1">
+                              {subject.code}
+                            </Badge>
+                            <p className="font-medium">{subject.name}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">{subject.teacher}</TableCell>
+                        <TableCell className="text-center font-medium">{subject.attended}</TableCell>
+                        <TableCell className="text-center">{subject.total}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <Progress
+                              value={subject.percentage}
+                              className={`h-2 ${
+                                subject.percentage < 75 ? "[&>div]:bg-red-500" : ""
+                              }`}
+                            />
+                            {subject.percentage < 75 && (
+                              <p className="text-xs text-red-600">
+                                Need {Math.ceil((0.75 * subject.total - subject.attended) / 0.25)} more classes
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getAttendanceBadge(subject.percentage)}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {subject.lastUpdated}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        No subject attendance data available
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -424,50 +517,68 @@ export default function ParentAttendance() {
                 ))}
 
                 {/* Date cells */}
-                {attendanceData.monthlyData.map((day) =>
-                  day.status !== null ? (
-                    <div
-                      key={day.date}
-                      className={`p-2 rounded-lg text-center ${getStatusColor(
-                        day.status
-                      )} ${
-                        day.status === "present" ||
-                        day.status === "absent" ||
-                        day.status === "late"
-                          ? "text-white"
-                          : ""
-                      }`}
-                    >
-                      <span className="text-sm font-medium">{day.date}</span>
-                    </div>
-                  ) : (
-                    <div key={day.date} className="p-2" />
+                {monthlyData.length > 0 ? (
+                  monthlyData.map((day) =>
+                    day.status !== null ? (
+                      <div
+                        key={day.date}
+                        className={`p-2 rounded-lg text-center ${getStatusColor(
+                          day.status
+                        )} ${
+                          day.status === "present" ||
+                          day.status === "absent" ||
+                          day.status === "late"
+                            ? "text-white"
+                            : ""
+                        }`}
+                      >
+                        <span className="text-sm font-medium">{day.date}</span>
+                      </div>
+                    ) : (
+                      <div key={day.date} className="p-2" />
+                    )
                   )
+                ) : (
+                  <div className="col-span-7 text-center py-8 text-muted-foreground">
+                    No calendar data available
+                  </div>
                 )}
               </div>
 
               {/* Monthly Summary */}
-              <div className="mt-6 p-4 rounded-lg bg-muted">
-                <h4 className="font-medium mb-2">January 2026 Summary</h4>
-                <div className="grid grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Working Days:</span>
-                    <span className="ml-2 font-medium">22</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Present:</span>
-                    <span className="ml-2 font-medium text-green-600">18</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Absent:</span>
-                    <span className="ml-2 font-medium text-red-600">2</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Late:</span>
-                    <span className="ml-2 font-medium text-yellow-600">2</span>
+              {monthlyData.length > 0 && (
+                <div className="mt-6 p-4 rounded-lg bg-muted">
+                  <h4 className="font-medium mb-2">
+                    {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })} Summary
+                  </h4>
+                  <div className="grid grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Working Days:</span>
+                      <span className="ml-2 font-medium">
+                        {monthlyData.filter(d => d.status !== 'weekend' && d.status !== 'holiday' && d.status !== null).length}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Present:</span>
+                      <span className="ml-2 font-medium text-green-600">
+                        {monthlyData.filter(d => d.status === 'present').length}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Absent:</span>
+                      <span className="ml-2 font-medium text-red-600">
+                        {monthlyData.filter(d => d.status === 'absent').length}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Late:</span>
+                      <span className="ml-2 font-medium text-yellow-600">
+                        {monthlyData.filter(d => d.status === 'late').length}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -488,7 +599,7 @@ export default function ParentAttendance() {
               </div>
             </CardHeader>
             <CardContent>
-              {attendanceData.leaveHistory.length > 0 ? (
+              {leaveHistory.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -502,7 +613,7 @@ export default function ParentAttendance() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {attendanceData.leaveHistory.map((leave) => (
+                    {leaveHistory.map((leave) => (
                       <TableRow key={leave.id}>
                         <TableCell>
                           <Badge variant="outline">{leave.type}</Badge>

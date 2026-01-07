@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Loader2,
 } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,15 +36,10 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useStudentFees, usePaymentHistory, useCreatePaymentOrder, useVerifyPayment } from "@/hooks/use-api";
+import { useStudentFees, usePaymentHistory, useCreatePaymentOrder, useVerifyPayment, useStudentByUserId } from "@/hooks/use-api";
+import { useTenantId } from "@/hooks/use-tenant";
 import { usePaymentFlow } from "@/hooks/use-razorpay";
 import type { StudentFee } from "@/lib/api";
-
-// TODO: Get from auth context
-const MOCK_TENANT_ID = "cmk2emocr0000vintzzjc52nb";
-const MOCK_STUDENT_ID = "cmk2ep9br0004vi0sh885uqda";
-const MOCK_STUDENT_NAME = "Rahul Sharma";
-const MOCK_STUDENT_EMAIL = "rahul.sharma@student.college.edu";
 
 // Fee structure (static for now)
 const feeStructure = [
@@ -61,11 +57,25 @@ export default function StudentFees() {
   const [selectedFees, setSelectedFees] = useState<string[]>([]);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
+  // Auth context
+  const tenantId = useTenantId();
+  const { user, isLoaded: isUserLoaded } = useUser();
+
+  // Get student data from user ID
+  const { data: studentData, isLoading: isLoadingStudent } = useStudentByUserId(
+    tenantId || '',
+    user?.id || ''
+  );
+
+  const studentId = studentData?.id || '';
+  const studentName = user?.fullName || user?.firstName || 'Student';
+  const studentEmail = user?.primaryEmailAddress?.emailAddress || '';
+
   // API Hooks
-  const { data: feesData, isLoading: isLoadingFees, refetch: refetchFees } = useStudentFees(MOCK_TENANT_ID, MOCK_STUDENT_ID);
-  const { data: historyData, isLoading: isLoadingHistory, refetch: refetchHistory } = usePaymentHistory(MOCK_TENANT_ID, MOCK_STUDENT_ID);
-  const createOrderMutation = useCreatePaymentOrder(MOCK_TENANT_ID, MOCK_STUDENT_ID);
-  const verifyPaymentMutation = useVerifyPayment(MOCK_TENANT_ID);
+  const { data: feesData, isLoading: isLoadingFees, refetch: refetchFees } = useStudentFees(tenantId || '', studentId);
+  const { data: historyData, isLoading: isLoadingHistory, refetch: refetchHistory } = usePaymentHistory(tenantId || '', studentId);
+  const createOrderMutation = useCreatePaymentOrder(tenantId || '', studentId);
+  const verifyPaymentMutation = useVerifyPayment(tenantId || '');
 
   // Razorpay
   const { isRazorpayLoaded, initiatePayment, paymentStatus, paymentError, resetPayment } = usePaymentFlow();
@@ -140,8 +150,8 @@ export default function StudentFees() {
         name: "EduNexus",
         description: orderResponse.description,
         prefill: {
-          name: MOCK_STUDENT_NAME,
-          email: MOCK_STUDENT_EMAIL,
+          name: studentName,
+          email: studentEmail,
         },
         onSuccess: async (response) => {
           try {

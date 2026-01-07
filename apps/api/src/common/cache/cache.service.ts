@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class CacheService {
@@ -29,9 +29,15 @@ export class CacheService {
 
   /**
    * Clear all cache (use with caution)
+   * Note: Modern cache-manager uses store.reset() or individual key deletion
    */
   async reset(): Promise<void> {
-    await this.cacheManager.reset();
+    // For cache-manager v5+, reset is handled differently
+    // Using store-level reset if available
+    const store = (this.cacheManager as any).store;
+    if (store && typeof store.reset === 'function') {
+      await store.reset();
+    }
   }
 
   /**

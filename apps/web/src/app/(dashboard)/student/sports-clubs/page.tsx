@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import {
   Trophy,
   Users,
@@ -29,66 +29,124 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-
-// Mock data for current student
-const studentId = 'student-001';
-
-const myTeams = [
-  { id: '1', name: 'Thunder', sport: 'cricket', category: 'men', role: 'captain', position: 'Batsman', jerseyNo: 7, joinedAt: '2024-08-15' },
-  { id: '2', name: 'Smashers', sport: 'badminton', category: 'mixed', role: 'member', position: 'Singles', jerseyNo: null, joinedAt: '2025-01-10' },
-];
-
-const myClubs = [
-  { id: '1', name: 'Google Developer Student Club', code: 'GDSC', category: 'technical', role: 'member', designation: null, joinedAt: '2024-09-01' },
-  { id: '2', name: 'Literary Society', code: 'LITSOC', category: 'literary', role: 'secretary', designation: 'Event Coordinator', joinedAt: '2024-08-20' },
-];
-
-const upcomingSportsEvents = [
-  { id: '1', name: 'Inter-College Cricket Tournament', sport: 'cricket', type: 'tournament', venue: 'Sports Ground', date: '2026-02-15', level: 'inter-college', registered: true },
-  { id: '2', name: 'College Badminton Championship', sport: 'badminton', type: 'tournament', venue: 'Indoor Court', date: '2026-01-25', level: 'college', registered: false },
-];
-
-const upcomingClubEvents = [
-  { id: '1', name: 'Hackathon 2026', club: 'GDSC', clubName: 'Google Developer Student Club', type: 'hackathon', venue: 'Main Auditorium', date: '2026-02-01', maxParticipants: 200, currentRegistrations: 150, registered: true },
-  { id: '2', name: 'Poetry Slam', club: 'LITSOC', clubName: 'Literary Society', type: 'competition', venue: 'Seminar Hall', date: '2026-01-25', maxParticipants: 30, currentRegistrations: 18, registered: false },
-  { id: '3', name: 'Workshop: Cloud Computing', club: 'GDSC', clubName: 'Google Developer Student Club', type: 'workshop', venue: 'Lab 301', date: '2026-01-20', maxParticipants: 50, currentRegistrations: 35, registered: false },
-];
-
-const myAchievements = [
-  { id: '1', title: 'Gold Medal - State Cricket Tournament', type: 'medal', category: 'sports', level: 'state', date: '2025-12-15', verified: true, creditsAwarded: 3 },
-  { id: '2', title: 'Best Speaker - Inter-College Debate', type: 'certificate', category: 'cultural', level: 'inter-college', date: '2025-11-20', verified: true, creditsAwarded: 2 },
-  { id: '3', title: 'Participation - National Hackathon', type: 'certificate', category: 'technical', level: 'national', date: '2025-10-05', verified: true, creditsAwarded: 1 },
-];
-
-const myCreditsSummary = {
-  totalCredits: 8,
-  maxCredits: 20,
-  byCategory: [
-    { category: 'sports', credits: 4, maxCredits: 10 },
-    { category: 'cultural', credits: 2, maxCredits: 10 },
-    { category: 'technical', credits: 2, maxCredits: 10 },
-    { category: 'social', credits: 0, maxCredits: 10 },
-  ],
-};
-
-const availableTeams = [
-  { id: '3', name: 'Blazers', sport: 'basketball', category: 'women', members: 12, maxMembers: 15 },
-  { id: '4', name: 'Strikers', sport: 'football', category: 'men', members: 20, maxMembers: 25 },
-];
-
-const availableClubs = [
-  { id: '3', name: 'Drama Club', code: 'DRAMA', category: 'cultural', members: 32, maxMembers: 50 },
-  { id: '4', name: 'NSS Unit', code: 'NSS', category: 'social', members: 120, maxMembers: 150 },
-  { id: '5', name: 'Photography Club', code: 'PHOTO', category: 'hobby', members: 25, maxMembers: 40 },
-];
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTenantId } from '@/hooks/use-tenant';
+import { useStudentByUserId } from '@/hooks/use-api';
+import {
+  useStudentActivities,
+  useSportsTeams,
+  useClubs,
+  useSportsEvents,
+  useClubEvents,
+  useStudentCreditsSummary,
+  useAddTeamMember,
+  useAddClubMember,
+  useRegisterForEvent,
+} from '@/hooks/use-sports-clubs';
 
 export default function StudentSportsClubsPage() {
-  const { getToken } = useAuth();
+  const { user } = useUser();
+  const tenantId = useTenantId() || '';
   const [activeTab, setActiveTab] = useState('overview');
   const [showJoinTeamDialog, setShowJoinTeamDialog] = useState(false);
   const [showJoinClubDialog, setShowJoinClubDialog] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
-  const [showEventDetailsDialog, setShowEventDetailsDialog] = useState(false);
+
+  // Fetch student data
+  const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
+  const studentId = studentData?.id || '';
+
+  // Fetch student's activities (teams, clubs, registrations, achievements, credits)
+  const { data: activities, isLoading: activitiesLoading } = useStudentActivities(tenantId, studentId);
+
+  // Fetch all teams and clubs for "join" dialogs
+  const { data: allTeamsData } = useSportsTeams(tenantId, { status: 'active' });
+  const { data: allClubsData } = useClubs(tenantId, { status: 'active' });
+
+  // Fetch upcoming events (use status filter instead of upcomingOnly)
+  const { data: sportsEventsData } = useSportsEvents(tenantId, { status: 'upcoming' });
+  const { data: clubEventsData } = useClubEvents(tenantId, { status: 'upcoming' });
+
+  // Credits summary
+  const { data: creditsSummary } = useStudentCreditsSummary(tenantId, studentId);
+
+  // Mutations
+  const addTeamMemberMutation = useAddTeamMember(tenantId);
+  const addClubMemberMutation = useAddClubMember(tenantId);
+  const registerForEventMutation = useRegisterForEvent(tenantId);
+
+  // Derived data - StudentActivitiesResponse has teams: SportsTeam[], clubs: Club[]
+  const myTeams = activities?.teams || [];
+  const myClubs = activities?.clubs || [];
+  const myAchievements = activities?.achievements || [];
+  const myRegistrations = activities?.registrations || [];
+  const registeredEventIds = new Set(myRegistrations.map(r => r.eventId));
+
+  const allTeams = allTeamsData?.data || [];
+  const allClubs = allClubsData?.data || [];
+  const sportsEvents = sportsEventsData?.data || [];
+  const clubEvents = clubEventsData?.data || [];
+
+  // Available teams/clubs (not already a member)
+  // myTeams is SportsTeam[] and myClubs is Club[], so use t.id directly
+  const myTeamIds = new Set(myTeams.map(t => t.id));
+  const myClubIds = new Set(myClubs.map(c => c.id));
+  const availableTeams = allTeams.filter(t => !myTeamIds.has(t.id));
+  const availableClubs = allClubs.filter(c => !myClubIds.has(c.id));
+
+  // Credits summary with defaults
+  // StudentCreditsSummary has totalCredits and byType: { type: string; credits: number }[]
+  const totalCredits = creditsSummary?.totalCredits || 0;
+  const maxCredits = 20; // This could come from settings
+  const creditsByType = creditsSummary?.byType || [];
+
+  const isLoading = studentLoading || activitiesLoading;
+
+  // Handlers
+  // Get student name for mutations - Student has user.name, not firstName/lastName
+  const studentName = studentData?.user?.name || user?.fullName || '';
+  const rollNo = studentData?.rollNo;
+
+  const handleJoinTeam = async (teamId: string) => {
+    try {
+      await addTeamMemberMutation.mutateAsync({
+        teamId,
+        studentId,
+        studentName,
+        rollNo,
+      });
+      setShowJoinTeamDialog(false);
+    } catch (error) {
+      console.error('Failed to join team:', error);
+    }
+  };
+
+  const handleJoinClub = async (clubId: string) => {
+    try {
+      await addClubMemberMutation.mutateAsync({
+        clubId,
+        studentId,
+        studentName,
+        rollNo,
+      });
+      setShowJoinClubDialog(false);
+    } catch (error) {
+      console.error('Failed to join club:', error);
+    }
+  };
+
+  const handleRegisterForEvent = async (eventId: string, eventType: 'sports' | 'club') => {
+    try {
+      await registerForEventMutation.mutateAsync({
+        eventId,
+        eventType,
+        studentId,
+        studentName,
+        rollNo,
+      });
+    } catch (error) {
+      console.error('Failed to register for event:', error);
+    }
+  };
 
   const getCategoryBadge = (category: string) => {
     const colors: Record<string, string> = {
@@ -129,6 +187,26 @@ export default function StudentSportsClubsPage() {
     };
     return <Badge variant={variants[role] || 'outline'}>{role.charAt(0).toUpperCase() + role.slice(1)}</Badge>;
   };
+
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-96 mt-2" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -176,8 +254,8 @@ export default function StudentSportsClubsPage() {
             <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{myCreditsSummary.totalCredits}/{myCreditsSummary.maxCredits}</div>
-            <Progress value={(myCreditsSummary.totalCredits / myCreditsSummary.maxCredits) * 100} className="mt-2" />
+            <div className="text-2xl font-bold">{totalCredits}/{maxCredits}</div>
+            <Progress value={(totalCredits / maxCredits) * 100} className="mt-2" />
           </CardContent>
         </Card>
       </div>
@@ -200,36 +278,40 @@ export default function StudentSportsClubsPage() {
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle>Upcoming Events</CardTitle>
-                  <CardDescription>Events you're registered for or might be interested in</CardDescription>
+                  <CardDescription>Events you&apos;re registered for</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {[...upcomingSportsEvents.filter(e => e.registered), ...upcomingClubEvents.filter(e => e.registered)].slice(0, 4).map((event: any) => (
-                  <div key={event.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-primary/10 rounded-lg">
-                        <Calendar className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold">{event.name}</h4>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {new Date(event.date).toLocaleDateString()}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {event.venue}
-                          </span>
+              {myRegistrations.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No registered events yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {myRegistrations.slice(0, 4).map((registration) => (
+                    <div key={registration.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-primary/10 rounded-lg">
+                          <Calendar className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold">Event Registration</h4>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                            <Badge variant="outline" className="capitalize">{registration.eventType}</Badge>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(registration.registrationDate).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      <Badge variant="default" className="capitalize">{registration.status}</Badge>
                     </div>
-                    <Badge variant="default">Registered</Badge>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -246,13 +328,16 @@ export default function StudentSportsClubsPage() {
                     <div key={team.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <p className="font-medium">{team.name}</p>
-                        <p className="text-sm text-muted-foreground capitalize">{team.sport} - {team.category}</p>
+                        <p className="text-sm text-muted-foreground capitalize">{team.sport}</p>
                       </div>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => handleJoinTeam(team.id)}>
                         <UserPlus className="h-4 w-4 mr-1" /> Join
                       </Button>
                     </div>
                   ))}
+                  {availableTeams.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-2">No teams available</p>
+                  )}
                 </div>
                 <Button variant="link" className="mt-4 w-full" onClick={() => setShowJoinTeamDialog(true)}>
                   View All Teams <ChevronRight className="h-4 w-4 ml-1" />
@@ -271,13 +356,16 @@ export default function StudentSportsClubsPage() {
                     <div key={club.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
                         <p className="font-medium">{club.name}</p>
-                        <p className="text-sm text-muted-foreground">{getCategoryBadge(club.category)}</p>
+                        <p className="text-sm text-muted-foreground">{getCategoryBadge(club.category || 'other')}</p>
                       </div>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => handleJoinClub(club.id)}>
                         <UserPlus className="h-4 w-4 mr-1" /> Join
                       </Button>
                     </div>
                   ))}
+                  {availableClubs.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-2">No clubs available</p>
+                  )}
                 </div>
                 <Button variant="link" className="mt-4 w-full" onClick={() => setShowJoinClubDialog(true)}>
                   View All Clubs <ChevronRight className="h-4 w-4 ml-1" />
@@ -290,19 +378,25 @@ export default function StudentSportsClubsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Activity Credits Progress</CardTitle>
-              <CardDescription>Your extracurricular activity credits by category</CardDescription>
+              <CardDescription>Your extracurricular activity credits by type</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {myCreditsSummary.byCategory.map(cat => (
-                  <div key={cat.category} className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="capitalize font-medium">{cat.category}</span>
-                      <span className="text-muted-foreground">{cat.credits}/{cat.maxCredits} credits</span>
+                {creditsByType.length > 0 ? (
+                  creditsByType.map(({ type, credits }) => (
+                    <div key={type} className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="capitalize font-medium">{type}</span>
+                        <span className="text-muted-foreground">{credits} credits</span>
+                      </div>
+                      <Progress value={Math.min((credits / 10) * 100, 100)} />
                     </div>
-                    <Progress value={(cat.credits / cat.maxCredits) * 100} />
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No activity credits earned yet. Participate in activities to earn credits!
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -327,26 +421,30 @@ export default function StudentSportsClubsPage() {
                         <Trophy className="h-5 w-5 text-primary" />
                         {team.name}
                       </CardTitle>
-                      <CardDescription className="capitalize">{team.sport} - {team.category}</CardDescription>
+                      <CardDescription className="capitalize">
+                        {team.sport}
+                      </CardDescription>
                     </div>
-                    {getRoleBadge(team.role)}
+                    <Badge variant="secondary">{team.status}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Position</span>
-                      <span className="font-medium">{team.position}</span>
-                    </div>
-                    {team.jerseyNo && (
+                    {team.coachName && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Jersey Number</span>
-                        <span className="font-medium">#{team.jerseyNo}</span>
+                        <span className="text-muted-foreground">Coach</span>
+                        <span className="font-medium">{team.coachName}</span>
+                      </div>
+                    )}
+                    {team.captainName && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Captain</span>
+                        <span className="font-medium">{team.captainName}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Member Since</span>
-                      <span className="font-medium">{new Date(team.joinedAt).toLocaleDateString()}</span>
+                      <span className="text-muted-foreground">Members</span>
+                      <span className="font-medium">{team._count?.members || 0}/{team.maxMembers}</span>
                     </div>
                   </div>
                   <Button variant="outline" className="w-full mt-4">
@@ -361,7 +459,7 @@ export default function StudentSportsClubsPage() {
             <Card className="p-8 text-center">
               <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Team Memberships</h3>
-              <p className="text-muted-foreground mb-4">You haven't joined any sports teams yet.</p>
+              <p className="text-muted-foreground mb-4">You haven&apos;t joined any sports teams yet.</p>
               <Button onClick={() => setShowJoinTeamDialog(true)}>
                 <UserPlus className="mr-2 h-4 w-4" /> Join a Team
               </Button>
@@ -388,23 +486,37 @@ export default function StudentSportsClubsPage() {
                         <Users className="h-5 w-5 text-primary" />
                         {club.name}
                       </CardTitle>
-                      <CardDescription>{club.code} - {getCategoryBadge(club.category)}</CardDescription>
+                      <CardDescription>
+                        {getCategoryBadge(club.category || 'other')}
+                      </CardDescription>
                     </div>
-                    {getRoleBadge(club.role)}
+                    <Badge variant="secondary">{club.status}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {club.designation && (
+                    {club.facultyAdvisorName && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Designation</span>
-                        <span className="font-medium">{club.designation}</span>
+                        <span className="text-muted-foreground">Faculty Advisor</span>
+                        <span className="font-medium">{club.facultyAdvisorName}</span>
+                      </div>
+                    )}
+                    {club.presidentName && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">President</span>
+                        <span className="font-medium">{club.presidentName}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Member Since</span>
-                      <span className="font-medium">{new Date(club.joinedAt).toLocaleDateString()}</span>
+                      <span className="text-muted-foreground">Members</span>
+                      <span className="font-medium">{club._count?.members || 0}{club.maxMembers ? `/${club.maxMembers}` : ''}</span>
                     </div>
+                    {club.meetingSchedule && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Meetings</span>
+                        <span className="font-medium">{club.meetingSchedule}</span>
+                      </div>
+                    )}
                   </div>
                   <Button variant="outline" className="w-full mt-4">
                     View Club Details <ExternalLink className="ml-2 h-4 w-4" />
@@ -418,7 +530,7 @@ export default function StudentSportsClubsPage() {
             <Card className="p-8 text-center">
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Club Memberships</h3>
-              <p className="text-muted-foreground mb-4">You haven't joined any clubs yet.</p>
+              <p className="text-muted-foreground mb-4">You haven&apos;t joined any clubs yet.</p>
               <Button onClick={() => setShowJoinClubDialog(true)}>
                 <UserPlus className="mr-2 h-4 w-4" /> Join a Club
               </Button>
@@ -435,39 +547,57 @@ export default function StudentSportsClubsPage() {
               <CardDescription>Matches, tournaments, and sports activities</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {upcomingSportsEvents.map(event => (
-                  <div key={event.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-red-100 rounded-lg">
-                        <Trophy className="h-6 w-6 text-red-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold">{event.name}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="capitalize">{event.sport}</Badge>
-                          {getLevelBadge(event.level)}
+              {sportsEvents.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No upcoming sports events</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {sportsEvents.map(event => {
+                    const isRegistered = registeredEventIds.has(event.id);
+                    return (
+                      <div key={event.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-red-100 rounded-lg">
+                            <Trophy className="h-6 w-6 text-red-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">{event.name}</h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="capitalize">{event.sport}</Badge>
+                              <Badge variant="secondary" className="capitalize">{event.eventType}</Badge>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {new Date(event.startDate).toLocaleDateString()}
+                              </span>
+                              {event.venue && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {event.venue}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {new Date(event.date).toLocaleDateString()}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {event.venue}
-                          </span>
-                        </div>
+                        {isRegistered ? (
+                          <Badge variant="default">Registered</Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => handleRegisterForEvent(event.id, 'sports')}
+                            disabled={registerForEventMutation.isPending}
+                          >
+                            Register
+                          </Button>
+                        )}
                       </div>
-                    </div>
-                    {event.registered ? (
-                      <Badge variant="default">Registered</Badge>
-                    ) : (
-                      <Button size="sm">Register</Button>
-                    )}
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -478,45 +608,64 @@ export default function StudentSportsClubsPage() {
               <CardDescription>Workshops, competitions, and club activities</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {upcomingClubEvents.map(event => (
-                  <div key={event.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-blue-100 rounded-lg">
-                        <Users className="h-6 w-6 text-blue-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold">{event.name}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline">{event.club}</Badge>
-                          <Badge variant="secondary" className="capitalize">{event.type}</Badge>
+              {clubEvents.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No upcoming club events</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {clubEvents.map(event => {
+                    const isRegistered = registeredEventIds.has(event.id);
+                    const isFull = event.maxParticipants && (event._count?.registrations || 0) >= event.maxParticipants;
+                    return (
+                      <div key={event.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-start gap-4">
+                          <div className="p-3 bg-blue-100 rounded-lg">
+                            <Users className="h-6 w-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">{event.name}</h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline">{event.club?.name || '-'}</Badge>
+                              <Badge variant="secondary" className="capitalize">{event.eventType}</Badge>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {new Date(event.startDate).toLocaleDateString()}
+                              </span>
+                              {event.venue && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {event.venue}
+                                </span>
+                              )}
+                              {event.maxParticipants && (
+                                <span className="flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  {event._count?.registrations || 0}/{event.maxParticipants}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {new Date(event.date).toLocaleDateString()}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {event.venue}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {event.currentRegistrations}/{event.maxParticipants}
-                          </span>
-                        </div>
+                        {isRegistered ? (
+                          <Badge variant="default">Registered</Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            disabled={!!isFull || registerForEventMutation.isPending}
+                            onClick={() => handleRegisterForEvent(event.id, 'club')}
+                          >
+                            {isFull ? 'Full' : 'Register'}
+                          </Button>
+                        )}
                       </div>
-                    </div>
-                    {event.registered ? (
-                      <Badge variant="default">Registered</Badge>
-                    ) : (
-                      <Button size="sm" disabled={event.currentRegistrations >= event.maxParticipants}>
-                        {event.currentRegistrations >= event.maxParticipants ? 'Full' : 'Register'}
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -526,7 +675,7 @@ export default function StudentSportsClubsPage() {
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">My Achievements</h2>
             <div className="text-sm text-muted-foreground">
-              Total Credits Earned: <span className="font-bold text-foreground">{myCreditsSummary.totalCredits}</span>
+              Total Credits Earned: <span className="font-bold text-foreground">{totalCredits}</span>
             </div>
           </div>
 
@@ -542,23 +691,27 @@ export default function StudentSportsClubsPage() {
                       <div>
                         <h3 className="font-semibold text-lg">{achievement.title}</h3>
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline" className="capitalize">{achievement.type}</Badge>
-                          {getCategoryBadge(achievement.category)}
-                          {getLevelBadge(achievement.level)}
+                          <Badge variant="outline" className="capitalize">{achievement.achievementType}</Badge>
+                          {achievement.level && getLevelBadge(achievement.level)}
                         </div>
                         <p className="text-sm text-muted-foreground mt-2">
-                          Awarded on {new Date(achievement.date).toLocaleDateString()}
+                          Awarded on {new Date(achievement.eventDate || achievement.createdAt).toLocaleDateString()}
                         </p>
+                        {achievement.eventName && (
+                          <p className="text-sm text-muted-foreground">
+                            Event: {achievement.eventName}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
-                      {achievement.verified && (
+                      {achievement.isVerified && (
                         <div className="flex items-center gap-1 text-green-600 mb-2">
                           <CheckCircle className="h-4 w-4" />
                           <span className="text-sm">Verified</span>
                         </div>
                       )}
-                      {achievement.creditsAwarded > 0 && (
+                      {achievement.creditsAwarded && achievement.creditsAwarded > 0 && (
                         <Badge variant="secondary" className="text-lg px-3 py-1">
                           +{achievement.creditsAwarded} credits
                         </Badge>
@@ -590,25 +743,36 @@ export default function StudentSportsClubsPage() {
             <DialogDescription>Browse and request to join available teams</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 max-h-96 overflow-y-auto">
-            {availableTeams.map(team => (
-              <div key={team.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <h4 className="font-semibold">{team.name}</h4>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {team.sport} - {team.category}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {team.members}/{team.maxMembers} members
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  disabled={team.members >= team.maxMembers}
-                >
-                  {team.members >= team.maxMembers ? 'Full' : 'Request to Join'}
-                </Button>
-              </div>
-            ))}
+            {availableTeams.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">No teams available to join</p>
+            ) : (
+              availableTeams.map(team => {
+                const memberCount = team._count?.members || 0;
+                const isFull = team.maxMembers && memberCount >= team.maxMembers;
+                return (
+                  <div key={team.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h4 className="font-semibold">{team.name}</h4>
+                      <p className="text-sm text-muted-foreground capitalize">
+                        {team.sport}
+                      </p>
+                      {team.maxMembers && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {memberCount}/{team.maxMembers} members
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={!!isFull || addTeamMemberMutation.isPending}
+                      onClick={() => handleJoinTeam(team.id)}
+                    >
+                      {isFull ? 'Full' : 'Request to Join'}
+                    </Button>
+                  </div>
+                );
+              })
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowJoinTeamDialog(false)}>Close</Button>
@@ -624,23 +788,34 @@ export default function StudentSportsClubsPage() {
             <DialogDescription>Browse and request to join available clubs</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 max-h-96 overflow-y-auto">
-            {availableClubs.map(club => (
-              <div key={club.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <h4 className="font-semibold">{club.name}</h4>
-                  <div className="mt-1">{getCategoryBadge(club.category)}</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {club.members}/{club.maxMembers} members
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  disabled={club.maxMembers && club.members >= club.maxMembers}
-                >
-                  {club.maxMembers && club.members >= club.maxMembers ? 'Full' : 'Request to Join'}
-                </Button>
-              </div>
-            ))}
+            {availableClubs.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">No clubs available to join</p>
+            ) : (
+              availableClubs.map(club => {
+                const memberCount = club._count?.members || 0;
+                const isFull = club.maxMembers && memberCount >= club.maxMembers;
+                return (
+                  <div key={club.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h4 className="font-semibold">{club.name}</h4>
+                      <div className="mt-1">{getCategoryBadge(club.category || 'other')}</div>
+                      {club.maxMembers && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {memberCount}/{club.maxMembers} members
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={!!isFull || addClubMemberMutation.isPending}
+                      onClick={() => handleJoinClub(club.id)}
+                    >
+                      {isFull ? 'Full' : 'Request to Join'}
+                    </Button>
+                  </div>
+                );
+              })
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowJoinClubDialog(false)}>Close</Button>

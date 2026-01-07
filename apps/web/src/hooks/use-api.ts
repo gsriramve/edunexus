@@ -7,6 +7,7 @@ import {
   staffApi,
   studentsApi,
   paymentsApi,
+  platformApi,
   type Tenant,
   type Department,
   type Staff,
@@ -22,6 +23,15 @@ import {
   type StudentListParams,
   type CreatePaymentOrderInput,
   type VerifyPaymentInput,
+  type PlatformTenant,
+  type PlatformStats,
+  type PlatformAuditLog,
+  type CreatePlatformTenantInput,
+  type InvitePrincipalInput,
+  type ExtendTrialInput,
+  type TenantStatusInput,
+  type TenantQueryParams,
+  type PlatformAuditLogQueryParams,
 } from '@/lib/api';
 
 // ============ Tenants Hooks ============
@@ -343,3 +353,158 @@ export {
   examKeys,
   examResultKeys,
 } from './use-exams';
+
+// ============ Platform Hooks (Super Admin) ============
+
+export const platformKeys = {
+  all: ['platform'] as const,
+  stats: () => [...platformKeys.all, 'stats'] as const,
+  tenants: () => [...platformKeys.all, 'tenants'] as const,
+  tenantList: (params?: TenantQueryParams) => [...platformKeys.tenants(), params] as const,
+  tenant: (id: string) => [...platformKeys.tenants(), id] as const,
+  auditLogs: () => [...platformKeys.all, 'audit-logs'] as const,
+  auditLogList: (params?: PlatformAuditLogQueryParams) => [...platformKeys.auditLogs(), params] as const,
+  tenantAuditLogs: (tenantId: string, params?: PlatformAuditLogQueryParams) =>
+    [...platformKeys.auditLogs(), tenantId, params] as const,
+};
+
+// Stats
+export function usePlatformStats() {
+  return useQuery({
+    queryKey: platformKeys.stats(),
+    queryFn: () => platformApi.getStats(),
+  });
+}
+
+// Tenant List
+export function usePlatformTenants(params?: TenantQueryParams) {
+  return useQuery({
+    queryKey: platformKeys.tenantList(params),
+    queryFn: () => platformApi.listTenants(params),
+  });
+}
+
+// Single Tenant
+export function usePlatformTenant(id: string) {
+  return useQuery({
+    queryKey: platformKeys.tenant(id),
+    queryFn: () => platformApi.getTenant(id),
+    enabled: !!id,
+  });
+}
+
+// Create Tenant
+export function useCreatePlatformTenant() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreatePlatformTenantInput) => platformApi.createTenant(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: platformKeys.tenants() });
+      queryClient.invalidateQueries({ queryKey: platformKeys.stats() });
+    },
+  });
+}
+
+// Extend Trial
+export function useExtendTrial() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ExtendTrialInput }) =>
+      platformApi.extendTrial(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: platformKeys.tenants() });
+      queryClient.invalidateQueries({ queryKey: platformKeys.stats() });
+    },
+  });
+}
+
+// Activate Tenant
+export function useActivateTenant() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data?: TenantStatusInput }) =>
+      platformApi.activateTenant(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: platformKeys.tenants() });
+      queryClient.invalidateQueries({ queryKey: platformKeys.stats() });
+    },
+  });
+}
+
+// Suspend Tenant
+export function useSuspendTenant() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data?: TenantStatusInput }) =>
+      platformApi.suspendTenant(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: platformKeys.tenants() });
+      queryClient.invalidateQueries({ queryKey: platformKeys.stats() });
+    },
+  });
+}
+
+// Reactivate Tenant
+export function useReactivateTenant() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data?: TenantStatusInput }) =>
+      platformApi.reactivateTenant(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: platformKeys.tenants() });
+      queryClient.invalidateQueries({ queryKey: platformKeys.stats() });
+    },
+  });
+}
+
+// Invite Principal
+export function useInvitePrincipal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tenantId, data }: { tenantId: string; data: InvitePrincipalInput }) =>
+      platformApi.invitePrincipal(tenantId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: platformKeys.tenants() });
+    },
+  });
+}
+
+// Resend Invitation
+export function useResendInvitation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ invitationId, message }: { invitationId: string; message?: string }) =>
+      platformApi.resendInvitation(invitationId, message),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: platformKeys.tenants() });
+    },
+  });
+}
+
+// Cancel Invitation
+export function useCancelInvitation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (invitationId: string) => platformApi.cancelInvitation(invitationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: platformKeys.tenants() });
+    },
+  });
+}
+
+// Audit Logs
+export function usePlatformAuditLogs(params?: PlatformAuditLogQueryParams) {
+  return useQuery({
+    queryKey: platformKeys.auditLogList(params),
+    queryFn: () => platformApi.getAuditLogs(params),
+  });
+}
+
+// Tenant Audit Logs
+export function useTenantAuditLogs(tenantId: string, params?: PlatformAuditLogQueryParams) {
+  return useQuery({
+    queryKey: platformKeys.tenantAuditLogs(tenantId, params),
+    queryFn: () => platformApi.getTenantAuditLogs(tenantId, params),
+    enabled: !!tenantId,
+  });
+}

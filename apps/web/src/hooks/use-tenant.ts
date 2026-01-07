@@ -1,28 +1,41 @@
 'use client';
 
+import { useUser } from '@clerk/nextjs';
 import { useParams, useSearchParams } from 'next/navigation';
 
 /**
- * Hook to get the current tenant ID from URL params or query string.
- * In production, this would come from the authenticated user's session or subdomain.
- * For development/testing, it can be passed via query param: ?tenantId=xxx
+ * Hook to get the current tenant ID.
+ * Priority:
+ * 1. Clerk user's publicMetadata.tenantId (for authenticated users with assigned tenant)
+ * 2. URL params (e.g., /[tenantId]/dashboard)
+ * 3. Query string (e.g., ?tenantId=xxx) - for development/testing
+ * 4. localStorage - for development/testing fallback
  */
 export function useTenantId(): string | null {
+  const { user, isLoaded } = useUser();
   const params = useParams();
   const searchParams = useSearchParams();
 
-  // Try to get from URL params first (e.g., /[tenantId]/dashboard)
+  // 1. First priority: Get from Clerk user's publicMetadata (production flow)
+  if (isLoaded && user) {
+    const metadata = user.publicMetadata as { tenantId?: string };
+    if (metadata?.tenantId) {
+      return metadata.tenantId;
+    }
+  }
+
+  // 2. Try to get from URL params (e.g., /[tenantId]/dashboard)
   if (params?.tenantId && typeof params.tenantId === 'string') {
     return params.tenantId;
   }
 
-  // Try to get from query string (e.g., ?tenantId=xxx)
+  // 3. Try to get from query string (e.g., ?tenantId=xxx) - for testing
   const queryTenantId = searchParams.get('tenantId');
   if (queryTenantId) {
     return queryTenantId;
   }
 
-  // For development, check localStorage for a saved tenant ID
+  // 4. For development, check localStorage for a saved tenant ID
   if (typeof window !== 'undefined') {
     const savedTenantId = localStorage.getItem('edunexus_tenant_id');
     if (savedTenantId) {

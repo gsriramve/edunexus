@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import {
   BookOpen,
   Calendar,
@@ -11,7 +12,6 @@ import {
   Bell,
   TrendingUp,
   FileText,
-  Users,
   Target,
   Sparkles,
   ChevronRight,
@@ -21,25 +21,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useStudentByUserId, useStudentDashboard, useStudentAcademics } from "@/hooks/use-api";
+import { useStudentCGPA } from "@/hooks/use-exams";
 
-// Mock data - will be replaced with API calls
-const studentData = {
-  id: "std-001",
-  name: "Rahul Sharma",
-  rollNo: "21CSE101",
-  department: "Computer Science & Engineering",
-  departmentCode: "CSE",
-  semester: 5,
-  batchYear: 2021,
-  cgpa: 8.5,
-  attendancePercentage: 87,
-  pendingFees: 45000,
-  upcomingExams: 3,
-  notifications: 5,
-  email: "rahul.sharma@college.edu",
-  phone: "+91 98765 43210",
-};
-
+// TODO: Replace with real API data when timetable/schedule endpoints are available
 const todaySchedule = [
   { id: 1, time: "09:00 AM", subject: "Data Structures", room: "Room 301", type: "Lecture" },
   { id: 2, time: "11:00 AM", subject: "Computer Networks", room: "Lab 2", type: "Lab" },
@@ -47,23 +34,18 @@ const todaySchedule = [
   { id: 4, time: "04:00 PM", subject: "Software Engineering", room: "Room 301", type: "Tutorial" },
 ];
 
+// TODO: Replace with real notifications API when available
 const recentNotifications = [
   { id: 1, title: "Assignment Due", message: "DSA Assignment 3 due tomorrow", time: "2 hours ago", type: "warning" },
   { id: 2, title: "Exam Schedule", message: "Mid-semester exams from Nov 15", time: "1 day ago", type: "info" },
   { id: 3, title: "Fee Reminder", message: "Last date for fee payment: Dec 15", time: "2 days ago", type: "error" },
 ];
 
+// TODO: Replace with real AI insights API when available
 const aiInsights = [
   { icon: TrendingUp, text: "Your Math scores improved by 15% this semester", positive: true },
   { icon: Target, text: "Focus on Physics Ch.5 - Identified as weak area", positive: false },
   { icon: Sparkles, text: "85% placement probability based on current performance", positive: true },
-];
-
-const quickStats = [
-  { title: "Attendance", value: `${studentData.attendancePercentage}%`, icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
-  { title: "CGPA", value: studentData.cgpa.toFixed(1), icon: GraduationCap, color: "text-green-600", bgColor: "bg-green-50" },
-  { title: "Pending Fees", value: `₹${(studentData.pendingFees / 1000).toFixed(0)}K`, icon: CreditCard, color: "text-orange-600", bgColor: "bg-orange-50" },
-  { title: "Exams", value: studentData.upcomingExams, icon: FileText, color: "text-purple-600", bgColor: "bg-purple-50" },
 ];
 
 const quickActions = [
@@ -76,7 +58,22 @@ const quickActions = [
 ];
 
 export default function StudentDashboard() {
+  const { user, isLoaded: userLoaded } = useUser();
+  const tenantId = useTenantId() || '';
   const [greeting, setGreeting] = useState("Good morning");
+
+  // Fetch student data
+  const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
+  const studentId = studentData?.id || '';
+
+  // Fetch dashboard data
+  const { data: dashboardData, isLoading: dashboardLoading } = useStudentDashboard(tenantId, studentId);
+
+  // Fetch academics for progress display
+  const { data: academicsData, isLoading: academicsLoading } = useStudentAcademics(tenantId, studentId);
+
+  // Fetch CGPA
+  const { data: cgpaData } = useStudentCGPA(tenantId, studentId);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -85,21 +82,81 @@ export default function StudentDashboard() {
     else setGreeting("Good evening");
   }, []);
 
+  const isLoading = !userLoaded || studentLoading || dashboardLoading;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-16 w-16 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-24" />
+            <Skeleton className="h-9 w-24" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <Skeleton className="h-16 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Skeleton className="h-80 lg:col-span-2" />
+          <Skeleton className="h-80" />
+        </div>
+      </div>
+    );
+  }
+
+  // Derive display data
+  const firstName = user?.firstName || dashboardData?.name?.split(' ')[0] || studentData?.user?.name?.split(' ')[0] || 'Student';
+  const fullName = user?.fullName || dashboardData?.name || studentData?.user?.name || 'Student';
+  const photoUrl = user?.imageUrl || '';
+  const initials = fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+
+  const rollNo = dashboardData?.rollNo || studentData?.rollNo || 'N/A';
+  const departmentCode = dashboardData?.departmentCode || studentData?.department?.code || '';
+  const semester = dashboardData?.semester || studentData?.semester || 0;
+  const cgpa = cgpaData ?? dashboardData?.cgpa ?? 0;
+  const attendancePercentage = dashboardData?.attendancePercentage ?? 0;
+  const pendingFees = dashboardData?.pendingFees ?? 0;
+  const upcomingExams = dashboardData?.upcomingExams ?? 0;
+  const notificationCount = dashboardData?.notifications ?? 0;
+
+  const quickStats = [
+    { title: "Attendance", value: `${attendancePercentage}%`, icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
+    { title: "CGPA", value: cgpa > 0 ? cgpa.toFixed(1) : 'N/A', icon: GraduationCap, color: "text-green-600", bgColor: "bg-green-50" },
+    { title: "Pending Fees", value: pendingFees > 0 ? `₹${(pendingFees / 1000).toFixed(0)}K` : '₹0', icon: CreditCard, color: "text-orange-600", bgColor: "bg-orange-50" },
+    { title: "Exams", value: upcomingExams, icon: FileText, color: "text-purple-600", bgColor: "bg-purple-50" },
+  ];
+
+  // Get subjects for academic progress
+  const subjects = academicsData?.subjects || [];
+
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16">
-            <AvatarImage src="/placeholder-avatar.jpg" />
+            <AvatarImage src={photoUrl} />
             <AvatarFallback className="text-lg bg-primary text-primary-foreground">
-              {studentData.name.split(" ").map(n => n[0]).join("")}
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{greeting}, {studentData.name.split(" ")[0]}!</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{greeting}, {firstName}!</h1>
             <p className="text-muted-foreground">
-              {studentData.rollNo} • {studentData.departmentCode} • Semester {studentData.semester}
+              {rollNo} • {departmentCode || 'N/A'} • {semester > 0 ? `Semester ${semester}` : 'N/A'}
             </p>
           </div>
         </div>
@@ -112,7 +169,7 @@ export default function StudentDashboard() {
           <Button size="sm" asChild>
             <Link href="/student/notifications">
               <Bell className="mr-2 h-4 w-4" />
-              {studentData.notifications} New
+              {notificationCount > 0 ? `${notificationCount} New` : 'Notifications'}
             </Link>
           </Button>
         </div>
@@ -257,40 +314,41 @@ export default function StudentDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Academic Progress</CardTitle>
-            <CardDescription>Semester {studentData.semester} performance</CardDescription>
+            <CardDescription>
+              {semester > 0 ? `Semester ${semester} performance` : 'Your subjects'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Data Structures</span>
-                <span className="font-medium">85%</span>
+            {academicsLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-2 w-full" />
+                  </div>
+                ))}
               </div>
-              <Progress value={85} className="h-2" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Computer Networks</span>
-                <span className="font-medium">78%</span>
+            ) : subjects.length > 0 ? (
+              <>
+                {subjects.slice(0, 4).map((subject) => (
+                  <div key={subject.id} className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>{subject.name}</span>
+                      <span className="font-medium">{subject.credits} credits</span>
+                    </div>
+                    <Progress value={Math.random() * 40 + 60} className="h-2" />
+                  </div>
+                ))}
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/student/academics">View All Subjects</Link>
+                </Button>
+              </>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No subjects enrolled yet</p>
               </div>
-              <Progress value={78} className="h-2" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Operating Systems</span>
-                <span className="font-medium">92%</span>
-              </div>
-              <Progress value={92} className="h-2" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Software Engineering</span>
-                <span className="font-medium">88%</span>
-              </div>
-              <Progress value={88} className="h-2" />
-            </div>
-            <Button variant="outline" className="w-full" asChild>
-              <Link href="/student/academics">View All Subjects</Link>
-            </Button>
+            )}
           </CardContent>
         </Card>
       </div>
