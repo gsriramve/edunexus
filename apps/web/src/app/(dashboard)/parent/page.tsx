@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import {
   GraduationCap,
   Calendar,
@@ -19,6 +20,7 @@ import {
   Bus,
   BookOpen,
   Award,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +34,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useParentChildren } from "@/hooks/use-parents";
+import { useStudentFees, useStudentAcademics } from "@/hooks/use-api";
+import { useStudentAttendanceStats } from "@/hooks/use-attendance";
+
+// TODO: Replace mock data with API calls when backend endpoints are implemented
+// Required endpoints:
+// - GET /parent/dashboard/activity - Recent activity for child
+// - GET /parent/dashboard/notifications - Parent notifications
+// - GET /parent/dashboard/events - Upcoming events
+// - GET /parent/dashboard/performance - Subject-wise performance
 
 // Mock data - Parent can have multiple children
 const children = [
@@ -111,8 +125,116 @@ const notifications = [
 ];
 
 export default function ParentDashboard() {
-  const [selectedChild, setSelectedChild] = useState("child-1");
-  const currentChild = childData[selectedChild as keyof typeof childData];
+  const { user } = useUser();
+  const tenantId = useTenantId() || '';
+  const [selectedChildId, setSelectedChildId] = useState<string>('');
+
+  // Fetch parent's children
+  const { data: childrenData, isLoading: childrenLoading } = useParentChildren(tenantId, user?.id || '');
+  const apiChildren = childrenData || [];
+
+  // Set first child as default when children load
+  useEffect(() => {
+    if (apiChildren.length > 0 && !selectedChildId) {
+      setSelectedChildId(apiChildren[0].id);
+    }
+  }, [apiChildren, selectedChildId]);
+
+  // Get selected child info from API
+  const currentApiChild = useMemo(() => {
+    const childRecord = apiChildren.find((c) => c.id === selectedChildId);
+    if (!childRecord) return null;
+    return {
+      id: childRecord.id,
+      name: `${childRecord.firstName} ${childRecord.lastName}`.trim() || 'Unknown',
+      rollNo: childRecord.rollNo || 'N/A',
+      department: childRecord.department?.name || 'N/A',
+      semester: childRecord.currentSemester || 1,
+    };
+  }, [apiChildren, selectedChildId]);
+
+  // Fetch additional data for selected child
+  const { data: feesData, isLoading: feesLoading } = useStudentFees(tenantId, selectedChildId);
+  const { data: academicsData, isLoading: academicsLoading } = useStudentAcademics(tenantId, selectedChildId);
+  const { data: attendanceStats, isLoading: attendanceLoading } = useStudentAttendanceStats(tenantId, selectedChildId);
+
+  // Calculate pending fees from API
+  const pendingFees = useMemo(() => {
+    if (feesData && Array.isArray(feesData)) {
+      return feesData
+        .filter((fee) => fee.status === 'pending' || fee.status === 'partial')
+        .reduce((sum, fee) => sum + (fee.amount - (fee.paidAmount || 0)), 0);
+    }
+    return 0;
+  }, [feesData]);
+
+  // Loading state
+  if (childrenLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-16 w-16 rounded-full" />
+            <div>
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-64 mt-2" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-48" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-5">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Skeleton className="h-96 lg:col-span-2" />
+          <Skeleton className="h-96" />
+        </div>
+      </div>
+    );
+  }
+
+  // No children state
+  if (apiChildren.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Parent Dashboard</h1>
+          <p className="text-muted-foreground">
+            Monitor your child's academic progress
+          </p>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="h-16 w-16 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">No Children Linked</h3>
+              <p>No children are currently linked to your account.</p>
+              <p className="text-sm mt-2">Please contact the school administration.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Use API data when available, fallback to mock for demo
+  // TODO: StudentAcademics API doesn't include cgpa, sgpa, rank, totalStudents yet
+  // When backend adds them, update to use real values
+  const currentChild = currentApiChild ? {
+    name: currentApiChild.name,
+    rollNo: currentApiChild.rollNo,
+    department: currentApiChild.department,
+    semester: currentApiChild.semester,
+    batchYear: 2021,
+    cgpa: 8.5, // Mock - StudentAcademics doesn't include this yet
+    sgpa: 8.7, // Mock - StudentAcademics doesn't include this yet
+    attendancePercentage: attendanceStats?.percentage || 0,
+    pendingFees: pendingFees,
+    rank: 12, // Mock - StudentAcademics doesn't include this yet
+    totalStudents: 120, // Mock - StudentAcademics doesn't include this yet
+  } : childData["child-1"];
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -161,17 +283,20 @@ export default function ParentDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          {children.length > 1 && (
-            <Select value={selectedChild} onValueChange={setSelectedChild}>
+          {apiChildren.length > 1 && (
+            <Select value={selectedChildId} onValueChange={setSelectedChildId}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Select child" />
               </SelectTrigger>
               <SelectContent>
-                {children.map((child) => (
-                  <SelectItem key={child.id} value={child.id}>
-                    {child.name} ({child.rollNo})
-                  </SelectItem>
-                ))}
+                {apiChildren.map((childRecord) => {
+                  const childName = `${childRecord.firstName} ${childRecord.lastName}`.trim() || 'Unknown';
+                  return (
+                    <SelectItem key={childRecord.id} value={childRecord.id}>
+                      {childName} ({childRecord.rollNo || 'N/A'})
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           )}

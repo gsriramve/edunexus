@@ -45,6 +45,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useStudents, useStudentStats } from "@/hooks/use-api";
+
+// TODO: Replace mock data with API calls when backend endpoints are implemented
+// Required endpoints:
+// - GET /students?departmentId=X - Filter students by department (already exists)
+// - GET /hod/students/stats - Department-specific student statistics
+// - GET /hod/students/at-risk - At-risk students in department
+// - GET /hod/students/top-performers - Top performers in department
+// - GET /hod/students/semester-overview - Semester-wise distribution
 
 // Mock department stats
 const departmentStudentStats = {
@@ -96,11 +107,85 @@ const topPerformers = [
 ];
 
 export default function HODStudentManagement() {
+  const tenantId = useTenantId() || '';
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSemester, setFilterSemester] = useState("all");
   const [filterSection, setFilterSection] = useState("all");
 
-  const filteredStudents = studentList.filter((student) => {
+  // Fetch students - filter by department when HOD's department is available
+  // TODO: Get HOD's department ID from user context/metadata
+  const { data: studentsData, isLoading: studentsLoading } = useStudents(tenantId, {
+    search: searchQuery || undefined,
+    // departmentId: hodDepartmentId, // TODO: Add department filter
+  });
+  const { data: studentStats, isLoading: statsLoading } = useStudentStats(tenantId);
+
+  // Extract students from paginated response
+  const apiStudents = studentsData?.data || [];
+
+  // Map API students to display format, or use mock data as fallback
+  const displayStudents = apiStudents.length > 0 ? apiStudents.map(student => ({
+    id: student.id,
+    rollNo: student.rollNo || '',
+    name: student.user?.name || 'Unknown',
+    semester: student.semester || 1,
+    section: student.section || 'A',
+    cgpa: 0, // TODO: Get from academics API
+    attendance: 0, // TODO: Get from attendance API
+    status: student.status || 'active',
+    atRisk: false, // TODO: Calculate based on attendance/grades
+  })) : studentList;
+
+  // Show loading skeleton while data loads
+  const isLoading = studentsLoading || statsLoading;
+  if (isLoading && !studentsData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-28" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-12 w-12 rounded-lg" />
+                  <div>
+                    <Skeleton className="h-4 w-16 mb-2" />
+                    <Skeleton className="h-7 w-12" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+    );
+  }
+
+  // Use API stats when available, fallback to mock
+  const stats = {
+    total: studentStats?.total || departmentStudentStats.total,
+    activeStudents: studentStats?.active || departmentStudentStats.activeStudents,
+    onLeave: departmentStudentStats.onLeave, // TODO: API doesn't have this
+    detained: departmentStudentStats.detained, // TODO: API doesn't have this
+    avgAttendance: departmentStudentStats.avgAttendance, // TODO: Get from attendance API
+    avgCGPA: departmentStudentStats.avgCGPA, // TODO: Get from academics API
+    atRisk: departmentStudentStats.atRisk, // TODO: Calculate from data
+  };
+
+  // Calculate at-risk students from display data
+  const atRiskStudentsList = displayStudents.filter(s => s.atRisk);
+
+  const filteredStudents = displayStudents.filter((student) => {
     const matchesSearch =
       student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       student.rollNo.toLowerCase().includes(searchQuery.toLowerCase());
@@ -156,7 +241,7 @@ export default function HODStudentManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{departmentStudentStats.total}</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
               </div>
             </div>
           </CardContent>
@@ -169,7 +254,7 @@ export default function HODStudentManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold">{departmentStudentStats.activeStudents}</p>
+                <p className="text-2xl font-bold">{stats.activeStudents}</p>
               </div>
             </div>
           </CardContent>
@@ -182,7 +267,7 @@ export default function HODStudentManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Attendance</p>
-                <p className="text-2xl font-bold">{departmentStudentStats.avgAttendance}%</p>
+                <p className="text-2xl font-bold">{stats.avgAttendance}%</p>
               </div>
             </div>
           </CardContent>
@@ -195,7 +280,7 @@ export default function HODStudentManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg CGPA</p>
-                <p className="text-2xl font-bold">{departmentStudentStats.avgCGPA}</p>
+                <p className="text-2xl font-bold">{stats.avgCGPA}</p>
               </div>
             </div>
           </CardContent>
@@ -208,7 +293,7 @@ export default function HODStudentManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">At Risk</p>
-                <p className="text-2xl font-bold text-red-600">{departmentStudentStats.atRisk}</p>
+                <p className="text-2xl font-bold text-red-600">{stats.atRisk}</p>
               </div>
             </div>
           </CardContent>
@@ -221,7 +306,7 @@ export default function HODStudentManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Detained</p>
-                <p className="text-2xl font-bold">{departmentStudentStats.detained}</p>
+                <p className="text-2xl font-bold">{stats.detained}</p>
               </div>
             </div>
           </CardContent>
@@ -427,7 +512,7 @@ export default function HODStudentManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {atRiskStudents.map((student) => (
+                {atRiskStudentsList.length > 0 ? atRiskStudentsList.map((student) => (
                   <div
                     key={student.id}
                     className="p-4 rounded-lg border border-red-200 bg-red-50"
@@ -477,7 +562,11 @@ export default function HODStudentManagement() {
                       )}
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No at-risk students found. All students are in good standing.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

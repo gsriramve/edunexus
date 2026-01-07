@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@clerk/nextjs';
 import {
   Trophy,
   Users,
@@ -16,7 +15,6 @@ import {
   UserPlus,
   CheckCircle,
   XCircle,
-  Filter,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,54 +46,30 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-
-// Mock data
-const mockTeams = [
-  { id: '1', name: 'Thunder', sport: 'cricket', category: 'men', members: 15, maxMembers: 20, coach: 'Prof. Sharma', captain: 'Rahul Sharma', status: 'active' },
-  { id: '2', name: 'Strikers', sport: 'football', category: 'men', members: 22, maxMembers: 25, coach: 'Prof. Kumar', captain: 'Amit Verma', status: 'active' },
-  { id: '3', name: 'Blazers', sport: 'basketball', category: 'women', members: 12, maxMembers: 15, coach: 'Prof. Reddy', captain: 'Priya Patel', status: 'active' },
-  { id: '4', name: 'Smashers', sport: 'badminton', category: 'mixed', members: 8, maxMembers: 12, coach: 'Prof. Das', captain: 'Vikram Singh', status: 'active' },
-];
-
-const mockClubs = [
-  { id: '1', name: 'Google Developer Student Club', code: 'GDSC', category: 'technical', members: 85, advisor: 'Prof. Tech', president: 'Aditya Kumar', status: 'active' },
-  { id: '2', name: 'Literary Society', code: 'LITSOC', category: 'literary', members: 45, advisor: 'Prof. English', president: 'Sneha Gupta', status: 'active' },
-  { id: '3', name: 'Drama Club', code: 'DRAMA', category: 'cultural', members: 32, advisor: 'Prof. Arts', president: 'Ravi Menon', status: 'active' },
-  { id: '4', name: 'NSS Unit', code: 'NSS', category: 'social', members: 120, advisor: 'Prof. Social', president: 'Kavita Sharma', status: 'active' },
-];
-
-const mockSportsEvents = [
-  { id: '1', name: 'Inter-College Cricket Tournament', sport: 'cricket', type: 'tournament', venue: 'Sports Ground', date: '2026-02-15', level: 'inter-college', participants: 120, status: 'scheduled' },
-  { id: '2', name: 'Football League Match - Finals', sport: 'football', type: 'match', venue: 'Football Field', date: '2026-01-20', level: 'college', participants: 22, status: 'ongoing' },
-  { id: '3', name: 'Basketball Trials', sport: 'basketball', type: 'trials', venue: 'Indoor Court', date: '2026-01-10', level: 'college', participants: 35, status: 'completed' },
-];
-
-const mockClubEvents = [
-  { id: '1', name: 'Hackathon 2026', club: 'GDSC', type: 'hackathon', venue: 'Main Auditorium', date: '2026-02-01', registrations: 150, maxParticipants: 200, status: 'scheduled' },
-  { id: '2', name: 'Poetry Slam', club: 'LITSOC', type: 'competition', venue: 'Seminar Hall', date: '2026-01-25', registrations: 25, maxParticipants: 30, status: 'scheduled' },
-  { id: '3', name: 'Annual Drama Fest', club: 'DRAMA', type: 'cultural', venue: 'Open Air Theatre', date: '2026-03-10', registrations: 80, maxParticipants: 100, status: 'scheduled' },
-];
-
-const mockAchievements = [
-  { id: '1', student: 'Rahul Sharma', title: 'Gold Medal - State Cricket', type: 'medal', category: 'sports', level: 'state', date: '2025-12-15', verified: true },
-  { id: '2', student: 'Aditya Kumar', title: 'Best Paper Award - TechFest', type: 'award', category: 'technical', level: 'national', date: '2025-11-20', verified: true },
-  { id: '3', student: 'Priya Patel', title: 'Best Athlete - Sports Day', type: 'trophy', category: 'sports', level: 'college', date: '2025-12-28', verified: false },
-];
-
-const mockActivityCredits = [
-  { id: '1', student: 'Rahul Sharma', rollNo: 'CS2021001', category: 'sports', activity: 'Cricket Team Captain', credits: 3, academicYear: '2025-26' },
-  { id: '2', student: 'Aditya Kumar', rollNo: 'CS2021002', category: 'technical', activity: 'GDSC Lead', credits: 2, academicYear: '2025-26' },
-  { id: '3', student: 'Kavita Sharma', rollNo: 'EC2021001', category: 'social', activity: 'NSS Coordinator', credits: 3, academicYear: '2025-26' },
-];
-
-const mockStats = {
-  totalTeams: 12,
-  totalClubs: 8,
-  upcomingSportsEvents: 5,
-  upcomingClubEvents: 8,
-  recentAchievements: 25,
-  totalCreditsAwarded: 156,
-};
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTenantId } from '@/hooks/use-tenant';
+import {
+  useSportsTeams,
+  useClubs,
+  useSportsEvents,
+  useClubEvents,
+  useAchievements,
+  useActivityCredits,
+  useSportsClubsStats,
+  useCreateTeam,
+  useDeleteTeam,
+  useCreateClub,
+  useDeleteClub,
+  useCreateSportsEvent,
+  useDeleteSportsEvent,
+  useCreateClubEvent,
+  useDeleteClubEvent,
+  useCreateAchievement,
+  useDeleteAchievement,
+  useVerifyAchievement,
+  useCreateActivityCredit,
+  useDeleteActivityCredit,
+} from '@/hooks/use-sports-clubs';
 
 const sportTypes = ['cricket', 'football', 'basketball', 'volleyball', 'badminton', 'table_tennis', 'tennis', 'athletics', 'swimming', 'chess', 'kabaddi', 'hockey'];
 const teamCategories = ['men', 'women', 'mixed'];
@@ -107,7 +81,7 @@ const eventLevels = ['college', 'inter-college', 'state', 'national', 'internati
 const activityCategories = ['sports', 'cultural', 'technical', 'social', 'ncc', 'nss'];
 
 export default function AdminSportsClubsPage() {
-  const { getToken } = useAuth();
+  const tenantId = useTenantId() || '';
   const [activeTab, setActiveTab] = useState('teams');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddTeamDialog, setShowAddTeamDialog] = useState(false);
@@ -118,6 +92,34 @@ export default function AdminSportsClubsPage() {
   const [showAddCreditDialog, setShowAddCreditDialog] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [selectedClub, setSelectedClub] = useState<any>(null);
+
+  // Data fetching hooks
+  const { data: teamsData, isLoading: teamsLoading } = useSportsTeams(tenantId);
+  const { data: clubsData, isLoading: clubsLoading } = useClubs(tenantId);
+  const { data: sportsEventsData, isLoading: sportsEventsLoading } = useSportsEvents(tenantId);
+  const { data: clubEventsData, isLoading: clubEventsLoading } = useClubEvents(tenantId);
+  const { data: achievementsData, isLoading: achievementsLoading } = useAchievements(tenantId);
+  const { data: activityCreditsData, isLoading: activityCreditsLoading } = useActivityCredits(tenantId);
+  const { data: stats, isLoading: statsLoading } = useSportsClubsStats(tenantId);
+
+  // Mutations
+  const deleteTeamMutation = useDeleteTeam(tenantId);
+  const deleteClubMutation = useDeleteClub(tenantId);
+  const deleteSportsEventMutation = useDeleteSportsEvent(tenantId);
+  const deleteClubEventMutation = useDeleteClubEvent(tenantId);
+  const deleteAchievementMutation = useDeleteAchievement(tenantId);
+  const verifyAchievementMutation = useVerifyAchievement(tenantId);
+  const deleteActivityCreditMutation = useDeleteActivityCredit(tenantId);
+
+  // Extract data from paginated responses
+  const teams = teamsData?.data || [];
+  const clubs = clubsData?.data || [];
+  const sportsEvents = sportsEventsData?.data || [];
+  const clubEvents = clubEventsData?.data || [];
+  const achievements = achievementsData?.data || [];
+  const activityCredits = activityCreditsData?.data || [];
+
+  const isLoading = teamsLoading || clubsLoading || sportsEventsLoading || clubEventsLoading || achievementsLoading || activityCreditsLoading || statsLoading;
 
   // Status badge helper
   const getStatusBadge = (status: string) => {
@@ -162,6 +164,26 @@ export default function AdminSportsClubsPage() {
     );
   };
 
+  // Loading state
+  if (isLoading || !tenantId) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96 mt-2" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-6">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -180,7 +202,7 @@ export default function AdminSportsClubsPage() {
             <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalTeams}</div>
+            <div className="text-2xl font-bold">{stats?.teams?.total || teams.length}</div>
             <p className="text-xs text-muted-foreground">Active teams</p>
           </CardContent>
         </Card>
@@ -190,7 +212,7 @@ export default function AdminSportsClubsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalClubs}</div>
+            <div className="text-2xl font-bold">{stats?.clubs?.total || clubs.length}</div>
             <p className="text-xs text-muted-foreground">Active clubs</p>
           </CardContent>
         </Card>
@@ -200,7 +222,7 @@ export default function AdminSportsClubsPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.upcomingSportsEvents}</div>
+            <div className="text-2xl font-bold">{stats?.events?.upcoming || 0}</div>
             <p className="text-xs text-muted-foreground">Upcoming</p>
           </CardContent>
         </Card>
@@ -210,7 +232,7 @@ export default function AdminSportsClubsPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.upcomingClubEvents}</div>
+            <div className="text-2xl font-bold">{stats?.events?.upcoming || 0}</div>
             <p className="text-xs text-muted-foreground">Upcoming</p>
           </CardContent>
         </Card>
@@ -220,7 +242,7 @@ export default function AdminSportsClubsPage() {
             <Medal className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.recentAchievements}</div>
+            <div className="text-2xl font-bold">{stats?.achievements?.total || achievements.length}</div>
             <p className="text-xs text-muted-foreground">Last 3 months</p>
           </CardContent>
         </Card>
@@ -230,7 +252,7 @@ export default function AdminSportsClubsPage() {
             <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalCreditsAwarded}</div>
+            <div className="text-2xl font-bold">{stats?.credits?.totalAwarded || 0}</div>
             <p className="text-xs text-muted-foreground">This year</p>
           </CardContent>
         </Card>
@@ -286,12 +308,18 @@ export default function AdminSportsClubsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {teams.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No sports teams found</p>
+                </div>
+              ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Team Name</TableHead>
                     <TableHead>Sport</TableHead>
-                    <TableHead>Category</TableHead>
+                    <TableHead>Academic Year</TableHead>
                     <TableHead>Members</TableHead>
                     <TableHead>Coach</TableHead>
                     <TableHead>Captain</TableHead>
@@ -300,14 +328,14 @@ export default function AdminSportsClubsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockTeams.map((team) => (
+                  {teams.map((team) => (
                     <TableRow key={team.id}>
                       <TableCell className="font-medium">{team.name}</TableCell>
                       <TableCell className="capitalize">{team.sport}</TableCell>
-                      <TableCell className="capitalize">{team.category}</TableCell>
-                      <TableCell>{team.members}/{team.maxMembers}</TableCell>
-                      <TableCell>{team.coach}</TableCell>
-                      <TableCell>{team.captain}</TableCell>
+                      <TableCell>{team.academicYear}</TableCell>
+                      <TableCell>{team._count?.members || 0}/{team.maxMembers}</TableCell>
+                      <TableCell>{team.coachName || '-'}</TableCell>
+                      <TableCell>{team.captainName || '-'}</TableCell>
                       <TableCell>{getStatusBadge(team.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -320,7 +348,7 @@ export default function AdminSportsClubsPage() {
                           <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive">
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteTeamMutation.mutate(team.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -329,6 +357,7 @@ export default function AdminSportsClubsPage() {
                   ))}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -372,11 +401,17 @@ export default function AdminSportsClubsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {clubs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No clubs found</p>
+                </div>
+              ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Club Name</TableHead>
-                    <TableHead>Code</TableHead>
+                    <TableHead>Venue</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Members</TableHead>
                     <TableHead>Faculty Advisor</TableHead>
@@ -386,14 +421,14 @@ export default function AdminSportsClubsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockClubs.map((club) => (
+                  {clubs.map((club) => (
                     <TableRow key={club.id}>
                       <TableCell className="font-medium">{club.name}</TableCell>
-                      <TableCell>{club.code}</TableCell>
+                      <TableCell>{club.venue || '-'}</TableCell>
                       <TableCell>{getCategoryBadge(club.category)}</TableCell>
-                      <TableCell>{club.members}</TableCell>
-                      <TableCell>{club.advisor}</TableCell>
-                      <TableCell>{club.president}</TableCell>
+                      <TableCell>{club._count?.members || 0}</TableCell>
+                      <TableCell>{club.facultyAdvisorName || '-'}</TableCell>
+                      <TableCell>{club.presidentName || '-'}</TableCell>
                       <TableCell>{getStatusBadge(club.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -406,7 +441,7 @@ export default function AdminSportsClubsPage() {
                           <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive">
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteClubMutation.mutate(club.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -415,6 +450,7 @@ export default function AdminSportsClubsPage() {
                   ))}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -469,6 +505,12 @@ export default function AdminSportsClubsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {sportsEvents.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No sports events found</p>
+                </div>
+              ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -477,22 +519,22 @@ export default function AdminSportsClubsPage() {
                     <TableHead>Type</TableHead>
                     <TableHead>Venue</TableHead>
                     <TableHead>Date</TableHead>
-                    <TableHead>Level</TableHead>
-                    <TableHead>Participants</TableHead>
+                    <TableHead>Opponent</TableHead>
+                    <TableHead>Registrations</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockSportsEvents.map((event) => (
+                  {sportsEvents.map((event) => (
                     <TableRow key={event.id}>
                       <TableCell className="font-medium">{event.name}</TableCell>
                       <TableCell className="capitalize">{event.sport}</TableCell>
-                      <TableCell className="capitalize">{event.type}</TableCell>
+                      <TableCell className="capitalize">{event.eventType}</TableCell>
                       <TableCell>{event.venue}</TableCell>
-                      <TableCell>{new Date(event.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{getLevelBadge(event.level)}</TableCell>
-                      <TableCell>{event.participants}</TableCell>
+                      <TableCell>{new Date(event.startDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{event.opponentTeam || '-'}</TableCell>
+                      <TableCell>{event._count?.registrations || 0}</TableCell>
                       <TableCell>{getStatusBadge(event.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -502,7 +544,7 @@ export default function AdminSportsClubsPage() {
                           <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive">
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteSportsEventMutation.mutate(event.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -511,6 +553,7 @@ export default function AdminSportsClubsPage() {
                   ))}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -548,8 +591,8 @@ export default function AdminSportsClubsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Clubs</SelectItem>
-                    {mockClubs.map(club => (
-                      <SelectItem key={club.id} value={club.id}>{club.code}</SelectItem>
+                    {clubs.map(club => (
+                      <SelectItem key={club.id} value={club.id}>{club.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -565,6 +608,12 @@ export default function AdminSportsClubsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {clubEvents.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No club events found</p>
+                </div>
+              ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -579,16 +628,16 @@ export default function AdminSportsClubsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockClubEvents.map((event) => (
+                  {clubEvents.map((event) => (
                     <TableRow key={event.id}>
                       <TableCell className="font-medium">{event.name}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">{event.club}</Badge>
+                        <Badge variant="outline">{event.club?.name || '-'}</Badge>
                       </TableCell>
-                      <TableCell className="capitalize">{event.type}</TableCell>
+                      <TableCell className="capitalize">{event.eventType}</TableCell>
                       <TableCell>{event.venue}</TableCell>
-                      <TableCell>{new Date(event.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{event.registrations}/{event.maxParticipants}</TableCell>
+                      <TableCell>{new Date(event.startDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{event._count?.registrations || 0}/{event.maxParticipants || '-'}</TableCell>
                       <TableCell>{getStatusBadge(event.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -598,7 +647,7 @@ export default function AdminSportsClubsPage() {
                           <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive">
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteClubEventMutation.mutate(event.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -607,6 +656,7 @@ export default function AdminSportsClubsPage() {
                   ))}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -661,6 +711,12 @@ export default function AdminSportsClubsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {achievements.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Medal className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No achievements found</p>
+                </div>
+              ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -675,16 +731,16 @@ export default function AdminSportsClubsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockAchievements.map((achievement) => (
+                  {achievements.map((achievement) => (
                     <TableRow key={achievement.id}>
-                      <TableCell className="font-medium">{achievement.student}</TableCell>
+                      <TableCell className="font-medium">{achievement.studentName || '-'}</TableCell>
                       <TableCell>{achievement.title}</TableCell>
-                      <TableCell className="capitalize">{achievement.type}</TableCell>
-                      <TableCell>{getCategoryBadge(achievement.category)}</TableCell>
+                      <TableCell className="capitalize">{achievement.achievementType}</TableCell>
+                      <TableCell>{getCategoryBadge(achievement.achievementType)}</TableCell>
                       <TableCell>{getLevelBadge(achievement.level)}</TableCell>
-                      <TableCell>{new Date(achievement.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(achievement.eventDate).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        {achievement.verified ? (
+                        {achievement.isVerified ? (
                           <CheckCircle className="h-5 w-5 text-green-500" />
                         ) : (
                           <XCircle className="h-5 w-5 text-gray-400" />
@@ -695,15 +751,15 @@ export default function AdminSportsClubsPage() {
                           <Button variant="ghost" size="sm">
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {!achievement.verified && (
-                            <Button variant="ghost" size="sm" className="text-green-600">
+                          {!achievement.isVerified && (
+                            <Button variant="ghost" size="sm" className="text-green-600" onClick={() => verifyAchievementMutation.mutate({ id: achievement.id, verifiedBy: 'admin' })}>
                               <CheckCircle className="h-4 w-4" />
                             </Button>
                           )}
                           <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive">
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteAchievementMutation.mutate(achievement.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -712,6 +768,7 @@ export default function AdminSportsClubsPage() {
                   ))}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -765,6 +822,12 @@ export default function AdminSportsClubsPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {activityCredits.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Star className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No activity credits found</p>
+                </div>
+              ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -778,12 +841,12 @@ export default function AdminSportsClubsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockActivityCredits.map((credit) => (
+                  {activityCredits.map((credit) => (
                     <TableRow key={credit.id}>
-                      <TableCell className="font-medium">{credit.student}</TableCell>
-                      <TableCell>{credit.rollNo}</TableCell>
-                      <TableCell>{getCategoryBadge(credit.category)}</TableCell>
-                      <TableCell>{credit.activity}</TableCell>
+                      <TableCell className="font-medium">{credit.studentName || '-'}</TableCell>
+                      <TableCell>{credit.studentId || '-'}</TableCell>
+                      <TableCell>{getCategoryBadge(credit.activityType)}</TableCell>
+                      <TableCell>{credit.activityName}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{credit.credits} credits</Badge>
                       </TableCell>
@@ -793,7 +856,7 @@ export default function AdminSportsClubsPage() {
                           <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive">
+                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteActivityCreditMutation.mutate(credit.id)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -802,6 +865,7 @@ export default function AdminSportsClubsPage() {
                   ))}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1009,8 +1073,8 @@ export default function AdminSportsClubsPage() {
                     <SelectValue placeholder="Select club" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockClubs.map(club => (
-                      <SelectItem key={club.id} value={club.id}>{club.code} - {club.name}</SelectItem>
+                    {clubs.map(club => (
+                      <SelectItem key={club.id} value={club.id}>{club.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

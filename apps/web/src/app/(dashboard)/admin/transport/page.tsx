@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Bus,
   MapPin,
@@ -18,6 +18,7 @@ import {
   MoreVertical,
   Eye,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,146 +57,82 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-
-// Mock data for demonstration
-const mockRoutes = [
-  {
-    id: "1",
-    name: "Route 1 - North Campus",
-    code: "R001",
-    startPoint: "Main Gate",
-    endPoint: "North Campus",
-    totalDistance: 15.5,
-    estimatedTime: 45,
-    fare: 2500,
-    status: "active",
-    stopsCount: 8,
-    vehiclesCount: 2,
-    passesCount: 45,
-  },
-  {
-    id: "2",
-    name: "Route 2 - South Campus",
-    code: "R002",
-    startPoint: "Main Gate",
-    endPoint: "South Campus",
-    totalDistance: 12.0,
-    estimatedTime: 35,
-    fare: 2000,
-    status: "active",
-    stopsCount: 6,
-    vehiclesCount: 1,
-    passesCount: 32,
-  },
-  {
-    id: "3",
-    name: "Route 3 - City Center",
-    code: "R003",
-    startPoint: "Main Gate",
-    endPoint: "City Center",
-    totalDistance: 20.0,
-    estimatedTime: 60,
-    fare: 3000,
-    status: "inactive",
-    stopsCount: 10,
-    vehiclesCount: 0,
-    passesCount: 0,
-  },
-];
-
-const mockVehicles = [
-  {
-    id: "1",
-    vehicleNumber: "KA-01-AB-1234",
-    vehicleType: "bus",
-    capacity: 40,
-    make: "Tata",
-    model: "Starbus",
-    driverName: "Rajesh Kumar",
-    driverPhone: "9876543210",
-    routeName: "Route 1 - North Campus",
-    status: "active",
-  },
-  {
-    id: "2",
-    vehicleNumber: "KA-01-CD-5678",
-    vehicleType: "bus",
-    capacity: 45,
-    make: "Ashok Leyland",
-    model: "Viking",
-    driverName: "Suresh Patil",
-    driverPhone: "9876543211",
-    routeName: "Route 1 - North Campus",
-    status: "active",
-  },
-  {
-    id: "3",
-    vehicleNumber: "KA-01-EF-9012",
-    vehicleType: "mini_bus",
-    capacity: 25,
-    make: "Force",
-    model: "Traveller",
-    driverName: "Mahesh Reddy",
-    driverPhone: "9876543212",
-    routeName: "Route 2 - South Campus",
-    status: "maintenance",
-  },
-];
-
-const mockPasses = [
-  {
-    id: "1",
-    passNumber: "TP000001",
-    studentName: "Alice Johnson",
-    rollNo: "CSE2021001",
-    routeName: "Route 1 - North Campus",
-    stopName: "Koramangala",
-    validUntil: "2026-06-30",
-    fare: 2500,
-    paidAmount: 2500,
-    paymentStatus: "paid",
-    status: "active",
-  },
-  {
-    id: "2",
-    passNumber: "TP000002",
-    studentName: "Bob Smith",
-    rollNo: "CSE2022002",
-    routeName: "Route 2 - South Campus",
-    stopName: "HSR Layout",
-    validUntil: "2026-06-30",
-    fare: 2000,
-    paidAmount: 1000,
-    paymentStatus: "partial",
-    status: "active",
-  },
-  {
-    id: "3",
-    passNumber: "TP000003",
-    studentName: "Carol White",
-    rollNo: "ECE2021003",
-    routeName: "Route 1 - North Campus",
-    stopName: "Indiranagar",
-    validUntil: "2026-06-30",
-    fare: 2500,
-    paidAmount: 0,
-    paymentStatus: "pending",
-    status: "active",
-  },
-];
-
-const stats = {
-  routes: { total: 3, active: 2 },
-  vehicles: { total: 3, active: 2 },
-  passes: { total: 77, active: 75, pendingPayments: 15 },
-  revenue: { totalFare: 192500, collected: 165000, pending: 27500 },
-};
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import {
+  useRoutes,
+  useVehicles,
+  usePasses,
+  useTransportStats,
+  useVehicleLocations,
+  useCreateRoute,
+  useCreateVehicle,
+  useCreatePass,
+  useDeleteRoute,
+  useDeleteVehicle,
+  useCancelPass,
+} from "@/hooks/use-transport";
 
 export default function AdminTransportPage() {
+  const tenantId = useTenantId() || '';
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddRouteOpen, setIsAddRouteOpen] = useState(false);
   const [isAddVehicleOpen, setIsAddVehicleOpen] = useState(false);
   const [isAddPassOpen, setIsAddPassOpen] = useState(false);
+
+  // Fetch data from API
+  const { data: routesData, isLoading: routesLoading } = useRoutes(tenantId);
+  const { data: vehiclesData, isLoading: vehiclesLoading } = useVehicles(tenantId);
+  const { data: passesData, isLoading: passesLoading } = usePasses(tenantId);
+  const { data: statsData, isLoading: statsLoading } = useTransportStats(tenantId);
+
+  // Extract arrays from paginated responses
+  const routes = routesData?.data || [];
+  const vehicles = vehiclesData?.data || [];
+  const passes = passesData?.data || [];
+
+  // Mutations for CRUD operations
+  const createRouteMutation = useCreateRoute(tenantId);
+  const createVehicleMutation = useCreateVehicle(tenantId);
+  const createPassMutation = useCreatePass(tenantId);
+  const deleteRouteMutation = useDeleteRoute(tenantId);
+  const deleteVehicleMutation = useDeleteVehicle(tenantId);
+  const cancelPassMutation = useCancelPass(tenantId);
+
+  const isLoading = routesLoading || vehiclesLoading || passesLoading || statsLoading;
+
+  // Calculate stats - use API data when available, fallback to derived stats
+  const stats = useMemo(() => {
+    const pendingPaymentPasses = passes.filter((p) => p.paymentStatus === 'pending').length;
+    const monthlyRev = statsData?.monthlyRevenue || 0;
+
+    if (statsData) {
+      return {
+        routes: {
+          total: statsData.totalRoutes || 0,
+          active: statsData.activeRoutes || 0,
+        },
+        vehicles: {
+          total: statsData.totalVehicles || 0,
+          active: statsData.activeVehicles || 0,
+        },
+        passes: {
+          active: statsData.activePasses || 0,
+          pendingPayments: pendingPaymentPasses,
+        },
+        revenue: {
+          collected: monthlyRev,
+          pending: 0, // Not available in API
+        },
+      };
+    }
+    return {
+      routes: { total: routes.length, active: routes.filter((r) => r.isActive).length },
+      vehicles: { total: vehicles.length, active: vehicles.filter((v) => v.isActive).length },
+      passes: { active: passes.filter((p) => p.status === 'active').length, pendingPayments: pendingPaymentPasses },
+      revenue: { collected: 0, pending: 0 },
+    };
+  }, [statsData, routes, vehicles, passes]);
 
   const getStatusBadge = (status: string) => {
     const statusStyles: Record<string, string> = {
@@ -224,6 +161,25 @@ export default function AdminTransportPage() {
       </Badge>
     );
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-96 mt-2" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -417,60 +373,73 @@ export default function AdminTransportPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockRoutes.map((route) => (
-                  <TableRow key={route.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{route.name}</p>
-                        <p className="text-sm text-muted-foreground">{route.code}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-3 w-3" />
-                        {route.startPoint} → {route.endPoint}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <p>{route.totalDistance} km</p>
-                        <p className="text-muted-foreground">{route.estimatedTime} min</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>₹{route.fare}/month</TableCell>
-                    <TableCell>{route.stopsCount}</TableCell>
-                    <TableCell>{route.vehiclesCount}</TableCell>
-                    <TableCell>{route.passesCount}</TableCell>
-                    <TableCell>{getStatusBadge(route.status)}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <MapPin className="h-4 w-4 mr-2" />
-                            Manage Stops
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit Route
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {routes.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      <Route className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No routes found</p>
+                      <p className="text-sm">Click "Add Route" to create your first route</p>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  routes.map((route) => (
+                    <TableRow key={route.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{route.name}</p>
+                          <p className="text-sm text-muted-foreground">{route.code}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-sm">
+                          <MapPin className="h-3 w-3" />
+                          {route.startLocation || 'N/A'} → {route.endLocation || 'N/A'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <p>{route.distanceKm || 0} km</p>
+                          <p className="text-muted-foreground">{route.estimatedDurationMinutes || 0} min</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>N/A</TableCell>
+                      <TableCell>{route._count?.stops || 0}</TableCell>
+                      <TableCell>{route.vehicleId ? 1 : 0}</TableCell>
+                      <TableCell>{route._count?.passes || 0}</TableCell>
+                      <TableCell>{getStatusBadge(route.isActive ? 'active' : 'inactive')}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <MapPin className="h-4 w-4 mr-2" />
+                              Manage Stops
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit Route
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => deleteRouteMutation.mutate(route.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </Card>
@@ -553,7 +522,7 @@ export default function AdminTransportPage() {
                         <SelectValue placeholder="Select route" />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockRoutes.map((route) => (
+                        {routes.map((route: { id: string; name: string }) => (
                           <SelectItem key={route.id} value={route.id}>
                             {route.name}
                           </SelectItem>
@@ -586,59 +555,74 @@ export default function AdminTransportPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockVehicles.map((vehicle) => (
-                  <TableRow key={vehicle.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-blue-50">
-                          <Bus className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{vehicle.vehicleNumber}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {vehicle.make} {vehicle.model}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="capitalize">{vehicle.vehicleType.replace("_", " ")}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p>{vehicle.driverName}</p>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {vehicle.driverPhone}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{vehicle.routeName}</TableCell>
-                    <TableCell>{vehicle.capacity} seats</TableCell>
-                    <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Navigation className="h-4 w-4 mr-2" />
-                            Track Location
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {vehicles.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <Bus className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No vehicles found</p>
+                      <p className="text-sm">Click "Add Vehicle" to register your first vehicle</p>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  vehicles.map((vehicle) => (
+                    <TableRow key={vehicle.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-blue-50">
+                            <Bus className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{vehicle.vehicleNumber}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {vehicle.make || 'N/A'} {vehicle.model || ''}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="capitalize">{vehicle.type.replace("_", " ")}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p>{vehicle.driverName || 'Unassigned'}</p>
+                          {vehicle.driverPhone && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {vehicle.driverPhone}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{vehicle.currentRouteId ? 'Assigned' : 'Unassigned'}</TableCell>
+                      <TableCell>{vehicle.capacity} seats</TableCell>
+                      <TableCell>{getStatusBadge(vehicle.isActive ? 'active' : 'inactive')}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Navigation className="h-4 w-4 mr-2" />
+                              Track Location
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => deleteVehicleMutation.mutate(vehicle.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </Card>
@@ -693,9 +677,9 @@ export default function AdminTransportPage() {
                         <SelectValue placeholder="Select route" />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockRoutes.map((route) => (
+                        {routes.map((route: { id: string; name: string; fare?: number }) => (
                           <SelectItem key={route.id} value={route.id}>
-                            {route.name} (₹{route.fare}/month)
+                            {route.name} (₹{route.fare || 0}/month)
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -751,57 +735,69 @@ export default function AdminTransportPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockPasses.map((pass) => (
-                  <TableRow key={pass.id}>
-                    <TableCell className="font-mono">{pass.passNumber}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{pass.studentName}</p>
-                        <p className="text-sm text-muted-foreground">{pass.rollNo}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{pass.routeName}</TableCell>
-                    <TableCell>{pass.stopName}</TableCell>
-                    <TableCell>{new Date(pass.validUntil).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p>₹{pass.fare}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Paid: ₹{pass.paidAmount}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getPaymentBadge(pass.paymentStatus)}</TableCell>
-                    <TableCell>{getStatusBadge(pass.status)}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <IndianRupee className="h-4 w-4 mr-2" />
-                            Record Payment
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Cancel Pass
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {passes.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No transport passes found</p>
+                      <p className="text-sm">Click "Issue Pass" to create a new pass</p>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  passes.map((pass) => (
+                    <TableRow key={pass.id}>
+                      <TableCell className="font-mono">{pass.id.slice(0, 8)}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">
+                            {pass.student ? `${pass.student.user.firstName} ${pass.student.user.lastName}` : 'N/A'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">{pass.student?.rollNo || 'N/A'}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>{pass.route?.name || 'N/A'}</TableCell>
+                      <TableCell>{pass.boardingStop?.name || pass.dropStop?.name || 'N/A'}</TableCell>
+                      <TableCell>{new Date(pass.validTo).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p>₹{pass.amount}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getPaymentBadge(pass.paymentStatus)}</TableCell>
+                      <TableCell>{getStatusBadge(pass.status)}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <IndianRupee className="h-4 w-4 mr-2" />
+                              Record Payment
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => cancelPassMutation.mutate(pass.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Cancel Pass
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </Card>
@@ -839,46 +835,55 @@ export default function AdminTransportPage() {
               <div className="mt-6 space-y-4">
                 <h4 className="font-medium">Active Vehicles</h4>
                 <div className="grid gap-4 md:grid-cols-3">
-                  {mockVehicles
-                    .filter((v) => v.status === "active")
-                    .map((vehicle) => (
-                      <Card key={vehicle.id}>
-                        <CardContent className="pt-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-full bg-green-100">
-                                <Bus className="h-4 w-4 text-green-600" />
+                  {vehicles.filter((v) => v.isActive).length === 0 ? (
+                    <div className="col-span-3 text-center py-8 text-muted-foreground">
+                      <Bus className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No active vehicles</p>
+                    </div>
+                  ) : (
+                    vehicles
+                      .filter((v) => v.isActive)
+                      .map((vehicle) => (
+                        <Card key={vehicle.id}>
+                          <CardContent className="pt-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-full bg-green-100">
+                                  <Bus className="h-4 w-4 text-green-600" />
+                                </div>
+                                <div>
+                                  <p className="font-medium">{vehicle.vehicleNumber}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {vehicle.currentRouteId ? 'On Route' : 'Unassigned'}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-medium">{vehicle.vehicleNumber}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {vehicle.routeName}
-                                </p>
+                              <Badge className="bg-green-100 text-green-800">Online</Badge>
+                            </div>
+                            <div className="mt-4 space-y-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                <span>Last updated: N/A</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Navigation className="h-4 w-4 text-muted-foreground" />
+                                <span>Speed: N/A</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                <span>Location: N/A</span>
                               </div>
                             </div>
-                            <Badge className="bg-green-100 text-green-800">Online</Badge>
-                          </div>
-                          <div className="mt-4 space-y-2 text-sm">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                              <span>Last updated: 2 min ago</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Navigation className="h-4 w-4 text-muted-foreground" />
-                              <span>Speed: 35 km/h</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <span>Near: Koramangala</span>
-                            </div>
-                          </div>
-                          <Button variant="outline" size="sm" className="w-full mt-4">
-                            <Phone className="h-4 w-4 mr-2" />
-                            Call Driver
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
+                            {vehicle.driverPhone && (
+                              <Button variant="outline" size="sm" className="w-full mt-4">
+                                <Phone className="h-4 w-4 mr-2" />
+                                Call Driver
+                              </Button>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))
+                  )}
                 </div>
               </div>
             </CardContent>

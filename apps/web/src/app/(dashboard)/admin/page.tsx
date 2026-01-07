@@ -26,6 +26,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useUser } from "@clerk/nextjs";
+
+// TODO: Replace mock data with API calls when backend endpoints are implemented
+// Required endpoints:
+// - GET /admin/dashboard/stats - Overall admin statistics
+// - GET /admin/dashboard/collections - Recent fee collections
+// - GET /admin/dashboard/applications - Pending admission applications
+// - GET /admin/dashboard/certificates - Pending certificate requests
+// - GET /admin/dashboard/tasks - Upcoming admin tasks
+// - GET /admin/dashboard/announcements - Recent announcements
 
 // Mock admin staff data
 const adminInfo = {
@@ -84,7 +96,40 @@ const recentAnnouncements = [
 ];
 
 export default function AdminStaffDashboard() {
+  const tenantId = useTenantId() || '';
+  const { user, isLoaded: userLoaded } = useUser();
   const collectionProgress = (dashboardStats.monthlyCollected / dashboardStats.monthlyTarget) * 100;
+
+  // Loading state
+  if (!tenantId || !userLoaded) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-48 mt-2" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-28" />
+            <Skeleton className="h-10 w-28" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-6">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-48" />
+        <div className="grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-72" />
+          <Skeleton className="h-72" />
+        </div>
+      </div>
+    );
+  }
+
+  // Get user display name
+  const displayName = user?.fullName || user?.firstName || adminInfo.name;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -129,7 +174,7 @@ export default function AdminStaffDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
           <p className="text-muted-foreground">
-            {adminInfo.name} • {adminInfo.role}
+            {displayName} • {adminInfo.role}
           </p>
         </div>
         <div className="flex items-center gap-2">

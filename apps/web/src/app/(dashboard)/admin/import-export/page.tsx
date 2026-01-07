@@ -58,10 +58,9 @@ import {
   ImportValidationResult,
   ImportExportStats,
 } from '@/lib/api';
-
-// Mock tenant ID - in production would come from auth context
-const TENANT_ID = 'cmk2l82k00001viari7idl59u';
-const CURRENT_USER_ID = 'user-001';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTenantId } from '@/hooks/use-tenant';
+import { useUser } from '@clerk/nextjs';
 
 const ENTITY_TYPES: { value: ImportEntityType; label: string; description: string }[] = [
   { value: 'students', label: 'Students', description: 'Student records with personal and academic info' },
@@ -114,6 +113,9 @@ function formatFileSize(bytes: number) {
 }
 
 export default function ImportExportPage() {
+  const tenantId = useTenantId() || '';
+  const { user } = useUser();
+  const currentUserId = user?.id || '';
   const [activeTab, setActiveTab] = useState('import');
   const [stats, setStats] = useState<ImportExportStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -143,43 +145,47 @@ export default function ImportExportPage() {
 
   // Load stats on mount
   const loadStats = useCallback(async () => {
+    if (!tenantId) return;
     try {
-      const data = await importExportApi.getStats(TENANT_ID);
+      const data = await importExportApi.getStats(tenantId);
       setStats(data);
     } catch (error) {
       console.error('Failed to load stats:', error);
     }
-  }, []);
+  }, [tenantId]);
 
   // Load import jobs
   const loadImportJobs = useCallback(async () => {
+    if (!tenantId) return;
     try {
-      const response = await importExportApi.listImportJobs(TENANT_ID, { limit: 20 });
+      const response = await importExportApi.listImportJobs(tenantId, { limit: 20 });
       setImportJobs(response.data);
     } catch (error) {
       console.error('Failed to load import jobs:', error);
     }
-  }, []);
+  }, [tenantId]);
 
   // Load export jobs
   const loadExportJobs = useCallback(async () => {
+    if (!tenantId) return;
     try {
-      const response = await importExportApi.listExportJobs(TENANT_ID, { limit: 20 });
+      const response = await importExportApi.listExportJobs(tenantId, { limit: 20 });
       setExportJobs(response.data);
     } catch (error) {
       console.error('Failed to load export jobs:', error);
     }
-  }, []);
+  }, [tenantId]);
 
   // Load templates
   const loadTemplates = useCallback(async () => {
+    if (!tenantId) return;
     try {
-      const response = await importExportApi.listTemplates(TENANT_ID, { limit: 50 });
+      const response = await importExportApi.listTemplates(tenantId, { limit: 50 });
       setTemplates(response.data);
     } catch (error) {
       console.error('Failed to load templates:', error);
     }
-  }, []);
+  }, [tenantId]);
 
   // Initial load
   useState(() => {
@@ -198,8 +204,9 @@ export default function ImportExportPage() {
 
   // Download sample template
   const handleDownloadTemplate = async (entityType: ImportEntityType) => {
+    if (!tenantId) return;
     try {
-      const blob = await importExportApi.downloadSampleTemplate(TENANT_ID, entityType);
+      const blob = await importExportApi.downloadSampleTemplate(tenantId, entityType);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -215,15 +222,15 @@ export default function ImportExportPage() {
 
   // Upload and validate
   const handleUploadAndValidate = async () => {
-    if (!selectedFile || !selectedEntityType) return;
+    if (!selectedFile || !selectedEntityType || !tenantId || !currentUserId) return;
 
     setIsImporting(true);
     try {
       const result = await importExportApi.uploadAndValidate(
-        TENANT_ID,
+        tenantId,
         selectedFile,
         selectedEntityType,
-        CURRENT_USER_ID
+        currentUserId
       );
       setImportJob(result.job);
       setValidationResult(result.validation);
@@ -236,12 +243,12 @@ export default function ImportExportPage() {
 
   // Process import
   const handleProcessImport = async () => {
-    if (!selectedFile || !importJob) return;
+    if (!selectedFile || !importJob || !tenantId) return;
 
     setIsImporting(true);
     try {
-      await importExportApi.processImportJob(TENANT_ID, importJob.id, selectedFile);
-      const updatedJob = await importExportApi.getImportJob(TENANT_ID, importJob.id);
+      await importExportApi.processImportJob(tenantId, importJob.id, selectedFile);
+      const updatedJob = await importExportApi.getImportJob(tenantId, importJob.id);
       setImportJob(updatedJob);
       loadStats();
       loadImportJobs();
@@ -254,15 +261,15 @@ export default function ImportExportPage() {
 
   // Quick import
   const handleQuickImport = async () => {
-    if (!selectedFile || !selectedEntityType) return;
+    if (!selectedFile || !selectedEntityType || !tenantId || !currentUserId) return;
 
     setIsImporting(true);
     try {
       const result = await importExportApi.quickImport(
-        TENANT_ID,
+        tenantId,
         selectedFile,
         selectedEntityType,
-        CURRENT_USER_ID,
+        currentUserId,
         updateExisting
       );
       setImportJob(result.job);
@@ -277,14 +284,14 @@ export default function ImportExportPage() {
 
   // Export data
   const handleExport = async () => {
-    if (!exportEntityType) return;
+    if (!exportEntityType || !tenantId || !currentUserId) return;
 
     setIsExporting(true);
     try {
-      const blob = await importExportApi.quickExport(TENANT_ID, {
+      const blob = await importExportApi.quickExport(tenantId, {
         entityType: exportEntityType,
         format: exportFormat,
-        createdById: CURRENT_USER_ID,
+        createdById: currentUserId,
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -935,7 +942,8 @@ export default function ImportExportPage() {
                             variant="ghost"
                             size="sm"
                             onClick={async () => {
-                              await importExportApi.deleteTemplate(TENANT_ID, template.id);
+                              if (!tenantId) return;
+                              await importExportApi.deleteTemplate(tenantId, template.id);
                               loadTemplates();
                             }}
                           >

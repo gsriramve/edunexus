@@ -508,3 +508,8 @@ export function useTenantAuditLogs(tenantId: string, params?: PlatformAuditLogQu
     enabled: !!tenantId,
   });
 }
+
+// ============ Parent Hooks ============
+// Parent hooks are in a separate file: use-parents.ts
+// Re-export them for convenience
+export { useParentChildren, useParentProfile, useParentChild, parentKeys } from './use-parents';

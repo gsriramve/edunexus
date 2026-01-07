@@ -50,6 +50,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+
+// TODO: Replace mock data with API calls when backend endpoints are implemented
+// Required endpoints:
+// - GET /lab-assistant/labs - Labs assigned to this assistant
+// - GET /lab-assistant/equipment?labId=X - Equipment inventory by lab
+// - GET /lab-assistant/equipment/stats - Equipment status statistics
+// - POST /lab-assistant/equipment/issues - Report new equipment issue
+// - GET /lab-assistant/equipment/issues - List reported issues
+// - GET /lab-assistant/equipment/maintenance - Maintenance history
+// - PUT /lab-assistant/equipment/:id/status - Update equipment status
 
 // Mock data
 const labs = [
@@ -91,6 +103,7 @@ const issueReports = [
 ];
 
 export default function LabEquipment() {
+  const tenantId = useTenantId() || '';
   const [selectedLab, setSelectedLab] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");

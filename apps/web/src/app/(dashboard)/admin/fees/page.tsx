@@ -56,6 +56,15 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+
+// TODO: Replace mock data with API calls when backend endpoints are implemented
+// The following data types will need endpoints:
+// - GET /fees/admin/stats - Collection stats (today, week, month, pending, overdue)
+// - GET /fees/admin/categories - Fee categories with collected/pending amounts
+// - GET /fees/admin/pending-students - Students with pending fees
+// - GET /fees/admin/transactions - Recent transactions
 
 // Mock data
 const collectionStats = {
@@ -110,7 +119,15 @@ const feeTypes = [
 ];
 
 export default function FeeCollectionPage() {
+  const tenantId = useTenantId() || '';
   const [selectedTab, setSelectedTab] = useState("collect");
+
+  // TODO: Replace with actual API hooks when backend is implemented
+  // const { data: statsData, isLoading: statsLoading } = useFeeStats(tenantId);
+  // const { data: categoriesData, isLoading: categoriesLoading } = useFeeCategories(tenantId);
+  // const { data: pendingStudentsData, isLoading: pendingLoading } = usePendingFeeStudents(tenantId);
+  // const { data: transactionsData, isLoading: transactionsLoading } = useRecentTransactions(tenantId);
+  const isLoading = false; // Set to true when actual data loading is implemented
   const [searchQuery, setSearchQuery] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
   const [semesterFilter, setSemesterFilter] = useState("all");
@@ -169,6 +186,25 @@ export default function FeeCollectionPage() {
         return <IndianRupee className="h-4 w-4" />;
     }
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-96 mt-2" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-28" />
+          ))}
+        </div>
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

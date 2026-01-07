@@ -37,6 +37,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+
+// TODO: Replace mock data with API calls when backend endpoints are implemented
+// Required endpoints:
+// - GET /lab-assistant/labs - Labs assigned to this assistant
+// - GET /lab-assistant/batches - Batches for a lab
+// - GET /lab-assistant/students?batchId=X - Students in a batch for attendance
+// - GET /lab-assistant/attendance/history - Past attendance records
+// - POST /lab-assistant/attendance - Submit attendance for a lab session
+// - GET /lab-assistant/attendance/low - Students with low attendance
+// - POST /lab-assistant/attendance/notify - Notify student/parent about low attendance
 
 // Mock data
 const labs = [
@@ -84,6 +96,7 @@ const lowAttendanceStudents = [
 ];
 
 export default function LabAttendance() {
+  const tenantId = useTenantId() || '';
   const [selectedLab, setSelectedLab] = useState(labs[0].id);
   const [selectedBatch, setSelectedBatch] = useState(batches[0].id);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);

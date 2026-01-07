@@ -69,9 +69,8 @@ import {
   Frequency,
   ColumnDefinition,
 } from '@/lib/api';
-
-// Mock tenant ID - in production would come from auth context
-const TENANT_ID = 'cmk2l82k00001viari7idl59u';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTenantId } from '@/hooks/use-tenant';
 
 const CATEGORY_OPTIONS: { value: ReportCategory; label: string }[] = [
   { value: 'academic', label: 'Academic' },
@@ -163,6 +162,7 @@ function formatDate(date: string | null | undefined): string {
 }
 
 export default function AdminReportsPage() {
+  const tenantId = useTenantId() || '';
   const [activeTab, setActiveTab] = useState('templates');
   const [stats, setStats] = useState<ReportStats | null>(null);
   const [templates, setTemplates] = useState<ReportTemplate[]>([]);
@@ -202,17 +202,19 @@ export default function AdminReportsPage() {
   });
 
   const fetchStats = useCallback(async () => {
+    if (!tenantId) return;
     try {
-      const data = await reportsApi.getStats(TENANT_ID);
+      const data = await reportsApi.getStats(tenantId);
       setStats(data);
     } catch (err) {
       console.error('Failed to fetch stats:', err);
     }
-  }, []);
+  }, [tenantId]);
 
   const fetchTemplates = useCallback(async () => {
+    if (!tenantId) return;
     try {
-      const data = await reportsApi.listTemplates(TENANT_ID, {
+      const data = await reportsApi.listTemplates(tenantId, {
         category: (templateFilter.category as ReportCategory) || undefined,
         dataSource: (templateFilter.dataSource as DataSource) || undefined,
         search: templateFilter.search || undefined,
@@ -223,11 +225,12 @@ export default function AdminReportsPage() {
     } catch (err) {
       console.error('Failed to fetch templates:', err);
     }
-  }, [templateFilter, templatePage]);
+  }, [tenantId, templateFilter, templatePage]);
 
   const fetchJobs = useCallback(async () => {
+    if (!tenantId) return;
     try {
-      const data = await reportsApi.listJobs(TENANT_ID, {
+      const data = await reportsApi.listJobs(tenantId, {
         status: jobFilter.status as ReportJobStatus || undefined,
         format: jobFilter.format as ReportFormat || undefined,
         limit: PAGE_SIZE,
@@ -237,11 +240,12 @@ export default function AdminReportsPage() {
     } catch (err) {
       console.error('Failed to fetch jobs:', err);
     }
-  }, [jobFilter, jobPage]);
+  }, [tenantId, jobFilter, jobPage]);
 
   const fetchScheduledReports = useCallback(async () => {
+    if (!tenantId) return;
     try {
-      const data = await reportsApi.listScheduledReports(TENANT_ID, {
+      const data = await reportsApi.listScheduledReports(tenantId, {
         frequency: scheduledFilter.frequency as Frequency || undefined,
         isActive: scheduledFilter.isActive ? scheduledFilter.isActive === 'true' : undefined,
         limit: PAGE_SIZE,
@@ -251,7 +255,7 @@ export default function AdminReportsPage() {
     } catch (err) {
       console.error('Failed to fetch scheduled reports:', err);
     }
-  }, [scheduledFilter, scheduledPage]);
+  }, [tenantId, scheduledFilter, scheduledPage]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -282,11 +286,11 @@ export default function AdminReportsPage() {
   }, [fetchScheduledReports]);
 
   const handleGenerateReport = async () => {
-    if (!selectedTemplate) return;
+    if (!selectedTemplate || !tenantId) return;
 
     setGeneratingReport(true);
     try {
-      await reportsApi.generateFromTemplate(TENANT_ID, {
+      await reportsApi.generateFromTemplate(tenantId, {
         templateId: selectedTemplate.id,
         format: generateFormat,
       });
@@ -302,10 +306,10 @@ export default function AdminReportsPage() {
   };
 
   const handleCreateSchedule = async () => {
-    if (!selectedTemplate) return;
+    if (!selectedTemplate || !tenantId) return;
 
     try {
-      await reportsApi.createScheduledReport(TENANT_ID, {
+      await reportsApi.createScheduledReport(tenantId, {
         templateId: selectedTemplate.id,
         name: scheduleForm.name || `Scheduled ${selectedTemplate.name}`,
         frequency: scheduleForm.frequency,
@@ -336,8 +340,9 @@ export default function AdminReportsPage() {
   };
 
   const handleToggleSchedule = async (schedule: ScheduledReport) => {
+    if (!tenantId) return;
     try {
-      await reportsApi.updateScheduledReport(TENANT_ID, schedule.id, {
+      await reportsApi.updateScheduledReport(tenantId, schedule.id, {
         isActive: !schedule.isActive,
       });
       fetchScheduledReports();
@@ -347,10 +352,10 @@ export default function AdminReportsPage() {
   };
 
   const handleDeleteSchedule = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this scheduled report?')) return;
+    if (!confirm('Are you sure you want to delete this scheduled report?') || !tenantId) return;
 
     try {
-      await reportsApi.deleteScheduledReport(TENANT_ID, id);
+      await reportsApi.deleteScheduledReport(tenantId, id);
       fetchScheduledReports();
       fetchStats();
     } catch (err: any) {
@@ -359,10 +364,10 @@ export default function AdminReportsPage() {
   };
 
   const handleDeleteJob = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this report job?')) return;
+    if (!confirm('Are you sure you want to delete this report job?') || !tenantId) return;
 
     try {
-      await reportsApi.deleteJob(TENANT_ID, id);
+      await reportsApi.deleteJob(tenantId, id);
       fetchJobs();
       fetchStats();
     } catch (err: any) {
@@ -382,20 +387,21 @@ export default function AdminReportsPage() {
   };
 
   const handleQuickReport = async (type: 'students' | 'fees' | 'attendance' | 'exam-results') => {
+    if (!tenantId) return;
     try {
       let job: ReportJob;
       switch (type) {
         case 'students':
-          job = await reportsApi.quickStudentReport(TENANT_ID, { format: 'pdf' });
+          job = await reportsApi.quickStudentReport(tenantId, { format: 'pdf' });
           break;
         case 'fees':
-          job = await reportsApi.quickFeeReport(TENANT_ID, { format: 'pdf' });
+          job = await reportsApi.quickFeeReport(tenantId, { format: 'pdf' });
           break;
         case 'attendance':
-          job = await reportsApi.quickAttendanceReport(TENANT_ID, { format: 'pdf' });
+          job = await reportsApi.quickAttendanceReport(tenantId, { format: 'pdf' });
           break;
         case 'exam-results':
-          job = await reportsApi.quickExamResultsReport(TENANT_ID, { format: 'pdf' });
+          job = await reportsApi.quickExamResultsReport(tenantId, { format: 'pdf' });
           break;
       }
       setActiveTab('history');

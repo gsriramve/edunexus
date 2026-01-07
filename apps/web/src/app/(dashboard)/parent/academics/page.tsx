@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
   GraduationCap,
   TrendingUp,
@@ -12,6 +13,7 @@ import {
   ChevronRight,
   Calendar,
   FileText,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +35,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useParentChildren } from "@/hooks/use-parents";
+import { useStudentAcademics } from "@/hooks/use-api";
+
+// TODO: Replace mock data with API calls when backend endpoints are implemented
+// Required endpoints:
+// - GET /students/:id/academics - Student academic overview (already exists)
+// - GET /students/:id/academics/current - Current semester marks
+// - GET /students/:id/academics/results - Past semester results
+// - GET /students/:id/academics/remarks - Teacher remarks/feedback
 
 // Mock data
 const childInfo = {
@@ -90,7 +103,101 @@ const teacherRemarks = [
 ];
 
 export default function ParentAcademics() {
+  const { user } = useUser();
+  const tenantId = useTenantId() || '';
+  const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [selectedSemester, setSelectedSemester] = useState("5");
+
+  // Fetch parent's children
+  const { data: childrenData, isLoading: childrenLoading } = useParentChildren(tenantId, user?.id || '');
+  const children = childrenData || [];
+
+  // Set first child as default when children load
+  useEffect(() => {
+    if (children.length > 0 && !selectedChildId) {
+      setSelectedChildId(children[0].id);
+    }
+  }, [children, selectedChildId]);
+
+  // Get selected child info
+  const currentChild = useMemo(() => {
+    const childRecord = children.find((c) => c.id === selectedChildId);
+    if (!childRecord) return null;
+    return {
+      id: childRecord.id,
+      name: `${childRecord.firstName} ${childRecord.lastName}`.trim() || 'Unknown',
+      rollNo: childRecord.rollNo || 'N/A',
+      department: childRecord.department?.name || 'N/A',
+      currentSemester: childRecord.currentSemester || 1,
+    };
+  }, [children, selectedChildId]);
+
+  // Fetch academics data for selected child
+  const { data: academicsData, isLoading: academicsLoading } = useStudentAcademics(tenantId, selectedChildId);
+
+  // Derive overview from API data or use mock
+  // TODO: StudentAcademics API doesn't include these aggregate fields yet
+  // When backend adds them, update to use: academicsData?.cgpa, etc.
+  const displayOverview = useMemo(() => {
+    // Currently using mock data since StudentAcademics only has currentSemester, subjects, results
+    return {
+      cgpa: 8.5,
+      totalCredits: 95,
+      earnedCredits: 95,
+      rank: 12,
+      totalStudents: 120,
+      percentile: 90,
+    };
+  }, []);
+
+  // Loading state
+  if (childrenLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-48" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-5">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-64" />
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  // No children state
+  if (children.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Academic Progress</h1>
+          <p className="text-muted-foreground">
+            View your child's academic performance and results
+          </p>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="h-16 w-16 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">No Children Linked</h3>
+              <p>No children are currently linked to your account.</p>
+              <p className="text-sm mt-2">Please contact the school administration.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Use API child info or fallback to mock
+  const displayChild = currentChild || childInfo;
 
   const getGradeBadge = (grade: string) => {
     const colorMap: Record<string, string> = {
@@ -119,17 +226,34 @@ export default function ParentAcademics() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Academic Progress</h1>
           <p className="text-muted-foreground">
-            {childInfo.name}'s academic performance and results
+            {displayChild.name}'s academic performance and results
           </p>
         </div>
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Download Report Card
-        </Button>
+        <div className="flex items-center gap-4">
+          <Select value={selectedChildId} onValueChange={setSelectedChildId}>
+            <SelectTrigger className="w-[220px]">
+              <SelectValue placeholder="Select Child" />
+            </SelectTrigger>
+            <SelectContent>
+              {children.map((childRecord) => {
+                const childName = `${childRecord.firstName} ${childRecord.lastName}`.trim() || 'Unknown';
+                return (
+                  <SelectItem key={childRecord.id} value={childRecord.id}>
+                    {childName} ({childRecord.rollNo || 'N/A'})
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+          <Button variant="outline">
+            <Download className="mr-2 h-4 w-4" />
+            Download Report Card
+          </Button>
+        </div>
       </div>
 
       {/* Overview Cards */}
@@ -142,7 +266,7 @@ export default function ParentAcademics() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">CGPA</p>
-                <p className="text-2xl font-bold">{academicOverview.cgpa}</p>
+                <p className="text-2xl font-bold">{displayOverview.cgpa}</p>
               </div>
             </div>
           </CardContent>
@@ -155,7 +279,7 @@ export default function ParentAcademics() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Credits Earned</p>
-                <p className="text-2xl font-bold">{academicOverview.earnedCredits}/{academicOverview.totalCredits}</p>
+                <p className="text-2xl font-bold">{displayOverview.earnedCredits}/{displayOverview.totalCredits}</p>
               </div>
             </div>
           </CardContent>
@@ -168,7 +292,7 @@ export default function ParentAcademics() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Class Rank</p>
-                <p className="text-2xl font-bold">{academicOverview.rank}/{academicOverview.totalStudents}</p>
+                <p className="text-2xl font-bold">{displayOverview.rank}/{displayOverview.totalStudents}</p>
               </div>
             </div>
           </CardContent>
@@ -181,7 +305,7 @@ export default function ParentAcademics() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Percentile</p>
-                <p className="text-2xl font-bold">{academicOverview.percentile}%</p>
+                <p className="text-2xl font-bold">{displayOverview.percentile}%</p>
               </div>
             </div>
           </CardContent>
@@ -194,7 +318,7 @@ export default function ParentAcademics() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Current Sem</p>
-                <p className="text-2xl font-bold">Sem {childInfo.currentSemester}</p>
+                <p className="text-2xl font-bold">Sem {displayChild.currentSemester}</p>
               </div>
             </div>
           </CardContent>
@@ -238,7 +362,7 @@ export default function ParentAcademics() {
         <TabsContent value="current">
           <Card>
             <CardHeader>
-              <CardTitle>Semester {childInfo.currentSemester} - Current Performance</CardTitle>
+              <CardTitle>Semester {displayChild.currentSemester} - Current Performance</CardTitle>
               <CardDescription>Subject-wise marks and progress</CardDescription>
             </CardHeader>
             <CardContent>

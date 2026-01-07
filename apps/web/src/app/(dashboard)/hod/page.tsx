@@ -29,6 +29,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useUser } from "@clerk/nextjs";
+import { useStaff, useStudents, useStaffStats, useStudentStats } from "@/hooks/use-api";
+
+// TODO: Replace mock data with API calls when backend endpoints are implemented
+// Required endpoints:
+// - GET /hod/dashboard/stats - Department-specific overview stats
+// - GET /hod/dashboard/faculty-overview - Faculty with today's schedule
+// - GET /hod/dashboard/pending-approvals - Pending approvals for HOD
+// - GET /hod/dashboard/alerts - Department alerts and notifications
+// - GET /hod/dashboard/events - Upcoming department events
+// - GET /hod/dashboard/semester-overview - Semester-wise student distribution
+// - GET /staff/me - Get current HOD's staff profile including department
 
 // Mock HOD data
 const hodInfo = {
@@ -87,7 +101,85 @@ const pendingApprovals = [
 ];
 
 export default function HODDashboard() {
+  const tenantId = useTenantId() || '';
+  const { user } = useUser();
   const [selectedSemester, setSelectedSemester] = useState("all");
+
+  // Fetch available data from existing APIs
+  // TODO: Get HOD's department ID from user context/metadata
+  const { data: staffData, isLoading: staffLoading } = useStaff(tenantId, {
+    // departmentId: hodDepartmentId, // TODO: Add department filter when available
+  });
+  const { data: studentsData, isLoading: studentsLoading } = useStudents(tenantId, {
+    // departmentId: hodDepartmentId, // TODO: Add department filter when available
+  });
+  const { data: staffStats, isLoading: staffStatsLoading } = useStaffStats(tenantId);
+  const { data: studentStats, isLoading: studentStatsLoading } = useStudentStats(tenantId);
+
+  // Show loading skeleton while data loads
+  const isLoading = staffLoading || studentsLoading || staffStatsLoading || studentStatsLoading;
+  if (isLoading && !staffData && !studentsData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-10 w-36" />
+            <Skeleton className="h-10 w-28" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-12 w-12 rounded-lg" />
+                  <div>
+                    <Skeleton className="h-4 w-16 mb-2" />
+                    <Skeleton className="h-7 w-12" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          <Skeleton className="h-[400px] md:col-span-2" />
+          <Skeleton className="h-[400px]" />
+        </div>
+      </div>
+    );
+  }
+
+  // Extract data from API responses
+  const apiStaff = staffData?.data || [];
+  const apiStudents = studentsData?.data || [];
+
+  // Use API stats when available, fallback to mock data
+  const stats = {
+    totalFaculty: staffStats?.total || departmentStats.totalFaculty,
+    totalStudents: studentStats?.total || departmentStats.totalStudents,
+    activeSubjects: departmentStats.activeSubjects, // TODO: No API for subjects
+    avgAttendance: departmentStats.avgAttendance, // TODO: Get from attendance API
+    avgCGPA: departmentStats.avgCGPA, // TODO: Get from academics API
+    placementRate: departmentStats.placementRate, // TODO: No API for placement
+  };
+
+  // Map API staff to faculty overview format
+  const displayFaculty = apiStaff.length > 0 ? apiStaff.slice(0, 5).map(staff => ({
+    id: staff.id,
+    name: staff.user?.name || 'Unknown',
+    designation: staff.designation || 'Faculty',
+    subjects: 0, // TODO: Get from teaching assignments
+    attendance: 0, // TODO: Get from attendance API
+    classesToday: 0, // TODO: Get from schedule API
+  })) : facultyOverview;
+
+  // Get display name from Clerk or fallback
+  const displayHodName = user?.fullName || user?.firstName || hodInfo.name;
 
   const getAlertBadge = (severity: string) => {
     switch (severity) {
@@ -117,7 +209,7 @@ export default function HODDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Department Dashboard</h1>
           <p className="text-muted-foreground">
-            {hodInfo.department} • {hodInfo.name}
+            {hodInfo.department} • {displayHodName}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -142,7 +234,7 @@ export default function HODDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Faculty</p>
-                <p className="text-2xl font-bold">{departmentStats.totalFaculty}</p>
+                <p className="text-2xl font-bold">{stats.totalFaculty}</p>
               </div>
             </div>
           </CardContent>
@@ -155,7 +247,7 @@ export default function HODDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Students</p>
-                <p className="text-2xl font-bold">{departmentStats.totalStudents}</p>
+                <p className="text-2xl font-bold">{stats.totalStudents}</p>
               </div>
             </div>
           </CardContent>
@@ -168,7 +260,7 @@ export default function HODDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Subjects</p>
-                <p className="text-2xl font-bold">{departmentStats.activeSubjects}</p>
+                <p className="text-2xl font-bold">{stats.activeSubjects}</p>
               </div>
             </div>
           </CardContent>
@@ -181,7 +273,7 @@ export default function HODDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Attendance</p>
-                <p className="text-2xl font-bold">{departmentStats.avgAttendance}%</p>
+                <p className="text-2xl font-bold">{stats.avgAttendance}%</p>
               </div>
             </div>
           </CardContent>
@@ -194,7 +286,7 @@ export default function HODDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg CGPA</p>
-                <p className="text-2xl font-bold">{departmentStats.avgCGPA}</p>
+                <p className="text-2xl font-bold">{stats.avgCGPA}</p>
               </div>
             </div>
           </CardContent>
@@ -207,7 +299,7 @@ export default function HODDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Placement</p>
-                <p className="text-2xl font-bold">{departmentStats.placementRate}%</p>
+                <p className="text-2xl font-bold">{stats.placementRate}%</p>
               </div>
             </div>
           </CardContent>
@@ -229,7 +321,7 @@ export default function HODDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {facultyOverview.map((faculty) => (
+              {displayFaculty.map((faculty) => (
                 <div key={faculty.id} className="flex items-center justify-between p-3 rounded-lg border">
                   <div className="flex items-center gap-3">
                     <Avatar>

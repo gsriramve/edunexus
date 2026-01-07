@@ -63,9 +63,8 @@ import {
   AuditCategory,
   AuditStatus,
 } from '@/lib/api';
-
-// Mock tenant ID - in production would come from auth context
-const TENANT_ID = 'cmk2l82k00001viari7idl59u';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTenantId } from '@/hooks/use-tenant';
 
 const ACTION_OPTIONS: { value: AuditAction; label: string; icon: React.ReactNode }[] = [
   { value: 'CREATE', label: 'Create', icon: <Plus className="h-3 w-3" /> },
@@ -149,6 +148,7 @@ function formatDuration(ms?: number) {
 }
 
 export default function AuditLogsPage() {
+  const tenantId = useTenantId() || '';
   const [activeTab, setActiveTab] = useState('logs');
   const [stats, setStats] = useState<AuditLogStats | null>(null);
   const [settings, setSettings] = useState<AuditLogSettings | null>(null);
@@ -172,29 +172,32 @@ export default function AuditLogsPage() {
 
   // Load stats
   const loadStats = useCallback(async () => {
+    if (!tenantId) return;
     try {
-      const data = await auditApi.getStats(TENANT_ID);
+      const data = await auditApi.getStats(tenantId);
       setStats(data);
     } catch (error) {
       console.error('Failed to load stats:', error);
     }
-  }, []);
+  }, [tenantId]);
 
   // Load settings
   const loadSettings = useCallback(async () => {
+    if (!tenantId) return;
     try {
-      const data = await auditApi.getSettings(TENANT_ID);
+      const data = await auditApi.getSettings(tenantId);
       setSettings(data);
     } catch (error) {
       console.error('Failed to load settings:', error);
     }
-  }, []);
+  }, [tenantId]);
 
   // Load logs
   const loadLogs = useCallback(async () => {
+    if (!tenantId) return;
     setIsLoading(true);
     try {
-      const response = await auditApi.listLogs(TENANT_ID, {
+      const response = await auditApi.listLogs(tenantId, {
         search: searchQuery || undefined,
         action: selectedAction as AuditAction || undefined,
         category: selectedCategory as AuditCategory || undefined,
@@ -213,12 +216,13 @@ export default function AuditLogsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, selectedAction, selectedCategory, selectedStatus, startDate, endDate, currentPage]);
+  }, [tenantId, searchQuery, selectedAction, selectedCategory, selectedStatus, startDate, endDate, currentPage]);
 
   // Update settings
   const handleUpdateSettings = async (updates: Partial<AuditLogSettings>) => {
+    if (!tenantId) return;
     try {
-      const updated = await auditApi.updateSettings(TENANT_ID, updates);
+      const updated = await auditApi.updateSettings(tenantId, updates);
       setSettings(updated);
     } catch (error) {
       console.error('Failed to update settings:', error);
@@ -227,8 +231,9 @@ export default function AuditLogsPage() {
 
   // Export logs
   const handleExportLogs = async () => {
+    if (!tenantId) return;
     try {
-      const exportedLogs = await auditApi.exportLogs(TENANT_ID, {
+      const exportedLogs = await auditApi.exportLogs(tenantId, {
         action: selectedAction as AuditAction || undefined,
         category: selectedCategory as AuditCategory || undefined,
         startDate: startDate || undefined,
@@ -279,6 +284,30 @@ export default function AuditLogsPage() {
   }, [searchQuery, selectedAction, selectedCategory, selectedStatus, startDate, endDate]);
 
   const totalPages = Math.ceil(totalLogs / pageSize);
+
+  // Loading state for tenant
+  if (!tenantId) {
+    return (
+      <div className="container mx-auto py-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-96 mt-2" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-24" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-5">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6 space-y-6">

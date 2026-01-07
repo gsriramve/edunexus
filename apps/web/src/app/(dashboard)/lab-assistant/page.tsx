@@ -20,6 +20,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useUser } from "@clerk/nextjs";
+
+// TODO: Replace mock data with API calls when backend endpoints are implemented
+// Required endpoints:
+// - GET /lab-assistant/dashboard/stats - Lab-specific overview stats
+// - GET /lab-assistant/labs - Labs assigned to this assistant
+// - GET /lab-assistant/schedule/today - Today's lab schedule
+// - GET /lab-assistant/schedule/week - Weekly lab schedule
+// - GET /lab-assistant/attendance/recent - Recent attendance records
+// - GET /lab-assistant/tasks/pending - Pending tasks for lab assistant
+// - GET /lab-assistant/equipment/issues - Equipment issues in assigned labs
+// - GET /staff/me - Get current lab assistant's staff profile
 
 // Mock lab assistant data
 const labAssistantInfo = {
@@ -71,6 +85,49 @@ const equipmentAlerts = [
 ];
 
 export default function LabAssistantDashboard() {
+  const tenantId = useTenantId() || '';
+  const { user, isLoaded: userLoaded } = useUser();
+
+  // Show loading skeleton while user data loads
+  if (!userLoaded) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-9 w-72 mb-2" />
+            <Skeleton className="h-5 w-56" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-10 w-36" />
+            <Skeleton className="h-10 w-40" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-12 w-12 rounded-lg" />
+                  <div>
+                    <Skeleton className="h-4 w-20 mb-2" />
+                    <Skeleton className="h-7 w-10" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-[350px]" />
+          <Skeleton className="h-[350px]" />
+        </div>
+      </div>
+    );
+  }
+
+  // Get display name from Clerk or fallback to mock
+  const displayName = user?.fullName || user?.firstName || labAssistantInfo.name;
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
@@ -102,7 +159,7 @@ export default function LabAssistantDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Lab Assistant Dashboard</h1>
           <p className="text-muted-foreground">
-            {labAssistantInfo.name} • {labAssistantInfo.department}
+            {displayName} • {labAssistantInfo.department}
           </p>
         </div>
         <div className="flex items-center gap-2">

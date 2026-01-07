@@ -56,6 +56,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useStaff, useStaffStats } from "@/hooks/use-api";
+
+// TODO: Replace mock data with API calls when backend endpoints are implemented
+// Required endpoints:
+// - GET /staff/by-user/:userId - Get staff member by Clerk user ID (to get HOD's departmentId)
+// - GET /staff?departmentId=X - Already implemented, filter staff by department
+// - GET /hod/workload - Faculty workload summary for department
+// - GET /hod/timetable - Department timetable
+// - GET /hod/leave-requests - Pending leave requests for department
 
 // Mock faculty data
 const facultyList = [
@@ -191,11 +202,67 @@ const timetableData = [
 ];
 
 export default function HODFacultyManagement() {
+  const tenantId = useTenantId() || '';
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDesignation, setFilterDesignation] = useState("all");
   const [selectedFaculty, setSelectedFaculty] = useState<typeof facultyList[0] | null>(null);
 
-  const filteredFaculty = facultyList.filter((faculty) => {
+  // Fetch staff data - TODO: Add departmentId filter when HOD's department can be determined
+  const { data: staffData, isLoading: staffLoading } = useStaff(tenantId, {
+    search: searchQuery || undefined,
+    // departmentId: hodDepartmentId, // TODO: Get HOD's department ID
+  });
+  const { data: staffStats, isLoading: statsLoading } = useStaffStats(tenantId);
+
+  // Use API data when available, fall back to mock data
+  const apiStaff = staffData?.data || [];
+  const isLoading = staffLoading || statsLoading;
+
+  // Loading state
+  if (!tenantId || isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96 mt-2" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  // Use API data if available, otherwise fall back to mock data for demo
+  const displayFaculty = apiStaff.length > 0 ? apiStaff.map(staff => ({
+    id: staff.id,
+    name: staff.user?.name || 'Unknown',
+    employeeId: staff.employeeId,
+    designation: staff.designation || 'Staff',
+    qualification: 'N/A', // Not available in Staff type
+    specialization: 'N/A', // Not available in Staff type
+    email: staff.user?.email || 'N/A',
+    phone: 'N/A', // Not available in Staff type
+    joinDate: staff.joiningDate ? new Date(staff.joiningDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : 'N/A',
+    experience: 'N/A',
+    subjects: [],
+    totalClasses: 0,
+    classesTaken: 0,
+    attendance: 0,
+    status: 'active', // Staff type doesn't have status field
+    onLeave: false,
+  })) : facultyList;
+
+  const filteredFaculty = displayFaculty.filter((faculty) => {
     const matchesSearch =
       faculty.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       faculty.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
@@ -262,7 +329,7 @@ export default function HODFacultyManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Faculty</p>
-                <p className="text-2xl font-bold">{facultyList.length}</p>
+                <p className="text-2xl font-bold">{staffStats?.total || displayFaculty.length}</p>
               </div>
             </div>
           </CardContent>
@@ -275,7 +342,7 @@ export default function HODFacultyManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Present Today</p>
-                <p className="text-2xl font-bold">{facultyList.filter(f => !f.onLeave).length}</p>
+                <p className="text-2xl font-bold">{staffStats?.active || displayFaculty.filter(f => !f.onLeave).length}</p>
               </div>
             </div>
           </CardContent>
@@ -288,7 +355,7 @@ export default function HODFacultyManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">On Leave</p>
-                <p className="text-2xl font-bold">{facultyList.filter(f => f.onLeave).length}</p>
+                <p className="text-2xl font-bold">{displayFaculty.filter(f => f.onLeave).length}</p>
               </div>
             </div>
           </CardContent>
@@ -371,7 +438,7 @@ export default function HODFacultyManagement() {
                         <div className="flex items-center gap-3">
                           <Avatar>
                             <AvatarFallback>
-                              {faculty.name.split(" ").map((n) => n[0]).join("")}
+                              {faculty.name.split(" ").map((n: string) => n[0]).join("")}
                             </AvatarFallback>
                           </Avatar>
                           <div>

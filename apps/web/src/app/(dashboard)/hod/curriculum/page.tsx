@@ -60,6 +60,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+
+// TODO: Replace mock data with API calls when backend endpoints are implemented
+// Required endpoints:
+// - GET /hod/curriculum/stats - Curriculum statistics for department
+// - GET /hod/curriculum/subjects?semester=X - Subjects by semester for department
+// - GET /hod/curriculum/syllabus/:subjectId - Syllabus details for a subject
+// - GET /hod/curriculum/assignments - Faculty-subject assignments
 
 // Mock curriculum data
 const curriculumStats = {
@@ -124,9 +133,34 @@ const facultyAssignments = [
 ];
 
 export default function HODCurriculum() {
+  const tenantId = useTenantId() || '';
   const [selectedSemester, setSelectedSemester] = useState("5");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
+
+  // Loading state
+  if (!tenantId) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96 mt-2" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-36" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-6">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
 
   const currentSubjects = semesterSubjects[parseInt(selectedSemester)] || [];
 
