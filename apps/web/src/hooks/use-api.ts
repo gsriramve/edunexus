@@ -68,6 +68,35 @@ export function useCreateTenant() {
   });
 }
 
+export function useTenantByDomain(domain: string | null) {
+  return useQuery({
+    queryKey: ['tenant', 'domain', domain],
+    queryFn: () => tenantsApi.getByDomain(domain!),
+    enabled: !!domain,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+}
+
+export function useUpdateTenantSettings(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (settings: {
+      displayName?: string;
+      logo?: string;
+      theme?: {
+        primaryColor?: string;
+        secondaryColor?: string;
+      };
+      config?: Record<string, any>;
+    }) => tenantsApi.updateSettings(tenantId, settings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenant', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['tenant', 'domain'] });
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+    },
+  });
+}
+
 // ============ Departments Hooks ============
 
 export function useDepartments(

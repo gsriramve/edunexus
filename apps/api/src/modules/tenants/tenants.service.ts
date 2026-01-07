@@ -116,6 +116,77 @@ export class TenantsService {
     });
   }
 
+  async updateSettings(
+    id: string,
+    settings: {
+      displayName?: string;
+      logo?: string;
+      theme?: {
+        primaryColor?: string;
+        secondaryColor?: string;
+      };
+      config?: {
+        tagline?: string;
+        established?: string;
+        accreditation?: string;
+        affiliatedTo?: string;
+        website?: string;
+        email?: string;
+        phone?: string;
+        address?: string;
+        academicYear?: string;
+        semesterSystem?: string;
+        oddSemStart?: string;
+        oddSemEnd?: string;
+        evenSemStart?: string;
+        evenSemEnd?: string;
+        classStartTime?: string;
+        classEndTime?: string;
+        emailNotifications?: boolean;
+        smsNotifications?: boolean;
+        attendanceAlerts?: boolean;
+        feeReminders?: boolean;
+        examNotifications?: boolean;
+        resultPublishing?: boolean;
+      };
+    },
+  ) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException('College not found');
+    }
+
+    // Merge existing config with new config
+    const existingConfig = (tenant.config as Record<string, any>) || {};
+    const existingTheme = (tenant.theme as Record<string, any>) || {};
+
+    const updatedData: any = {};
+
+    if (settings.displayName !== undefined) {
+      updatedData.displayName = settings.displayName;
+    }
+
+    if (settings.logo !== undefined) {
+      updatedData.logo = settings.logo;
+    }
+
+    if (settings.theme) {
+      updatedData.theme = { ...existingTheme, ...settings.theme };
+    }
+
+    if (settings.config) {
+      updatedData.config = { ...existingConfig, ...settings.config };
+    }
+
+    return this.prisma.tenant.update({
+      where: { id },
+      data: updatedData,
+    });
+  }
+
   async getStats() {
     const [totalTenants, activeTenants, trialTenants, totalStudents, totalRevenue] = await Promise.all([
       this.prisma.tenant.count(),

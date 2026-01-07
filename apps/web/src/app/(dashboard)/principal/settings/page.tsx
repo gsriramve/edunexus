@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useId } from "react";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -28,73 +28,295 @@ import {
   ImageIcon,
   Save,
   RotateCcw,
+  Loader2,
 } from "lucide-react";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useTenant, useUpdateTenantSettings } from "@/hooks/use-api";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Mock data - Replace with real API calls
-const institutionData = {
-  name: "Demo Engineering College",
-  shortName: "DEC",
-  tagline: "Excellence in Engineering Education",
-  established: "1985",
-  accreditation: "NAAC A+",
-  affiliatedTo: "Anna University",
-  logo: null as string | null,
-  website: "https://www.demoengg.edu",
-  email: "info@demoengg.edu",
-  phone: "+91 44 2345 6789",
-  address: "123 College Road, Chennai, Tamil Nadu - 600001",
-  primaryColor: "#1e40af",
-  secondaryColor: "#3b82f6",
-};
-
-const academicSettings = {
-  currentYear: "2025-26",
-  semesterSystem: "semester", // semester or annual
-  oddSemStart: "2025-07-01",
-  oddSemEnd: "2025-12-15",
-  evenSemStart: "2026-01-05",
-  evenSemEnd: "2026-05-30",
-  workingDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-  classStartTime: "09:00",
-  classEndTime: "17:00",
-};
-
-const notificationSettings = {
-  emailNotifications: true,
-  smsNotifications: true,
-  attendanceAlerts: true,
-  feeReminders: true,
-  examNotifications: true,
-  resultPublishing: true,
-};
+// Dynamic import Tabs to avoid hydration mismatch with Radix UI
+const Tabs = dynamic(
+  () => import("@/components/ui/tabs").then((mod) => mod.Tabs),
+  { ssr: false }
+);
+const TabsContent = dynamic(
+  () => import("@/components/ui/tabs").then((mod) => mod.TabsContent),
+  { ssr: false }
+);
+const TabsList = dynamic(
+  () => import("@/components/ui/tabs").then((mod) => mod.TabsList),
+  { ssr: false }
+);
+const TabsTrigger = dynamic(
+  () => import("@/components/ui/tabs").then((mod) => mod.TabsTrigger),
+  { ssr: false }
+);
 
 export default function PrincipalSettingsPage() {
-  const [institution, setInstitution] = useState(institutionData);
-  const [academic, setAcademic] = useState(academicSettings);
-  const [notifications, setNotifications] = useState(notificationSettings);
+  const tenantId = useTenantId();
+  const { data: tenant, isLoading, error } = useTenant(tenantId || "");
+  const updateSettings = useUpdateTenantSettings(tenantId || "");
+  const { toast } = useToast();
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure client-side only rendering to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Form state - initialized from tenant data
+  const [institution, setInstitution] = useState({
+    displayName: "",
+    shortName: "",
+    tagline: "",
+    established: "",
+    accreditation: "",
+    affiliatedTo: "",
+    logo: null as string | null,
+    website: "",
+    email: "",
+    phone: "",
+    address: "",
+    primaryColor: "#1e40af",
+    secondaryColor: "#3b82f6",
+  });
+
+  const [academic, setAcademic] = useState({
+    academicYear: "2025-26",
+    semesterSystem: "semester",
+    oddSemStart: "",
+    oddSemEnd: "",
+    evenSemStart: "",
+    evenSemEnd: "",
+    classStartTime: "09:00",
+    classEndTime: "17:00",
+  });
+
+  const [notifications, setNotifications] = useState({
+    emailNotifications: true,
+    smsNotifications: true,
+    attendanceAlerts: true,
+    feeReminders: true,
+    examNotifications: true,
+    resultPublishing: true,
+  });
+
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [savedSection, setSavedSection] = useState<string | null>(null);
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Populate form from tenant data when it loads
+  useEffect(() => {
+    if (tenant) {
+      const config = (tenant.config as Record<string, any>) || {};
+      const theme = (tenant.theme as Record<string, any>) || {};
+
+      setInstitution({
+        displayName: tenant.displayName || tenant.name || "",
+        shortName: config.shortName || "",
+        tagline: config.tagline || "",
+        established: config.established || "",
+        accreditation: config.accreditation || "",
+        affiliatedTo: config.affiliatedTo || "",
+        logo: tenant.logo || null,
+        website: config.website || "",
+        email: config.email || "",
+        phone: config.phone || "",
+        address: config.address || "",
+        primaryColor: theme.primaryColor || "#1e40af",
+        secondaryColor: theme.secondaryColor || "#3b82f6",
+      });
+
+      setAcademic({
+        academicYear: config.academicYear || "2025-26",
+        semesterSystem: config.semesterSystem || "semester",
+        oddSemStart: config.oddSemStart || "",
+        oddSemEnd: config.oddSemEnd || "",
+        evenSemStart: config.evenSemStart || "",
+        evenSemEnd: config.evenSemEnd || "",
+        classStartTime: config.classStartTime || "09:00",
+        classEndTime: config.classEndTime || "17:00",
+      });
+
+      setNotifications({
+        emailNotifications: config.emailNotifications ?? true,
+        smsNotifications: config.smsNotifications ?? true,
+        attendanceAlerts: config.attendanceAlerts ?? true,
+        feeReminders: config.feeReminders ?? true,
+        examNotifications: config.examNotifications ?? true,
+        resultPublishing: config.resultPublishing ?? true,
+      });
+
+      if (tenant.logo) {
+        setLogoPreview(tenant.logo);
+      }
+    }
+  }, [tenant]);
+
+  const compressImage = (file: File, maxWidth: number = 200, quality: number = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          // Scale down if larger than maxWidth
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Could not get canvas context"));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const base64 = canvas.toDataURL("image/jpeg", quality);
+          resolve(base64);
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Compress image to reduce size
+        const compressedBase64 = await compressImage(file, 200, 0.8);
+        setLogoPreview(compressedBase64);
+        setInstitution(prev => ({ ...prev, logo: compressedBase64 }));
+      } catch (err) {
+        console.error("Logo compression error:", err);
+        toast({
+          title: "Error uploading logo",
+          description: "Failed to process the image. Please try a different file.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const handleSave = async (section: string) => {
-    setIsSaving(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    setSavedSection(section);
-    setTimeout(() => setSavedSection(null), 3000);
+    try {
+      let settingsToUpdate: Parameters<typeof updateSettings.mutateAsync>[0] = {};
+
+      if (section === "branding") {
+        settingsToUpdate = {
+          displayName: institution.displayName,
+          logo: institution.logo || undefined,
+          theme: {
+            primaryColor: institution.primaryColor,
+            secondaryColor: institution.secondaryColor,
+          },
+          config: {
+            shortName: institution.shortName,
+            tagline: institution.tagline,
+            established: institution.established,
+            accreditation: institution.accreditation,
+            affiliatedTo: institution.affiliatedTo,
+          },
+        };
+      } else if (section === "academic") {
+        settingsToUpdate = {
+          config: {
+            academicYear: academic.academicYear,
+            semesterSystem: academic.semesterSystem,
+            oddSemStart: academic.oddSemStart,
+            oddSemEnd: academic.oddSemEnd,
+            evenSemStart: academic.evenSemStart,
+            evenSemEnd: academic.evenSemEnd,
+            classStartTime: academic.classStartTime,
+            classEndTime: academic.classEndTime,
+          },
+        };
+      } else if (section === "notifications") {
+        settingsToUpdate = {
+          config: {
+            emailNotifications: notifications.emailNotifications,
+            smsNotifications: notifications.smsNotifications,
+            attendanceAlerts: notifications.attendanceAlerts,
+            feeReminders: notifications.feeReminders,
+            examNotifications: notifications.examNotifications,
+            resultPublishing: notifications.resultPublishing,
+          },
+        };
+      } else if (section === "contact") {
+        settingsToUpdate = {
+          config: {
+            website: institution.website,
+            email: institution.email,
+            phone: institution.phone,
+            address: institution.address,
+          },
+        };
+      }
+
+      await updateSettings.mutateAsync(settingsToUpdate);
+      setSavedSection(section);
+      toast({
+        title: "Settings saved",
+        description: "Your settings have been updated successfully.",
+      });
+      setTimeout(() => setSavedSection(null), 3000);
+    } catch (err: any) {
+      console.error("Save settings error:", err);
+      const errorMessage = err?.message || err?.data?.message || "Failed to save settings. Please try again.";
+
+      // Check if it's a payload too large error
+      const isPayloadTooLarge = err?.status === 413 || errorMessage.includes("too large");
+
+      toast({
+        title: "Error saving settings",
+        description: isPayloadTooLarge
+          ? "Logo file is too large. Please use an image smaller than 1MB."
+          : errorMessage,
+        variant: "destructive",
+      });
+    }
   };
+
+  if (!mounted || isLoading) {
+    return (
+      <div className="flex-1 space-y-6 p-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 p-6">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-destructive">Failed to load tenant settings. Please try again.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const isSaving = updateSettings.isPending;
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -148,9 +370,9 @@ export default function PrincipalSettingsPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-6">
                   <div className="w-32 h-32 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50 overflow-hidden">
-                    {logoPreview || institution.logo ? (
+                    {logoPreview ? (
                       <img
-                        src={logoPreview || institution.logo || ""}
+                        src={logoPreview}
                         alt="College Logo"
                         className="w-full h-full object-contain"
                       />
@@ -179,7 +401,10 @@ export default function PrincipalSettingsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setLogoPreview(null)}
+                        onClick={() => {
+                          setLogoPreview(null);
+                          setInstitution(prev => ({ ...prev, logo: null }));
+                        }}
                       >
                         <RotateCcw className="w-3 h-3 mr-1" />
                         Reset
@@ -283,11 +508,11 @@ export default function PrincipalSettingsPage() {
             <CardContent>
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Institution Name</Label>
+                  <Label htmlFor="displayName">Institution Name</Label>
                   <Input
-                    id="name"
-                    value={institution.name}
-                    onChange={(e) => setInstitution({ ...institution, name: e.target.value })}
+                    id="displayName"
+                    value={institution.displayName}
+                    onChange={(e) => setInstitution({ ...institution, displayName: e.target.value })}
                     placeholder="Enter college name"
                   />
                 </div>
@@ -340,7 +565,10 @@ export default function PrincipalSettingsPage() {
               <div className="flex justify-end mt-6">
                 <Button onClick={() => handleSave("branding")} disabled={isSaving}>
                   {isSaving ? (
-                    <>Saving...</>
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
                   ) : savedSection === "branding" ? (
                     <>
                       <CheckCircle className="w-4 h-4 mr-2" />
@@ -370,10 +598,10 @@ export default function PrincipalSettingsPage() {
             <CardContent>
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="currentYear">Current Academic Year</Label>
+                  <Label htmlFor="academicYear">Current Academic Year</Label>
                   <Select
-                    value={academic.currentYear}
-                    onValueChange={(value) => setAcademic({ ...academic, currentYear: value })}
+                    value={academic.academicYear}
+                    onValueChange={(value) => setAcademic({ ...academic, academicYear: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select year" />
@@ -479,7 +707,10 @@ export default function PrincipalSettingsPage() {
               <div className="flex justify-end mt-6">
                 <Button onClick={() => handleSave("academic")} disabled={isSaving}>
                   {isSaving ? (
-                    <>Saving...</>
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
                   ) : savedSection === "academic" ? (
                     <>
                       <CheckCircle className="w-4 h-4 mr-2" />
@@ -597,7 +828,10 @@ export default function PrincipalSettingsPage() {
               <div className="flex justify-end">
                 <Button onClick={() => handleSave("notifications")} disabled={isSaving}>
                   {isSaving ? (
-                    <>Saving...</>
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
                   ) : savedSection === "notifications" ? (
                     <>
                       <CheckCircle className="w-4 h-4 mr-2" />
@@ -670,7 +904,10 @@ export default function PrincipalSettingsPage() {
               <div className="flex justify-end mt-6">
                 <Button onClick={() => handleSave("contact")} disabled={isSaving}>
                   {isSaving ? (
-                    <>Saving...</>
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
                   ) : savedSection === "contact" ? (
                     <>
                       <CheckCircle className="w-4 h-4 mr-2" />

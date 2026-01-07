@@ -35,6 +35,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useRole, UserRole } from "@/lib/auth";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useTenant } from "@/hooks/use-api";
 
 // Navigation items by role
 const platformOwnerNav = [
@@ -110,16 +112,34 @@ const NAV_BY_ROLE: Record<string, typeof platformOwnerNav> = {
 export function AppSidebar() {
   const pathname = usePathname();
   const { role, roleName } = useRole();
+  const tenantId = useTenantId();
+  const { data: tenant } = useTenant(tenantId || "");
 
   const navItems = role ? NAV_BY_ROLE[role] || studentNav : [];
+
+  // Determine branding - use tenant if available, otherwise default EduNexus
+  const isPlatformOwner = role === UserRole.PLATFORM_OWNER;
+  const showTenantBranding = !isPlatformOwner && tenant;
+  const brandName = showTenantBranding ? (tenant.displayName || tenant.name) : "EduNexus";
+  const brandLogo = showTenantBranding ? tenant.logo : null;
 
   return (
     <Sidebar>
       <SidebarHeader className="border-b px-6 py-4">
         <Link href="/" className="flex items-center gap-2">
-          <GraduationCap className="h-8 w-8 text-primary" />
-          <div className="flex flex-col">
-            <span className="font-bold text-lg">EduNexus</span>
+          {brandLogo ? (
+            <img
+              src={brandLogo}
+              alt={brandName}
+              className="h-8 w-8 object-contain rounded"
+            />
+          ) : (
+            <GraduationCap className="h-8 w-8 text-primary" />
+          )}
+          <div className="flex flex-col min-w-0">
+            <span className="font-bold text-lg truncate" title={brandName}>
+              {brandName}
+            </span>
             <span className="text-xs text-muted-foreground">{roleName}</span>
           </div>
         </Link>

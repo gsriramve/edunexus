@@ -54,4 +54,21 @@ export class TenantsController {
   updateStatus(@Param('id') id: string, @Body('status') status: string) {
     return this.tenantsService.updateStatus(id, status);
   }
+
+  @Patch(':id/settings')
+  updateSettings(
+    @Param('id') id: string,
+    @Body()
+    settings: {
+      displayName?: string;
+      logo?: string;
+      theme?: {
+        primaryColor?: string;
+        secondaryColor?: string;
+      };
+      config?: Record<string, any>;
+    },
+  ) {
+    return this.tenantsService.updateSettings(id, settings);
+  }
 }

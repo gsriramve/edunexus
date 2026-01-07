@@ -168,6 +168,21 @@ export const tenantsApi = {
     api<Tenant>('/tenants', { method: 'POST', body: data }),
 
   stats: () => api<TenantStats>('/tenants/stats'),
+
+  getByDomain: (domain: string) => api<Tenant>(`/tenants/domain/${domain}`),
+
+  updateSettings: (
+    id: string,
+    settings: {
+      displayName?: string;
+      logo?: string;
+      theme?: {
+        primaryColor?: string;
+        secondaryColor?: string;
+      };
+      config?: Record<string, any>;
+    },
+  ) => api<Tenant>(`/tenants/${id}/settings`, { method: 'PATCH', body: settings }),
 };
 
 // Platform API (Super Admin)
