@@ -65,7 +65,11 @@ export function DashboardHeader() {
         {/* User dropdown with real Clerk data */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+            <Button
+              variant="ghost"
+              className="relative h-9 w-9 rounded-full"
+              suppressHydrationWarning
+            >
               <Avatar className="h-9 w-9">
                 {user?.imageUrl && (
                   <AvatarImage src={user.imageUrl} alt={user.fullName || "User"} />
