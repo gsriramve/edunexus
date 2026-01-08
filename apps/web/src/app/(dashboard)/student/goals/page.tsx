@@ -12,17 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -30,6 +19,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Target,
   Plus,
@@ -39,158 +38,152 @@ import {
   Briefcase,
   Award,
   Trophy,
+  Heart,
   Brain,
   Calendar,
-  ChevronRight,
   Edit2,
   Trash2,
+  TrendingUp,
+  Filter,
+  User,
+  Sparkles,
 } from "lucide-react";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useUser } from "@clerk/nextjs";
-
-// Mock data - will be replaced with API hooks
-const mockGoalsData = {
-  summary: {
-    total: 8,
-    completed: 3,
-    inProgress: 4,
-    pending: 1,
-  },
-  goals: [
-    {
-      id: "1",
-      title: "Achieve 8.5+ CGPA",
-      description: "Maintain consistent academic performance",
-      category: "academic",
-      targetDate: "2026-05-31",
-      targetValue: 8.5,
-      currentValue: 8.2,
-      unit: "CGPA",
-      status: "active",
-      progress: 82,
-      isAiSuggested: false,
-      isMentorAssigned: true,
-    },
-    {
-      id: "2",
-      title: "Complete AWS Certification",
-      description: "Get AWS Cloud Practitioner certification",
-      category: "skill",
-      targetDate: "2026-02-28",
-      status: "active",
-      progress: 60,
-      isAiSuggested: true,
-      isMentorAssigned: false,
-    },
-    {
-      id: "3",
-      title: "Secure Summer Internship",
-      description: "Get an internship at a product company",
-      category: "career",
-      targetDate: "2026-03-31",
-      status: "active",
-      progress: 30,
-      isAiSuggested: false,
-      isMentorAssigned: false,
-    },
-    {
-      id: "4",
-      title: "Lead a Club Event",
-      description: "Organize a technical workshop for juniors",
-      category: "extracurricular",
-      targetDate: "2026-02-15",
-      status: "active",
-      progress: 45,
-      isAiSuggested: false,
-      isMentorAssigned: false,
-    },
-    {
-      id: "5",
-      title: "Complete 100 LeetCode Problems",
-      description: "Practice DSA for placements",
-      category: "skill",
-      targetValue: 100,
-      currentValue: 65,
-      unit: "problems",
-      status: "active",
-      progress: 65,
-      isAiSuggested: true,
-      isMentorAssigned: false,
-    },
-    {
-      id: "6",
-      title: "Learn React Framework",
-      description: "Master React for web development",
-      category: "skill",
-      status: "completed",
-      progress: 100,
-      isAiSuggested: false,
-      isMentorAssigned: false,
-    },
-    {
-      id: "7",
-      title: "Win Hackathon",
-      description: "Participate and win a college hackathon",
-      category: "extracurricular",
-      status: "completed",
-      progress: 100,
-      isAiSuggested: false,
-      isMentorAssigned: false,
-    },
-    {
-      id: "8",
-      title: "Build Portfolio Website",
-      description: "Create a personal portfolio to showcase projects",
-      category: "career",
-      status: "completed",
-      progress: 100,
-      isAiSuggested: false,
-      isMentorAssigned: false,
-    },
-  ],
-};
-
-const getCategoryIcon = (category: string) => {
-  switch (category) {
-    case "academic":
-      return <BookOpen className="h-5 w-5 text-blue-500" />;
-    case "career":
-      return <Briefcase className="h-5 w-5 text-purple-500" />;
-    case "skill":
-      return <Award className="h-5 w-5 text-yellow-500" />;
-    case "extracurricular":
-      return <Trophy className="h-5 w-5 text-green-500" />;
-    default:
-      return <Target className="h-5 w-5" />;
-  }
-};
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "completed":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-    case "active":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
+import { useStudentByUserId } from "@/hooks/use-api";
+import {
+  useMyGoals,
+  useCreateGoal,
+  useUpdateGoal,
+  useDeleteGoal,
+  useGoalSuggestions,
+  GoalCategory,
+  GoalStatus,
+  type Goal,
+  type CreateGoalInput,
+  type UpdateGoalInput,
+  type GoalSuggestion,
+} from "@/hooks/use-ai-guidance";
+import { GoalForm, GoalSuggestions, ProgressUpdateDialog } from "@/components/goals";
+import { GoalCard } from "@/components/guidance";
 
 export default function StudentGoalsPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
+  const [progressGoal, setProgressGoal] = useState<Goal | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const tenantId = useTenantId();
   const { user } = useUser();
 
-  const isLoading = false;
-  const data = mockGoalsData;
+  // Get student data
+  const { data: student, isLoading: studentLoading } = useStudentByUserId(
+    tenantId || "",
+    user?.id || ""
+  );
 
-  const filteredGoals = categoryFilter === "all"
-    ? data.goals
-    : data.goals.filter(g => g.category === categoryFilter);
+  // Fetch goals
+  const { data: goalsData, isLoading: goalsLoading, refetch: refetchGoals } = useMyGoals(
+    tenantId || "",
+    {
+      category: categoryFilter !== "all" ? categoryFilter as GoalCategory : undefined,
+      status: statusFilter !== "all" ? statusFilter as GoalStatus : undefined,
+    }
+  );
 
-  const activeGoals = filteredGoals.filter(g => g.status === "active");
-  const completedGoals = filteredGoals.filter(g => g.status === "completed");
+  // Fetch AI suggestions
+  const { data: suggestions, isLoading: suggestionsLoading, refetch: refetchSuggestions } = useGoalSuggestions(
+    tenantId || "",
+    student?.id || "",
+    5
+  );
+
+  // Mutations
+  const createGoal = useCreateGoal(tenantId || "");
+  const deleteGoal = useDeleteGoal(tenantId || "");
+
+  const isLoading = studentLoading || goalsLoading;
+  const goals = goalsData?.data || [];
+
+  // Calculate summary stats
+  const totalGoals = goals.length;
+  const completedGoals = goals.filter(g => g.status === GoalStatus.COMPLETED).length;
+  const activeGoals = goals.filter(g => g.status === GoalStatus.ACTIVE).length;
+  const completionRate = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0;
+
+  // Filter goals by status for display
+  const activeGoalsList = goals.filter(g => g.status === GoalStatus.ACTIVE);
+  const completedGoalsList = goals.filter(g => g.status === GoalStatus.COMPLETED);
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case GoalCategory.ACADEMIC:
+        return <BookOpen className="h-5 w-5 text-blue-500" />;
+      case GoalCategory.CAREER:
+        return <Briefcase className="h-5 w-5 text-purple-500" />;
+      case GoalCategory.SKILL:
+        return <Award className="h-5 w-5 text-yellow-500" />;
+      case GoalCategory.EXTRACURRICULAR:
+        return <Trophy className="h-5 w-5 text-green-500" />;
+      case GoalCategory.PERSONAL:
+        return <Heart className="h-5 w-5 text-pink-500" />;
+      default:
+        return <Target className="h-5 w-5" />;
+    }
+  };
+
+  const handleCreateGoal = (data: CreateGoalInput | UpdateGoalInput) => {
+    createGoal.mutate(data as CreateGoalInput, {
+      onSuccess: () => {
+        setShowAddDialog(false);
+        refetchGoals();
+      },
+    });
+  };
+
+  const handleUpdateGoal = (data: CreateGoalInput | UpdateGoalInput) => {
+    if (!editingGoal) return;
+    // Would use useUpdateGoal mutation
+    console.log("Update goal:", editingGoal.id, data);
+    setEditingGoal(null);
+    refetchGoals();
+  };
+
+  const handleDeleteGoal = () => {
+    if (!deletingGoal) return;
+    deleteGoal.mutate(deletingGoal.id, {
+      onSuccess: () => {
+        setDeletingGoal(null);
+        refetchGoals();
+      },
+    });
+  };
+
+  const handleUpdateProgress = (goalId: string, progress: number, currentValue?: number) => {
+    console.log("Update progress:", goalId, progress, currentValue);
+    setProgressGoal(null);
+    refetchGoals();
+  };
+
+  const handleAcceptSuggestion = (suggestion: GoalSuggestion) => {
+    if (!student?.id) return;
+    const goalData: CreateGoalInput = {
+      studentId: student.id,
+      title: suggestion.title,
+      description: suggestion.description,
+      category: suggestion.category as GoalCategory,
+      targetValue: suggestion.targetValue,
+      unit: suggestion.unit,
+      isAiSuggested: true,
+    };
+    createGoal.mutate(goalData, {
+      onSuccess: () => {
+        refetchGoals();
+        refetchSuggestions();
+      },
+    });
+  };
 
   if (isLoading) {
     return (
@@ -206,6 +199,7 @@ export default function StudentGoalsPage() {
             <Skeleton key={i} className="h-24" />
           ))}
         </div>
+        <Skeleton className="h-48" />
         <Skeleton className="h-96" />
       </div>
     );
@@ -221,70 +215,10 @@ export default function StudentGoalsPage() {
             Track and manage your personal and academic goals
           </p>
         </div>
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Goal
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Goal</DialogTitle>
-              <DialogDescription>
-                Set a new goal to track your progress
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Title</label>
-                <Input placeholder="Enter goal title" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Description</label>
-                <Textarea placeholder="Describe your goal" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Category</label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="academic">Academic</SelectItem>
-                      <SelectItem value="career">Career</SelectItem>
-                      <SelectItem value="skill">Skill</SelectItem>
-                      <SelectItem value="extracurricular">Extracurricular</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Target Date</label>
-                  <Input type="date" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Target Value (optional)</label>
-                  <Input type="number" placeholder="e.g., 100" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Unit (optional)</label>
-                  <Input placeholder="e.g., problems, hours" />
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => setShowAddDialog(false)}>
-                Create Goal
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setShowAddDialog(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Goal
+        </Button>
       </div>
 
       {/* Summary Cards */}
@@ -297,22 +231,8 @@ export default function StudentGoalsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">{data.summary.total}</span>
+              <span className="text-2xl font-bold">{totalGoals}</span>
               <Target className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Completed
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-green-600">{data.summary.completed}</span>
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -325,8 +245,22 @@ export default function StudentGoalsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-blue-600">{data.summary.inProgress}</span>
+              <span className="text-2xl font-bold text-blue-600">{activeGoals}</span>
               <Clock className="h-5 w-5 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Completed
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold text-green-600">{completedGoals}</span>
+              <CheckCircle2 className="h-5 w-5 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -339,48 +273,87 @@ export default function StudentGoalsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">
-                {Math.round((data.summary.completed / data.summary.total) * 100)}%
-              </span>
+              <span className="text-2xl font-bold">{completionRate}%</span>
+              <TrendingUp className={`h-5 w-5 ${completionRate >= 50 ? 'text-green-500' : 'text-yellow-500'}`} />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filter */}
+      {/* AI Suggestions */}
+      <GoalSuggestions
+        suggestions={suggestions}
+        isLoading={suggestionsLoading}
+        onAcceptSuggestion={handleAcceptSuggestion}
+        onRefresh={() => refetchSuggestions()}
+        isRefreshing={suggestionsLoading}
+      />
+
+      {/* Filters */}
       <div className="flex items-center gap-4">
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="academic">Academic</SelectItem>
-            <SelectItem value="career">Career</SelectItem>
-            <SelectItem value="skill">Skill</SelectItem>
-            <SelectItem value="extracurricular">Extracurricular</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value={GoalCategory.ACADEMIC}>Academic</SelectItem>
+              <SelectItem value={GoalCategory.CAREER}>Career</SelectItem>
+              <SelectItem value={GoalCategory.SKILL}>Skill</SelectItem>
+              <SelectItem value={GoalCategory.EXTRACURRICULAR}>Extracurricular</SelectItem>
+              <SelectItem value={GoalCategory.PERSONAL}>Personal</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value={GoalStatus.ACTIVE}>Active</SelectItem>
+              <SelectItem value={GoalStatus.COMPLETED}>Completed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex-1" />
+
+        <Badge variant="outline" className="text-sm">
+          {goals.length} goal{goals.length !== 1 ? 's' : ''}
+        </Badge>
       </div>
 
       {/* Active Goals */}
-      {activeGoals.length > 0 && (
+      {activeGoalsList.length > 0 && (statusFilter === "all" || statusFilter === GoalStatus.ACTIVE) && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Active Goals</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Clock className="h-5 w-5 text-blue-500" />
+            Active Goals
+            <Badge variant="secondary">{activeGoalsList.length}</Badge>
+          </h2>
           <div className="grid gap-4 md:grid-cols-2">
-            {activeGoals.map((goal) => (
-              <Card key={goal.id}>
+            {activeGoalsList.map((goal) => (
+              <Card key={goal.id} className="relative">
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
                       {getCategoryIcon(goal.category)}
                       <div>
-                        <CardTitle className="text-base flex items-center gap-2">
+                        <CardTitle className="text-base flex items-center gap-2 flex-wrap">
                           {goal.title}
                           {goal.isAiSuggested && (
                             <Badge variant="outline" className="text-xs">
-                              <Brain className="h-3 w-3 mr-1" />
-                              AI Suggested
+                              <Sparkles className="h-3 w-3 mr-1" />
+                              AI
+                            </Badge>
+                          )}
+                          {goal.isMentorAssigned && (
+                            <Badge variant="outline" className="text-xs">
+                              <User className="h-3 w-3 mr-1" />
+                              Mentor
                             </Badge>
                           )}
                         </CardTitle>
@@ -391,11 +364,29 @@ export default function StudentGoalsPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => setProgressGoal(goal)}
+                      >
+                        <TrendingUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => setEditingGoal(goal)}
+                      >
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-500">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={() => setDeletingGoal(goal)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -427,14 +418,17 @@ export default function StudentGoalsPage() {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
                         Target: {new Date(goal.targetDate).toLocaleDateString()}
+                        {new Date(goal.targetDate) < new Date() && (
+                          <Badge variant="destructive" className="text-xs">Overdue</Badge>
+                        )}
                       </div>
                     )}
 
-                    {/* Mentor Badge */}
-                    {goal.isMentorAssigned && (
-                      <Badge variant="secondary" className="text-xs">
-                        Mentor Assigned
-                      </Badge>
+                    {/* Milestones preview */}
+                    {goal.milestones && goal.milestones.length > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        {goal.milestones.filter(m => m.completed).length}/{goal.milestones.length} milestones completed
+                      </div>
                     )}
                   </div>
                 </CardContent>
@@ -445,15 +439,19 @@ export default function StudentGoalsPage() {
       )}
 
       {/* Completed Goals */}
-      {completedGoals.length > 0 && (
+      {completedGoalsList.length > 0 && (statusFilter === "all" || statusFilter === GoalStatus.COMPLETED) && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Completed Goals</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            Completed Goals
+            <Badge variant="secondary">{completedGoalsList.length}</Badge>
+          </h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {completedGoals.map((goal) => (
+            {completedGoalsList.map((goal) => (
               <Card key={goal.id} className="bg-green-50/50 dark:bg-green-950/20">
                 <CardHeader className="pb-2">
                   <div className="flex items-start gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
                     <div>
                       <CardTitle className="text-base">{goal.title}</CardTitle>
                       {goal.description && (
@@ -465,9 +463,16 @@ export default function StudentGoalsPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Badge className={getStatusColor(goal.status)}>
-                    Completed
-                  </Badge>
+                  <div className="flex items-center justify-between">
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                      Completed
+                    </Badge>
+                    {goal.completedAt && (
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(goal.completedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -476,15 +481,15 @@ export default function StudentGoalsPage() {
       )}
 
       {/* Empty State */}
-      {filteredGoals.length === 0 && (
+      {goals.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Target className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">No Goals Found</h3>
             <p className="text-muted-foreground text-center mb-4">
-              {categoryFilter !== "all"
-                ? `No goals in the ${categoryFilter} category yet.`
-                : "Start by adding your first goal."}
+              {categoryFilter !== "all" || statusFilter !== "all"
+                ? "No goals match your current filters."
+                : "Start by adding your first goal to track your progress."}
             </p>
             <Button onClick={() => setShowAddDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
@@ -493,6 +498,57 @@ export default function StudentGoalsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Goal Form Dialog */}
+      <GoalForm
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        studentId={student?.id || ""}
+        onSubmit={handleCreateGoal}
+        isLoading={createGoal.isPending}
+        mode="create"
+      />
+
+      {/* Edit Goal Dialog */}
+      <GoalForm
+        open={!!editingGoal}
+        onOpenChange={(open) => !open && setEditingGoal(null)}
+        goal={editingGoal}
+        studentId={student?.id || ""}
+        onSubmit={handleUpdateGoal}
+        isLoading={false}
+        mode="edit"
+      />
+
+      {/* Progress Update Dialog */}
+      <ProgressUpdateDialog
+        open={!!progressGoal}
+        onOpenChange={(open) => !open && setProgressGoal(null)}
+        goal={progressGoal}
+        onUpdate={handleUpdateProgress}
+        isLoading={false}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingGoal} onOpenChange={(open) => !open && setDeletingGoal(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Goal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingGoal?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteGoal}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {deleteGoal.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
