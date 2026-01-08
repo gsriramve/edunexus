@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   TrendingUp,
   TrendingDown,
@@ -23,6 +24,7 @@ import {
   ChevronRight,
   Target,
   Lightbulb,
+  RefreshCw,
 } from "lucide-react";
 import {
   Tooltip,
@@ -30,61 +32,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-// Placeholder data - will be replaced with API calls
-const mockSGIData = {
-  currentScore: 72,
-  previousScore: 68,
-  trend: "improving" as const,
-  trendDelta: 4,
-  month: "January",
-  year: 2026,
-  dataCompleteness: 0.85,
-  components: {
-    academic: {
-      score: 75,
-      weight: 40,
-      breakdown: {
-        cgpaTrend: "+0.3 this semester",
-        examImprovement: "12% better than last exam",
-        assignments: "85% completion rate",
-      },
-    },
-    engagement: {
-      score: 68,
-      weight: 30,
-      breakdown: {
-        clubActivity: "Active in 2 clubs",
-        eventsAttended: "5 events this month",
-        attendanceRate: "92% attendance",
-      },
-    },
-    skills: {
-      score: 70,
-      weight: 20,
-      breakdown: {
-        certifications: "2 new certifications",
-        projects: "1 ongoing project",
-        internships: "No internship yet",
-      },
-    },
-    behavioral: {
-      score: 78,
-      weight: 10,
-      breakdown: {
-        feedbackScore: "4.2/5 from peers",
-        punctuality: "95% on-time",
-        discipline: "No incidents",
-      },
-    },
-  },
-  insights: "Your SGI improved by 4 points this month! Academic performance is your strongest area. Consider joining more skill-building activities to boost your overall growth.",
-  recommendations: [
-    { category: "skills", action: "Complete an online certification in your field", priority: "high" },
-    { category: "engagement", action: "Participate in the upcoming tech fest", priority: "medium" },
-    { category: "career", action: "Apply for summer internship programs", priority: "high" },
-  ],
-};
+import { useTenantId } from "@/hooks/use-tenant";
+import { useStudentByUserId, useStudentSgi, useCalculateSgi, type SgiData } from "@/hooks/use-api";
+import { useUser } from "@clerk/nextjs";
 
 const getTrendIcon = (trend: string) => {
   switch (trend) {
@@ -130,16 +80,124 @@ const getScoreColor = (score: number) => {
   return "text-red-600";
 };
 
-const getProgressColor = (score: number) => {
-  if (score >= 80) return "bg-green-500";
-  if (score >= 60) return "bg-blue-500";
-  if (score >= 40) return "bg-yellow-500";
-  return "bg-red-500";
+// Component weights (default)
+const componentWeights = {
+  academic: 40,
+  engagement: 30,
+  skills: 20,
+  behavioral: 10,
 };
 
 export default function StudentGrowthPage() {
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
-  const data = mockSGIData;
+  const tenantId = useTenantId();
+  const { user } = useUser();
+
+  const { data: student, isLoading: studentLoading } = useStudentByUserId(
+    tenantId || "",
+    user?.id || ""
+  );
+
+  const { data: sgiData, isLoading: sgiLoading, refetch: refetchSgi } = useStudentSgi(
+    tenantId || "",
+    student?.id || ""
+  );
+
+  const calculateSgi = useCalculateSgi(tenantId || "");
+
+  const isLoading = studentLoading || sgiLoading;
+
+  // Get the latest SGI data
+  const sgi: SgiData | null = sgiData && "latest" in sgiData ? sgiData.latest : (sgiData as SgiData | null);
+  const sgiHistory = sgiData && "history" in sgiData ? sgiData.history : [];
+
+  // Previous score from history
+  const previousSgi = sgiHistory.length > 1 ? sgiHistory[1]?.sgiScore : undefined;
+
+  const handleRecalculate = () => {
+    if (student?.id) {
+      const now = new Date();
+      calculateSgi.mutate({
+        studentId: student.id,
+        month: now.getMonth() + 1,
+        year: now.getFullYear(),
+      });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-64 mb-2" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+        </div>
+        <Skeleton className="h-48" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!sgi) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">My Growth Index</h1>
+          <p className="text-muted-foreground">
+            Track your holistic development with the Student Growth Index (SGI)
+          </p>
+        </div>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No SGI Data Available</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              Your Student Growth Index hasn't been calculated yet. <br />
+              Complete more activities and assessments to generate your SGI.
+            </p>
+            <Button onClick={handleRecalculate} disabled={calculateSgi.isPending}>
+              {calculateSgi.isPending ? "Calculating..." : "Calculate SGI Now"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Build components data from SGI
+  const components = {
+    academic: {
+      score: sgi.academicScore,
+      weight: componentWeights.academic,
+      breakdown: sgi.academicBreakdown || {},
+    },
+    engagement: {
+      score: sgi.engagementScore,
+      weight: componentWeights.engagement,
+      breakdown: sgi.engagementBreakdown || {},
+    },
+    skills: {
+      score: sgi.skillsScore,
+      weight: componentWeights.skills,
+      breakdown: sgi.skillsBreakdown || {},
+    },
+    behavioral: {
+      score: sgi.behavioralScore,
+      weight: componentWeights.behavioral,
+      breakdown: sgi.behavioralBreakdown || {},
+    },
+  };
+
+  // Parse recommendations
+  const recommendations = Array.isArray(sgi.recommendations)
+    ? sgi.recommendations
+    : [];
 
   return (
     <div className="space-y-6">
@@ -151,9 +209,20 @@ export default function StudentGrowthPage() {
             Track your holistic development with the Student Growth Index (SGI)
           </p>
         </div>
-        <Badge variant="outline" className="text-sm">
-          {data.month} {data.year}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-sm">
+            {new Date(0, sgi.month - 1).toLocaleString('default', { month: 'long' })} {sgi.year}
+          </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRecalculate}
+            disabled={calculateSgi.isPending}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${calculateSgi.isPending ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Main SGI Score Card */}
@@ -190,8 +259,8 @@ export default function StudentGrowthPage() {
             <div className="relative">
               <div className="w-32 h-32 rounded-full border-8 border-primary/20 flex items-center justify-center">
                 <div className="text-center">
-                  <span className={`text-4xl font-bold ${getScoreColor(data.currentScore)}`}>
-                    {data.currentScore}
+                  <span className={`text-4xl font-bold ${getScoreColor(sgi.sgiScore)}`}>
+                    {Math.round(sgi.sgiScore)}
                   </span>
                   <span className="text-muted-foreground text-sm block">/100</span>
                 </div>
@@ -201,22 +270,26 @@ export default function StudentGrowthPage() {
             {/* Trend and Delta */}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-4">
-                {getTrendIcon(data.trend)}
-                <span className={`px-2 py-1 rounded-full text-sm font-medium ${getTrendColor(data.trend)}`}>
-                  {data.trend === "improving" ? "+" : data.trend === "declining" ? "-" : ""}
-                  {Math.abs(data.trendDelta)} points from last month
+                {getTrendIcon(sgi.sgiTrend)}
+                <span className={`px-2 py-1 rounded-full text-sm font-medium ${getTrendColor(sgi.sgiTrend)}`}>
+                  {sgi.sgiTrend === "improving" ? "+" : sgi.sgiTrend === "declining" ? "" : ""}
+                  {sgi.trendDelta > 0 ? "+" : ""}{sgi.trendDelta.toFixed(1)} points from last month
                 </span>
               </div>
 
-              <p className="text-sm text-muted-foreground mb-4">
-                Previous score: {data.previousScore}
-              </p>
+              {previousSgi !== undefined && (
+                <p className="text-sm text-muted-foreground mb-4">
+                  Previous score: {Math.round(previousSgi)}
+                </p>
+              )}
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Data completeness:</span>
-                <Progress value={data.dataCompleteness * 100} className="w-24 h-2" />
-                <span className="text-xs text-muted-foreground">{Math.round(data.dataCompleteness * 100)}%</span>
-              </div>
+              {sgi.dataCompleteness !== undefined && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Data completeness:</span>
+                  <Progress value={sgi.dataCompleteness * 100} className="w-24 h-2" />
+                  <span className="text-xs text-muted-foreground">{Math.round(sgi.dataCompleteness * 100)}%</span>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -224,7 +297,7 @@ export default function StudentGrowthPage() {
 
       {/* Component Breakdown */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Object.entries(data.components).map(([key, component]) => (
+        {Object.entries(components).map(([key, component]) => (
           <Card
             key={key}
             className={`cursor-pointer transition-all hover:shadow-md ${
@@ -247,7 +320,7 @@ export default function StudentGrowthPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className={`text-2xl font-bold ${getScoreColor(component.score)}`}>
-                    {component.score}
+                    {Math.round(component.score)}
                   </span>
                   <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${
                     selectedComponent === key ? "rotate-90" : ""
@@ -276,13 +349,78 @@ export default function StudentGrowthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              {Object.entries(data.components[selectedComponent as keyof typeof data.components].breakdown).map(([metric, value]) => (
-                <div key={metric} className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {metric.replace(/([A-Z])/g, ' $1').trim()}
-                  </p>
-                  <p className="font-medium">{value}</p>
+            {components[selectedComponent as keyof typeof components].breakdown &&
+            Object.keys(components[selectedComponent as keyof typeof components].breakdown).length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-3">
+                {Object.entries(components[selectedComponent as keyof typeof components].breakdown).map(([metric, value]) => (
+                  <div key={metric} className="p-4 rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground capitalize">
+                      {metric.replace(/([A-Z])/g, ' $1').trim()}
+                    </p>
+                    <p className="font-medium">
+                      {typeof value === 'number' ? value.toFixed(1) : String(value)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">
+                No detailed breakdown available for this component.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Insights */}
+      {sgi.insightsSummary && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              AI Insights
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">{sgi.insightsSummary}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recommendations */}
+      {recommendations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Recommended Actions
+            </CardTitle>
+            <CardDescription>
+              Personalized recommendations to improve your growth index
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recommendations.map((rec: any, index: number) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                >
+                  <Badge
+                    variant={rec.priority === "high" ? "destructive" : "secondary"}
+                    className="shrink-0"
+                  >
+                    {rec.priority || "medium"}
+                  </Badge>
+                  <div className="flex-1">
+                    <p className="font-medium">{rec.action || rec.title || rec}</p>
+                    {rec.category && (
+                      <p className="text-sm text-muted-foreground capitalize">{rec.category}</p>
+                    )}
+                  </div>
+                  <Button variant="outline" size="sm">
+                    Learn More
+                  </Button>
                 </div>
               ))}
             </div>
@@ -290,55 +428,40 @@ export default function StudentGrowthPage() {
         </Card>
       )}
 
-      {/* AI Insights */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-yellow-500" />
-            AI Insights
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">{data.insights}</p>
-        </CardContent>
-      </Card>
-
-      {/* Recommendations */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Recommended Actions
-          </CardTitle>
-          <CardDescription>
-            Personalized recommendations to improve your growth index
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {data.recommendations.map((rec, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-              >
-                <Badge
-                  variant={rec.priority === "high" ? "destructive" : "secondary"}
-                  className="shrink-0"
+      {/* SGI History */}
+      {sgiHistory.length > 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>SGI History</CardTitle>
+            <CardDescription>Your growth index over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {sgiHistory.slice(0, 6).map((item: SgiData, index: number) => (
+                <div
+                  key={item.id}
+                  className={`flex-shrink-0 p-4 rounded-lg border ${
+                    index === 0 ? "bg-primary/5 border-primary" : "bg-card"
+                  }`}
                 >
-                  {rec.priority}
-                </Badge>
-                <div className="flex-1">
-                  <p className="font-medium">{rec.action}</p>
-                  <p className="text-sm text-muted-foreground capitalize">{rec.category}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(0, item.month - 1).toLocaleString('default', { month: 'short' })} {item.year}
+                  </p>
+                  <p className={`text-2xl font-bold ${getScoreColor(item.sgiScore)}`}>
+                    {Math.round(item.sgiScore)}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1">
+                    {getTrendIcon(item.sgiTrend)}
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {item.sgiTrend}
+                    </span>
+                  </div>
                 </div>
-                <Button variant="outline" size="sm">
-                  Learn More
-                </Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -33,6 +33,8 @@ import {
   Handshake,
   Calendar,
   Shield,
+  Camera,
+  ScanFace,
 } from "lucide-react";
 import { useClerk } from "@clerk/nextjs";
 import {
@@ -61,6 +63,7 @@ const principalNav = [
   { title: "Dashboard", href: "/principal", icon: LayoutDashboard },
   { title: "Institution Metrics", href: "/principal/institution-metrics", icon: TrendingUp },
   { title: "Accreditation", href: "/principal/accreditation", icon: Shield },
+  { title: "Face Recognition", href: "/principal/face-recognition", icon: ScanFace },
   { title: "Alumni", href: "/principal/alumni", icon: GraduationCap },
   { title: "Feedback Cycles", href: "/principal/feedback-cycles", icon: MessageSquare },
   { title: "Departments", href: "/principal/departments", icon: Building2 },
@@ -78,6 +81,7 @@ const hodNav = [
   { title: "Dashboard", href: "/hod", icon: LayoutDashboard },
   { title: "Department Health", href: "/hod/department-health", icon: TrendingUp },
   { title: "Skill Gaps", href: "/hod/skill-gaps", icon: Target },
+  { title: "Face Enrollment", href: "/hod/face-enrollment", icon: ScanFace },
   { title: "Feedback Cycles", href: "/hod/feedback-cycles", icon: MessageSquare },
   { title: "Faculty", href: "/hod/faculty", icon: Users },
   { title: "Students", href: "/hod/students", icon: GraduationCap },
@@ -93,6 +97,7 @@ const teacherNav = [
   { title: "Student Alerts", href: "/teacher/alerts", icon: Bell },
   { title: "My Classes", href: "/teacher/classes", icon: BookOpen },
   { title: "Attendance", href: "/teacher/attendance", icon: CalendarDays },
+  { title: "Face Attendance", href: "/teacher/face-attendance", icon: Camera },
   { title: "Assignments", href: "/teacher/assignments", icon: FileText },
   { title: "Results", href: "/teacher/results", icon: BarChart3 },
   { title: "Messages", href: "/teacher/messages", icon: Bell },

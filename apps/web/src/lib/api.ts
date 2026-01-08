@@ -5776,4 +5776,382 @@ export const idCardsApi = {
     api<IdCardStats>('/id-cards/stats', { tenantId }),
 };
 
+// ============ Face Recognition API ============
+
+export type FaceEnrollmentStatus = 'pending' | 'active' | 'failed';
+export type FaceSessionStatus = 'pending' | 'processing' | 'review' | 'confirmed' | 'cancelled';
+export type DetectedFaceStatus = 'matched' | 'unmatched' | 'manual_override' | 'ignored';
+export type FaceAttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
+
+export interface BoundingBox {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+export interface FaceEnrollment {
+  id: string;
+  tenantId: string;
+  studentId: string;
+  collectionId: string;
+  faceId: string;
+  sourceImageUrl?: string;
+  enrollmentQuality?: number;
+  status: FaceEnrollmentStatus;
+  failureReason?: string;
+  enrolledBy?: string;
+  enrolledAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  student?: {
+    id: string;
+    rollNo: string;
+    user: { name: string; email?: string };
+    department: { id: string; name: string; code: string };
+  };
+}
+
+export interface EnrollStudentInput {
+  studentId: string;
+  imageUrl?: string;
+  imageBase64?: string;
+}
+
+export interface BulkEnrollInput {
+  enrollments: EnrollStudentInput[];
+}
+
+export interface EnrollmentResult {
+  studentId: string;
+  success: boolean;
+  faceId?: string;
+  quality?: number;
+  error?: string;
+}
+
+export interface BulkEnrollResult {
+  total: number;
+  successful: number;
+  failed: number;
+  results: EnrollmentResult[];
+}
+
+export interface EnrollmentStats {
+  total: number;
+  active: number;
+  pending: number;
+  failed: number;
+  byDepartment: Array<{
+    departmentId: string;
+    departmentName: string;
+    enrolled: number;
+    total: number;
+    percentage: number;
+  }>;
+}
+
+export interface QueryEnrollmentsParams {
+  status?: FaceEnrollmentStatus;
+  departmentId?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+// Attendance Session Types
+export interface MatchedStudent {
+  id: string;
+  name: string;
+  rollNo: string;
+  photoUrl?: string;
+}
+
+export interface DetectedFaceResult {
+  id: string;
+  boundingBox: BoundingBox;
+  matchedStudent?: MatchedStudent;
+  matchConfidence?: number;
+  status: DetectedFaceStatus;
+  attendanceStatus: FaceAttendanceStatus;
+}
+
+export interface SessionResult {
+  id: string;
+  status: FaceSessionStatus;
+  totalFacesDetected: number;
+  matchedFaces: number;
+  unmatchedFaces: number;
+  detectedFaces: DetectedFaceResult[];
+  classPhotoUrl: string;
+  date: string;
+}
+
+export interface CreateSessionInput {
+  departmentId: string;
+  section?: string;
+  subjectId?: string;
+  classPhotoUrl: string;
+  date: string;
+}
+
+export interface ProcessSessionInput {
+  sessionId: string;
+  matchThreshold?: number;
+}
+
+export interface ConfirmSessionInput {
+  sessionId: string;
+  overrides?: Array<{
+    detectedFaceId: string;
+    studentId?: string;
+    attendanceStatus?: FaceAttendanceStatus;
+  }>;
+}
+
+export interface QuerySessionsParams {
+  departmentId?: string;
+  section?: string;
+  status?: FaceSessionStatus;
+  createdBy?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AttendanceSessionStats {
+  totalSessions: number;
+  todaySessions: number;
+  averageMatchRate: number;
+  totalStudentsMarked: number;
+  byDepartment: Array<{
+    departmentId: string;
+    departmentName: string;
+    sessions: number;
+    averageMatchRate: number;
+  }>;
+}
+
+export interface UpdateDetectedFaceInput {
+  overrideStudentId?: string;
+  status?: DetectedFaceStatus;
+  attendanceStatus?: FaceAttendanceStatus;
+}
+
+export interface BulkUpdateFacesInput {
+  updates: Array<{
+    detectedFaceId: string;
+    overrideStudentId?: string;
+    attendanceStatus?: FaceAttendanceStatus;
+  }>;
+}
+
+export interface FaceRecognitionConfig {
+  isConfigured: boolean;
+  collectionId: string;
+  matchThreshold: number;
+  enrollmentQualityThreshold: number;
+  autoConfirmHighConfidence: boolean;
+  requireManualReview: boolean;
+  maxFacesPerPhoto: number;
+}
+
+export interface DetectFacesInput {
+  imageUrl?: string;
+  imageBase64?: string;
+}
+
+export interface SearchFaceInput {
+  imageUrl?: string;
+  imageBase64?: string;
+  threshold?: number;
+  maxFaces?: number;
+}
+
+export interface FaceMatch {
+  faceId: string;
+  similarity: number;
+  studentId?: string;
+}
+
+export interface SectionStudent {
+  id: string;
+  rollNo: string;
+  section?: string;
+  user: {
+    name: string;
+    profile?: { photoUrl?: string };
+  };
+  faceEnrollment?: { status: FaceEnrollmentStatus };
+}
+
+export const faceRecognitionApi = {
+  // ============ Enrollment ============
+
+  // Enroll a student's face
+  enroll: (tenantId: string, data: EnrollStudentInput) =>
+    api<EnrollmentResult>('/face-recognition/enroll', { method: 'POST', body: data, tenantId }),
+
+  // Bulk enroll multiple students
+  bulkEnroll: (tenantId: string, data: BulkEnrollInput) =>
+    api<BulkEnrollResult>('/face-recognition/enroll/bulk', { method: 'POST', body: data, tenantId }),
+
+  // Re-enroll a student (update face)
+  reEnroll: (tenantId: string, studentId: string, imageUrl: string) =>
+    api<EnrollmentResult>(`/face-recognition/enroll/${studentId}/re-enroll`, {
+      method: 'POST',
+      body: { imageUrl },
+      tenantId,
+    }),
+
+  // Unenroll a student
+  unenroll: (tenantId: string, studentId: string) =>
+    api<void>(`/face-recognition/enroll/${studentId}`, { method: 'DELETE', tenantId }),
+
+  // Get enrollment for a student
+  getEnrollment: (tenantId: string, studentId: string) =>
+    api<FaceEnrollment>(`/face-recognition/enrollments/${studentId}`, { tenantId }),
+
+  // Query enrollments
+  queryEnrollments: (tenantId: string, params?: QueryEnrollmentsParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.departmentId) searchParams.set('departmentId', params.departmentId);
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: FaceEnrollment[]; total: number }>(
+      `/face-recognition/enrollments${query ? `?${query}` : ''}`,
+      { tenantId }
+    );
+  },
+
+  // Get enrollment statistics
+  getEnrollmentStats: (tenantId: string) =>
+    api<EnrollmentStats>('/face-recognition/enrollments/stats', { tenantId }),
+
+  // Get unenrolled students
+  getUnenrolledStudents: (tenantId: string, params?: { departmentId?: string; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.departmentId) searchParams.set('departmentId', params.departmentId);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    const query = searchParams.toString();
+    return api<SectionStudent[]>(
+      `/face-recognition/enrollments/unenrolled${query ? `?${query}` : ''}`,
+      { tenantId }
+    );
+  },
+
+  // Check enrollment status
+  checkEnrollmentStatus: (tenantId: string, studentId: string) =>
+    api<{ studentId: string; isEnrolled: boolean }>(
+      `/face-recognition/enrollments/${studentId}/status`,
+      { tenantId }
+    ),
+
+  // ============ Attendance Sessions ============
+
+  // Create a new session
+  createSession: (tenantId: string, data: CreateSessionInput) =>
+    api<SessionResult>('/face-recognition/sessions', { method: 'POST', body: data, tenantId }),
+
+  // Process a session (detect and match faces)
+  processSession: (tenantId: string, sessionId: string, matchThreshold?: number) =>
+    api<SessionResult>(`/face-recognition/sessions/${sessionId}/process`, {
+      method: 'POST',
+      body: { matchThreshold },
+      tenantId,
+    }),
+
+  // Confirm a session
+  confirmSession: (tenantId: string, sessionId: string, overrides?: ConfirmSessionInput['overrides']) =>
+    api<SessionResult>(`/face-recognition/sessions/${sessionId}/confirm`, {
+      method: 'POST',
+      body: { overrides },
+      tenantId,
+    }),
+
+  // Cancel a session
+  cancelSession: (tenantId: string, sessionId: string) =>
+    api<void>(`/face-recognition/sessions/${sessionId}/cancel`, { method: 'POST', tenantId }),
+
+  // Get a session by ID
+  getSession: (tenantId: string, sessionId: string) =>
+    api<SessionResult>(`/face-recognition/sessions/${sessionId}`, { tenantId }),
+
+  // Query sessions
+  querySessions: (tenantId: string, params?: QuerySessionsParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.departmentId) searchParams.set('departmentId', params.departmentId);
+    if (params?.section) searchParams.set('section', params.section);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.createdBy) searchParams.set('createdBy', params.createdBy);
+    if (params?.dateFrom) searchParams.set('dateFrom', params.dateFrom);
+    if (params?.dateTo) searchParams.set('dateTo', params.dateTo);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: SessionResult[]; total: number }>(
+      `/face-recognition/sessions${query ? `?${query}` : ''}`,
+      { tenantId }
+    );
+  },
+
+  // Get attendance statistics
+  getAttendanceStats: (tenantId: string) =>
+    api<AttendanceSessionStats>('/face-recognition/sessions/stats', { tenantId }),
+
+  // ============ Detected Faces ============
+
+  // Update a detected face
+  updateDetectedFace: (tenantId: string, faceId: string, data: UpdateDetectedFaceInput) =>
+    api<DetectedFaceResult>(`/face-recognition/faces/${faceId}`, {
+      method: 'PUT',
+      body: data,
+      tenantId,
+    }),
+
+  // Bulk update detected faces
+  bulkUpdateFaces: (tenantId: string, data: BulkUpdateFacesInput) =>
+    api<{ updated: number }>('/face-recognition/faces/bulk', { method: 'PUT', body: data, tenantId }),
+
+  // ============ Utility ============
+
+  // Get students in a section (for face matching suggestions)
+  getSectionStudents: (tenantId: string, params?: { departmentId?: string; section?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.departmentId) searchParams.set('departmentId', params.departmentId);
+    if (params?.section) searchParams.set('section', params.section);
+    const query = searchParams.toString();
+    return api<SectionStudent[]>(
+      `/face-recognition/section-students${query ? `?${query}` : ''}`,
+      { tenantId }
+    );
+  },
+
+  // Detect faces in an image
+  detectFaces: (tenantId: string, data: DetectFacesInput) =>
+    api<Array<{ boundingBox: BoundingBox; confidence: number }>>(
+      '/face-recognition/detect',
+      { method: 'POST', body: data, tenantId }
+    ),
+
+  // Search for a face in enrolled students
+  searchFace: (tenantId: string, data: SearchFaceInput) =>
+    api<FaceMatch[]>('/face-recognition/search', { method: 'POST', body: data, tenantId }),
+
+  // Get configuration
+  getConfig: (tenantId: string) =>
+    api<FaceRecognitionConfig>('/face-recognition/config', { tenantId }),
+
+  // Initialize collection
+  initializeCollection: (tenantId: string) =>
+    api<{ collectionId: string; status: string }>(
+      '/face-recognition/collection/initialize',
+      { method: 'POST', tenantId }
+    ),
+};
+
 export { ApiError };

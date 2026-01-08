@@ -28,6 +28,10 @@ import { IdCardsModule } from './modules/id-cards/id-cards.module';
 import { StudentIndicesModule } from './modules/student-indices/student-indices.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { AiGuidanceModule } from './modules/ai-guidance/ai-guidance.module';
+import { StudentJourneyModule } from './modules/student-journey/student-journey.module';
+import { AlumniModule } from './modules/alumni/alumni.module';
+import { AccreditationModule } from './modules/accreditation/accreditation.module';
+import { FaceRecognitionModule } from './modules/face-recognition/face-recognition.module';
 
 @Module({
   imports: [
@@ -74,6 +78,10 @@ import { AiGuidanceModule } from './modules/ai-guidance/ai-guidance.module';
     StudentIndicesModule,
     FeedbackModule,
     AiGuidanceModule,
+    StudentJourneyModule,
+    AlumniModule,
+    AccreditationModule,
+    FaceRecognitionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
