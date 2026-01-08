@@ -595,7 +595,7 @@ export default function StaffPage() {
                     <TableCell>
                       <div className="flex items-center">
                         <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span>{staff.department.code}</span>
+                        <span>{staff.department?.code || "—"}</span>
                       </div>
                     </TableCell>
                     <TableCell>
