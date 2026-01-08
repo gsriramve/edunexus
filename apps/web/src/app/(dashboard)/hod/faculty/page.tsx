@@ -58,165 +58,34 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
-import { useStaff, useStaffStats } from "@/hooks/use-api";
+import {
+  useHodFaculty,
+  useDepartmentTimetable,
+  useWorkloadDetails,
+  type FacultyDto,
+} from "@/hooks/use-hod-faculty";
 
-// TODO: Replace mock data with API calls when backend endpoints are implemented
-// Required endpoints:
-// - GET /staff/by-user/:userId - Get staff member by Clerk user ID (to get HOD's departmentId)
-// - GET /staff?departmentId=X - Already implemented, filter staff by department
-// - GET /hod/workload - Faculty workload summary for department
-// - GET /hod/timetable - Department timetable
-// - GET /hod/leave-requests - Pending leave requests for department
-
-// Mock faculty data
-const facultyList = [
-  {
-    id: "fac-1",
-    name: "Dr. Priya Sharma",
-    employeeId: "CSE-FAC-001",
-    designation: "Associate Professor",
-    qualification: "Ph.D. (Computer Science)",
-    specialization: "Machine Learning, Data Mining",
-    email: "priya.sharma@college.edu",
-    phone: "+91 98765 43210",
-    joinDate: "Aug 2015",
-    experience: "10 years",
-    subjects: ["Computer Networks", "Data Communication"],
-    totalClasses: 45,
-    classesTaken: 42,
-    attendance: 93,
-    status: "active",
-    onLeave: false,
-  },
-  {
-    id: "fac-2",
-    name: "Dr. Arun Menon",
-    employeeId: "CSE-FAC-002",
-    designation: "Associate Professor",
-    qualification: "Ph.D. (Computer Science)",
-    specialization: "Operating Systems, Distributed Computing",
-    email: "arun.menon@college.edu",
-    phone: "+91 98765 43211",
-    joinDate: "Jun 2012",
-    experience: "13 years",
-    subjects: ["Operating Systems", "System Programming"],
-    totalClasses: 50,
-    classesTaken: 44,
-    attendance: 88,
-    status: "active",
-    onLeave: false,
-  },
-  {
-    id: "fac-3",
-    name: "Prof. Kavitha Nair",
-    employeeId: "CSE-FAC-003",
-    designation: "Assistant Professor",
-    qualification: "M.Tech (Software Engineering)",
-    specialization: "Software Engineering, Web Technologies",
-    email: "kavitha.nair@college.edu",
-    phone: "+91 98765 43212",
-    joinDate: "Jul 2018",
-    experience: "7 years",
-    subjects: ["Software Engineering", "Web Development", "DBMS Lab"],
-    totalClasses: 55,
-    classesTaken: 52,
-    attendance: 95,
-    status: "active",
-    onLeave: false,
-  },
-  {
-    id: "fac-4",
-    name: "Dr. Suresh Pillai",
-    employeeId: "CSE-FAC-004",
-    designation: "Associate Professor",
-    qualification: "Ph.D. (Information Technology)",
-    specialization: "Database Systems, Big Data",
-    email: "suresh.pillai@college.edu",
-    phone: "+91 98765 43213",
-    joinDate: "Mar 2014",
-    experience: "11 years",
-    subjects: ["Database Systems", "Big Data Analytics"],
-    totalClasses: 48,
-    classesTaken: 37,
-    attendance: 77,
-    status: "active",
-    onLeave: true,
-  },
-  {
-    id: "fac-5",
-    name: "Prof. Vijay Kumar",
-    employeeId: "CSE-FAC-005",
-    designation: "Assistant Professor",
-    qualification: "M.Tech (Computer Science)",
-    specialization: "Algorithms, Theory of Computation",
-    email: "vijay.kumar@college.edu",
-    phone: "+91 98765 43214",
-    joinDate: "Aug 2019",
-    experience: "6 years",
-    subjects: ["Data Structures", "Design & Analysis of Algorithms", "DS Lab"],
-    totalClasses: 60,
-    classesTaken: 54,
-    attendance: 90,
-    status: "active",
-    onLeave: false,
-  },
-  {
-    id: "fac-6",
-    name: "Dr. Meera Nair",
-    employeeId: "CSE-FAC-006",
-    designation: "Professor",
-    qualification: "Ph.D. (Computer Science)",
-    specialization: "Artificial Intelligence, Neural Networks",
-    email: "meera.nair@college.edu",
-    phone: "+91 98765 43215",
-    joinDate: "Jan 2008",
-    experience: "18 years",
-    subjects: ["Artificial Intelligence", "Machine Learning"],
-    totalClasses: 40,
-    classesTaken: 38,
-    attendance: 95,
-    status: "active",
-    onLeave: false,
-  },
-];
-
-const workloadSummary = {
-  avgClassesPerFaculty: 8.5,
-  avgLabsPerFaculty: 2.3,
-  underloaded: 2,
-  optimal: 3,
-  overloaded: 1,
-};
-
+// Mock leave requests - Leave model not yet implemented
 const leaveRequests = [
   { id: 1, faculty: "Dr. Suresh Pillai", type: "Medical", from: "Jan 6, 2026", to: "Jan 8, 2026", days: 3, status: "pending" },
   { id: 2, faculty: "Prof. Kavitha Nair", type: "Personal", from: "Jan 15, 2026", to: "Jan 15, 2026", days: 1, status: "pending" },
-];
-
-const timetableData = [
-  { time: "9:00 AM", mon: "Dr. Priya - CN", tue: "Dr. Arun - OS", wed: "Prof. Vijay - DS", thu: "Dr. Meera - AI", fri: "Dr. Suresh - DBMS" },
-  { time: "10:00 AM", mon: "Prof. Kavitha - SE", tue: "Dr. Priya - CN", wed: "Dr. Arun - OS", thu: "Prof. Vijay - DS", fri: "Dr. Meera - AI" },
-  { time: "11:00 AM", mon: "Dr. Arun - OS Lab", tue: "Prof. Kavitha - Web Lab", wed: "Dr. Priya - CN Lab", thu: "Dr. Suresh - DB Lab", fri: "Prof. Vijay - DS Lab" },
-  { time: "2:00 PM", mon: "Dr. Meera - ML", tue: "Dr. Suresh - BDA", wed: "Prof. Kavitha - SE", thu: "Dr. Priya - DC", fri: "Dr. Arun - SP" },
-  { time: "3:00 PM", mon: "Prof. Vijay - DAA", tue: "Dr. Meera - AI", wed: "Dr. Suresh - DBMS", thu: "Prof. Kavitha - Web", fri: "Dr. Priya - CN" },
 ];
 
 export default function HODFacultyManagement() {
   const tenantId = useTenantId() || '';
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDesignation, setFilterDesignation] = useState("all");
-  const [selectedFaculty, setSelectedFaculty] = useState<typeof facultyList[0] | null>(null);
+  const [selectedFaculty, setSelectedFaculty] = useState<FacultyDto | null>(null);
 
-  // Fetch staff data - TODO: Add departmentId filter when HOD's department can be determined
-  const { data: staffData, isLoading: staffLoading } = useStaff(tenantId, {
+  // Fetch faculty data from HoD faculty API
+  const { data: facultyData, isLoading: facultyLoading, error } = useHodFaculty(tenantId, {
     search: searchQuery || undefined,
-    // departmentId: hodDepartmentId, // TODO: Get HOD's department ID
+    designation: filterDesignation !== 'all' ? filterDesignation : undefined,
   });
-  const { data: staffStats, isLoading: statsLoading } = useStaffStats(tenantId);
+  const { data: timetableData } = useDepartmentTimetable(tenantId);
+  const { data: workloadData } = useWorkloadDetails(tenantId);
 
-  // Use API data when available, fall back to mock data
-  const apiStaff = staffData?.data || [];
-  const isLoading = staffLoading || statsLoading;
+  const isLoading = facultyLoading;
 
   // Loading state
   if (!tenantId || isLoading) {
@@ -242,39 +111,38 @@ export default function HODFacultyManagement() {
     );
   }
 
-  // Use API data if available, otherwise fall back to mock data for demo
-  const displayFaculty = apiStaff.length > 0 ? apiStaff.map(staff => ({
-    id: staff.id,
-    name: staff.user?.name || 'Unknown',
-    employeeId: staff.employeeId,
-    designation: staff.designation || 'Staff',
-    qualification: 'N/A', // Not available in Staff type
-    specialization: 'N/A', // Not available in Staff type
-    email: staff.user?.email || 'N/A',
-    phone: 'N/A', // Not available in Staff type
-    joinDate: staff.joiningDate ? new Date(staff.joiningDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : 'N/A',
-    experience: 'N/A',
-    subjects: [],
-    totalClasses: 0,
-    classesTaken: 0,
-    attendance: 0,
-    status: 'active', // Staff type doesn't have status field
-    onLeave: false,
-  })) : facultyList;
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Error Loading Faculty</h2>
+          <p className="text-muted-foreground">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
-  const filteredFaculty = displayFaculty.filter((faculty) => {
-    const matchesSearch =
-      faculty.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faculty.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDesignation =
-      filterDesignation === "all" || faculty.designation === filterDesignation;
-    return matchesSearch && matchesDesignation;
-  });
+  // Use API data
+  const stats = facultyData?.stats || { totalFaculty: 0, presentToday: 0, onLeave: 0, avgClassesPerWeek: 0 };
+  const workload = facultyData?.workload || { avgClassesPerFaculty: 0, avgLabsPerFaculty: 0, underloaded: 0, optimal: 0, overloaded: 0 };
+  const faculty = facultyData?.faculty || [];
+  const departmentName = facultyData?.department?.name || 'Department';
+  const timetable = timetableData?.timetable || [];
+  const workloadFaculty = workloadData?.faculty || [];
 
   const getAttendanceBadge = (attendance: number) => {
     if (attendance >= 90) return <Badge className="bg-green-500">{attendance}%</Badge>;
     if (attendance >= 80) return <Badge className="bg-yellow-500">{attendance}%</Badge>;
     return <Badge variant="destructive">{attendance}%</Badge>;
+  };
+
+  const formatJoinDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+    } catch {
+      return 'N/A';
+    }
   };
 
   return (
@@ -329,7 +197,7 @@ export default function HODFacultyManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Faculty</p>
-                <p className="text-2xl font-bold">{staffStats?.total || displayFaculty.length}</p>
+                <p className="text-2xl font-bold">{stats.totalFaculty}</p>
               </div>
             </div>
           </CardContent>
@@ -342,7 +210,7 @@ export default function HODFacultyManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Present Today</p>
-                <p className="text-2xl font-bold">{staffStats?.active || displayFaculty.filter(f => !f.onLeave).length}</p>
+                <p className="text-2xl font-bold">{stats.presentToday}</p>
               </div>
             </div>
           </CardContent>
@@ -355,7 +223,7 @@ export default function HODFacultyManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">On Leave</p>
-                <p className="text-2xl font-bold">{displayFaculty.filter(f => f.onLeave).length}</p>
+                <p className="text-2xl font-bold">{stats.onLeave}</p>
               </div>
             </div>
           </CardContent>
@@ -368,7 +236,7 @@ export default function HODFacultyManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg Classes/Week</p>
-                <p className="text-2xl font-bold">{workloadSummary.avgClassesPerFaculty}</p>
+                <p className="text-2xl font-bold">{stats.avgClassesPerWeek}</p>
               </div>
             </div>
           </CardContent>
@@ -391,7 +259,7 @@ export default function HODFacultyManagement() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle>All Faculty Members</CardTitle>
-                  <CardDescription>Department of Computer Science & Engineering</CardDescription>
+                  <CardDescription>{departmentName}</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="relative">
@@ -419,99 +287,108 @@ export default function HODFacultyManagement() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Faculty</TableHead>
-                    <TableHead>Designation</TableHead>
-                    <TableHead>Subjects</TableHead>
-                    <TableHead className="text-center">Classes</TableHead>
-                    <TableHead className="text-center">Attendance</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredFaculty.map((faculty) => (
-                    <TableRow key={faculty.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback>
-                              {faculty.name.split(" ").map((n: string) => n[0]).join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{faculty.name}</p>
-                            <p className="text-sm text-muted-foreground">{faculty.employeeId}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{faculty.designation}</p>
-                          <p className="text-xs text-muted-foreground">{faculty.experience}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {faculty.subjects.slice(0, 2).map((subject, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {subject}
-                            </Badge>
-                          ))}
-                          {faculty.subjects.length > 2 && (
-                            <Badge variant="secondary" className="text-xs">
-                              +{faculty.subjects.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className="font-medium">{faculty.classesTaken}</span>
-                        <span className="text-muted-foreground">/{faculty.totalClasses}</span>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {getAttendanceBadge(faculty.attendance)}
-                      </TableCell>
-                      <TableCell>
-                        {faculty.onLeave ? (
-                          <Badge variant="secondary">On Leave</Badge>
-                        ) : (
-                          <Badge className="bg-green-500">Active</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setSelectedFaculty(faculty)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Calendar className="h-4 w-4 mr-2" />
-                              View Timetable
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Mail className="h-4 w-4 mr-2" />
-                              Send Message
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+              {faculty.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No faculty members found
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Faculty</TableHead>
+                      <TableHead>Designation</TableHead>
+                      <TableHead>Subjects</TableHead>
+                      <TableHead className="text-center">Classes</TableHead>
+                      <TableHead className="text-center">Attendance</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {faculty.map((f) => (
+                      <TableRow key={f.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback>
+                                {f.name.split(" ").map((n: string) => n[0]).join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{f.name}</p>
+                              <p className="text-sm text-muted-foreground">{f.employeeId}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{f.designation}</p>
+                            <p className="text-xs text-muted-foreground">{formatJoinDate(f.joiningDate)}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {f.subjects.slice(0, 2).map((subject) => (
+                              <Badge key={subject.id} variant="outline" className="text-xs">
+                                {subject.code}
+                              </Badge>
+                            ))}
+                            {f.subjects.length > 2 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{f.subjects.length - 2}
+                              </Badge>
+                            )}
+                            {f.subjects.length === 0 && (
+                              <span className="text-muted-foreground text-xs">No subjects</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="font-medium">{f.classesTaken}</span>
+                          <span className="text-muted-foreground">/{f.totalClasses}</span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getAttendanceBadge(f.attendancePercentage)}
+                        </TableCell>
+                        <TableCell>
+                          {f.isOnLeave ? (
+                            <Badge variant="secondary">On Leave</Badge>
+                          ) : (
+                            <Badge className="bg-green-500">Active</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setSelectedFaculty(f)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Profile
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Calendar className="h-4 w-4 mr-2" />
+                                View Timetable
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Mail className="h-4 w-4 mr-2" />
+                                Send Message
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -525,45 +402,52 @@ export default function HODFacultyManagement() {
                 <CardDescription>Classes and lab sessions per faculty</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  {facultyList.map((faculty) => {
-                    const workloadPercent = (faculty.subjects.length / 4) * 100;
-                    const isOverloaded = workloadPercent > 80;
-                    const isUnderloaded = workloadPercent < 50;
-                    return (
-                      <div key={faculty.id} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{faculty.name}</span>
-                            {isOverloaded && (
-                              <Badge variant="destructive" className="text-xs">Overloaded</Badge>
-                            )}
-                            {isUnderloaded && (
-                              <Badge variant="secondary" className="text-xs">Underloaded</Badge>
+                {workloadFaculty.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No workload data available
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {workloadFaculty.map((f) => {
+                      const workloadPercent = Math.min((f.subjectCount / 4) * 100, 100);
+                      return (
+                        <div key={f.id} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{f.name}</span>
+                              {f.status === 'overloaded' && (
+                                <Badge variant="destructive" className="text-xs">Overloaded</Badge>
+                              )}
+                              {f.status === 'underloaded' && (
+                                <Badge variant="secondary" className="text-xs">Underloaded</Badge>
+                              )}
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              {f.subjectCount} subjects
+                            </span>
+                          </div>
+                          <Progress
+                            value={workloadPercent}
+                            className={`h-3 ${
+                              f.status === 'overloaded' ? "[&>div]:bg-red-500" :
+                              f.status === 'underloaded' ? "[&>div]:bg-yellow-500" : ""
+                            }`}
+                          />
+                          <div className="flex flex-wrap gap-1">
+                            {f.subjects.map((subject, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {subject.code}
+                              </Badge>
+                            ))}
+                            {f.subjects.length === 0 && (
+                              <span className="text-muted-foreground text-xs">No subjects assigned</span>
                             )}
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            {faculty.subjects.length} subjects
-                          </span>
                         </div>
-                        <Progress
-                          value={workloadPercent}
-                          className={`h-3 ${
-                            isOverloaded ? "[&>div]:bg-red-500" :
-                            isUnderloaded ? "[&>div]:bg-yellow-500" : ""
-                          }`}
-                        />
-                        <div className="flex flex-wrap gap-1">
-                          {faculty.subjects.map((subject, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {subject}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -575,15 +459,15 @@ export default function HODFacultyManagement() {
                 <div className="space-y-6">
                   <div className="p-4 rounded-lg bg-green-50 border border-green-200">
                     <p className="text-sm text-green-700">Optimal Workload</p>
-                    <p className="text-2xl font-bold text-green-800">{workloadSummary.optimal} faculty</p>
+                    <p className="text-2xl font-bold text-green-800">{workload.optimal} faculty</p>
                   </div>
                   <div className="p-4 rounded-lg bg-yellow-50 border border-yellow-200">
                     <p className="text-sm text-yellow-700">Underloaded</p>
-                    <p className="text-2xl font-bold text-yellow-800">{workloadSummary.underloaded} faculty</p>
+                    <p className="text-2xl font-bold text-yellow-800">{workload.underloaded} faculty</p>
                   </div>
                   <div className="p-4 rounded-lg bg-red-50 border border-red-200">
                     <p className="text-sm text-red-700">Overloaded</p>
-                    <p className="text-2xl font-bold text-red-800">{workloadSummary.overloaded} faculty</p>
+                    <p className="text-2xl font-bold text-red-800">{workload.overloaded} faculty</p>
                   </div>
                   <Button className="w-full">
                     Optimize Workload
@@ -611,42 +495,52 @@ export default function HODFacultyManagement() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]">Time</TableHead>
-                      <TableHead>Monday</TableHead>
-                      <TableHead>Tuesday</TableHead>
-                      <TableHead>Wednesday</TableHead>
-                      <TableHead>Thursday</TableHead>
-                      <TableHead>Friday</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {timetableData.map((row, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-medium">{row.time}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="whitespace-nowrap">{row.mon}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="whitespace-nowrap">{row.tue}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="whitespace-nowrap">{row.wed}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="whitespace-nowrap">{row.thu}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="whitespace-nowrap">{row.fri}</Badge>
-                        </TableCell>
+              {timetable.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No timetable data available
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[120px]">Time</TableHead>
+                        <TableHead>Monday</TableHead>
+                        <TableHead>Tuesday</TableHead>
+                        <TableHead>Wednesday</TableHead>
+                        <TableHead>Thursday</TableHead>
+                        <TableHead>Friday</TableHead>
+                        <TableHead>Saturday</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {timetable.map((row, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">{row.time}</TableCell>
+                          <TableCell>
+                            {row.monday && <Badge variant="outline" className="whitespace-nowrap">{row.monday}</Badge>}
+                          </TableCell>
+                          <TableCell>
+                            {row.tuesday && <Badge variant="outline" className="whitespace-nowrap">{row.tuesday}</Badge>}
+                          </TableCell>
+                          <TableCell>
+                            {row.wednesday && <Badge variant="outline" className="whitespace-nowrap">{row.wednesday}</Badge>}
+                          </TableCell>
+                          <TableCell>
+                            {row.thursday && <Badge variant="outline" className="whitespace-nowrap">{row.thursday}</Badge>}
+                          </TableCell>
+                          <TableCell>
+                            {row.friday && <Badge variant="outline" className="whitespace-nowrap">{row.friday}</Badge>}
+                          </TableCell>
+                          <TableCell>
+                            {row.saturday && <Badge variant="outline" className="whitespace-nowrap">{row.saturday}</Badge>}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -713,20 +607,20 @@ export default function HODFacultyManagement() {
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Qualification</p>
-                  <p className="font-medium">{selectedFaculty.qualification}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Experience</p>
-                  <p className="font-medium">{selectedFaculty.experience}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Specialization</p>
-                  <p className="font-medium">{selectedFaculty.specialization}</p>
+                  <p className="text-muted-foreground">Email</p>
+                  <p className="font-medium">{selectedFaculty.email}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Joined</p>
-                  <p className="font-medium">{selectedFaculty.joinDate}</p>
+                  <p className="font-medium">{formatJoinDate(selectedFaculty.joiningDate)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Total Classes</p>
+                  <p className="font-medium">{selectedFaculty.classesTaken} / {selectedFaculty.totalClasses}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Attendance</p>
+                  <p className="font-medium">{selectedFaculty.attendancePercentage}%</p>
                 </div>
               </div>
               <div className="flex items-center gap-4 text-sm">
@@ -736,17 +630,17 @@ export default function HODFacultyManagement() {
                     {selectedFaculty.email}
                   </a>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedFaculty.phone}</span>
-                </div>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-2">Subjects</p>
+                <p className="text-sm text-muted-foreground mb-2">Subjects ({selectedFaculty.subjectCount})</p>
                 <div className="flex flex-wrap gap-1">
-                  {selectedFaculty.subjects.map((subject, idx) => (
-                    <Badge key={idx} variant="secondary">{subject}</Badge>
-                  ))}
+                  {selectedFaculty.subjects.length > 0 ? (
+                    selectedFaculty.subjects.map((subject) => (
+                      <Badge key={subject.id} variant="secondary">{subject.name}</Badge>
+                    ))
+                  ) : (
+                    <span className="text-muted-foreground text-sm">No subjects assigned</span>
+                  )}
                 </div>
               </div>
             </div>

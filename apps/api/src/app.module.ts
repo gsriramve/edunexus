@@ -37,6 +37,7 @@ import { TeacherAttendanceModule } from './modules/teacher-attendance/teacher-at
 import { TeacherResultsModule } from './modules/teacher-results/teacher-results.module';
 import { HodSubjectsModule } from './modules/hod-subjects/hod-subjects.module';
 import { HodAttendanceModule } from './modules/hod-attendance/hod-attendance.module';
+import { HodFacultyModule } from './modules/hod-faculty/hod-faculty.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { HodAttendanceModule } from './modules/hod-attendance/hod-attendance.mod
     TeacherResultsModule,
     HodSubjectsModule,
     HodAttendanceModule,
+    HodFacultyModule,
   ],
   controllers: [AppController],
   providers: [AppService],
