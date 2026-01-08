@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Calendar,
   CheckCircle2,
@@ -10,9 +11,8 @@ import {
   Save,
   RotateCcw,
   Search,
-  Filter,
   Download,
-  ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,97 +34,144 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useTeacherClasses } from "@/hooks/use-teacher-classes";
+import {
+  useClassAttendance,
+  useMarkAttendance,
+  type AttendanceStatus,
+} from "@/hooks/use-teacher-attendance";
+import { toast } from "sonner";
 
-// Mock data
-const classes = [
-  { id: "class-1", subject: "Data Structures", code: "CS501", section: "CSE-A", time: "09:00 AM", students: 60 },
-  { id: "class-2", subject: "Data Structures", code: "CS501", section: "CSE-B", time: "11:00 AM", students: 58 },
-  { id: "class-3", subject: "Data Structures Lab", code: "CS505", section: "CSE-A (Batch 1)", time: "02:00 PM", students: 30 },
-  { id: "class-4", subject: "Algorithms", code: "CS502", section: "CSE-C", time: "04:00 PM", students: 55 },
-];
-
-const studentsList = [
-  { id: "1", rollNo: "21CSE001", name: "Aakash Verma", status: "present" },
-  { id: "2", rollNo: "21CSE002", name: "Aditi Sharma", status: "present" },
-  { id: "3", rollNo: "21CSE003", name: "Amit Kumar", status: "absent" },
-  { id: "4", rollNo: "21CSE004", name: "Ananya Patel", status: "present" },
-  { id: "5", rollNo: "21CSE005", name: "Arjun Singh", status: "late" },
-  { id: "6", rollNo: "21CSE006", name: "Bhavya Reddy", status: "present" },
-  { id: "7", rollNo: "21CSE007", name: "Chetan Gupta", status: "present" },
-  { id: "8", rollNo: "21CSE008", name: "Deepika Joshi", status: "absent" },
-  { id: "9", rollNo: "21CSE009", name: "Dhruv Mehta", status: "present" },
-  { id: "10", rollNo: "21CSE010", name: "Esha Kapoor", status: "present" },
-  { id: "11", rollNo: "21CSE011", name: "Farhan Khan", status: "present" },
-  { id: "12", rollNo: "21CSE012", name: "Garima Saxena", status: "late" },
-  { id: "13", rollNo: "21CSE013", name: "Harsh Agarwal", status: "present" },
-  { id: "14", rollNo: "21CSE014", name: "Ishita Malhotra", status: "present" },
-  { id: "15", rollNo: "21CSE015", name: "Jai Prakash", status: "absent" },
-];
-
-type AttendanceStatus = "present" | "absent" | "late" | "not_marked";
+type LocalAttendanceStatus = AttendanceStatus | "not_marked";
 
 export default function TeacherAttendance() {
-  const [selectedClass, setSelectedClass] = useState(classes[0].id);
+  const searchParams = useSearchParams();
+  const classIdFromUrl = searchParams.get("class");
+
+  const [selectedClass, setSelectedClass] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>(
-    studentsList.reduce((acc, student) => ({ ...acc, [student.id]: student.status as AttendanceStatus }), {})
-  );
+  const [localAttendance, setLocalAttendance] = useState<Record<string, LocalAttendanceStatus>>({});
   const [hasChanges, setHasChanges] = useState(false);
 
+  const tenantId = useTenantId();
+
+  // Load teacher's classes
+  const { data: classesData, isLoading: isLoadingClasses } = useTeacherClasses(tenantId || "");
+
+  // Set initial class from URL or first available
+  useEffect(() => {
+    if (classIdFromUrl) {
+      setSelectedClass(classIdFromUrl);
+    } else if (classesData?.classes && classesData.classes.length > 0 && !selectedClass) {
+      setSelectedClass(classesData.classes[0].id);
+    }
+  }, [classIdFromUrl, classesData?.classes, selectedClass]);
+
+  // Load attendance for selected class
+  const {
+    data: attendanceData,
+    isLoading: isLoadingAttendance,
+    error: attendanceError,
+  } = useClassAttendance(tenantId || "", selectedClass, selectedDate);
+
+  // Mark attendance mutation
+  const { mutate: saveAttendance, isPending: isSaving } = useMarkAttendance(tenantId || "");
+
+  // Initialize local attendance when data loads
+  useEffect(() => {
+    if (attendanceData) {
+      const initial: Record<string, LocalAttendanceStatus> = {};
+      for (const student of attendanceData.students) {
+        initial[student.id] = attendanceData.attendance[student.id] || "not_marked";
+      }
+      setLocalAttendance(initial);
+      setHasChanges(false);
+    }
+  }, [attendanceData]);
+
+  const classes = classesData?.classes || [];
   const selectedClassData = classes.find((c) => c.id === selectedClass);
 
-  const filteredStudents = studentsList.filter(
-    (student) =>
-      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredStudents = useMemo(() => {
+    if (!attendanceData?.students) return [];
+    return attendanceData.students.filter(
+      (student) =>
+        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [attendanceData?.students, searchQuery]);
 
-  const updateAttendance = (studentId: string, status: AttendanceStatus) => {
-    setAttendance((prev) => ({ ...prev, [studentId]: status }));
+  const updateAttendance = (studentId: string, status: LocalAttendanceStatus) => {
+    setLocalAttendance((prev) => ({ ...prev, [studentId]: status }));
     setHasChanges(true);
   };
 
   const markAllPresent = () => {
-    const newAttendance = studentsList.reduce(
-      (acc, student) => ({ ...acc, [student.id]: "present" as AttendanceStatus }),
+    if (!attendanceData?.students) return;
+    const newAttendance = attendanceData.students.reduce(
+      (acc, student) => ({ ...acc, [student.id]: "present" as LocalAttendanceStatus }),
       {}
     );
-    setAttendance(newAttendance);
+    setLocalAttendance(newAttendance);
     setHasChanges(true);
   };
 
   const resetAttendance = () => {
-    const newAttendance = studentsList.reduce(
-      (acc, student) => ({ ...acc, [student.id]: "not_marked" as AttendanceStatus }),
+    if (!attendanceData?.students) return;
+    const newAttendance = attendanceData.students.reduce(
+      (acc, student) => ({ ...acc, [student.id]: "not_marked" as LocalAttendanceStatus }),
       {}
     );
-    setAttendance(newAttendance);
+    setLocalAttendance(newAttendance);
     setHasChanges(true);
   };
 
-  const saveAttendance = () => {
-    // TODO: API call to save attendance
-    console.log("Saving attendance:", { classId: selectedClass, date: selectedDate, attendance });
-    setHasChanges(false);
-    alert("Attendance saved successfully!");
+  const handleSaveAttendance = () => {
+    const attendanceEntries = Object.entries(localAttendance)
+      .filter(([, status]) => status !== "not_marked")
+      .map(([studentId, status]) => ({
+        studentId,
+        status: status as AttendanceStatus,
+      }));
+
+    if (attendanceEntries.length === 0) {
+      toast.error("Please mark attendance for at least one student");
+      return;
+    }
+
+    saveAttendance(
+      {
+        teacherSubjectId: selectedClass,
+        date: selectedDate,
+        attendance: attendanceEntries,
+      },
+      {
+        onSuccess: (response) => {
+          toast.success(response.message);
+          setHasChanges(false);
+        },
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : "Failed to save attendance");
+        },
+      }
+    );
   };
 
-  const stats = {
-    total: filteredStudents.length,
-    present: Object.values(attendance).filter((s) => s === "present").length,
-    absent: Object.values(attendance).filter((s) => s === "absent").length,
-    late: Object.values(attendance).filter((s) => s === "late").length,
-  };
+  const stats = useMemo(() => {
+    const values = Object.values(localAttendance);
+    return {
+      total: attendanceData?.students.length || 0,
+      present: values.filter((s) => s === "present").length,
+      absent: values.filter((s) => s === "absent").length,
+      late: values.filter((s) => s === "late").length,
+    };
+  }, [localAttendance, attendanceData?.students.length]);
 
-  const getStatusBadge = (status: AttendanceStatus) => {
+  const getStatusBadge = (status: LocalAttendanceStatus) => {
     switch (status) {
       case "present":
         return <Badge className="bg-green-500">Present</Badge>;
@@ -132,10 +179,50 @@ export default function TeacherAttendance() {
         return <Badge className="bg-red-500">Absent</Badge>;
       case "late":
         return <Badge className="bg-yellow-500">Late</Badge>;
+      case "excused":
+        return <Badge className="bg-blue-500">Excused</Badge>;
       default:
         return <Badge variant="outline">Not Marked</Badge>;
     }
   };
+
+  // Loading state
+  if (isLoadingClasses) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid gap-4 md:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  // No classes assigned
+  if (classes.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Mark Attendance</h1>
+          <p className="text-muted-foreground">
+            Record student attendance for your classes
+          </p>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-medium">No Classes Assigned</h3>
+            <p className="text-muted-foreground">
+              You don't have any classes assigned for this semester.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -148,12 +235,16 @@ export default function TeacherAttendance() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={resetAttendance}>
+          <Button variant="outline" onClick={resetAttendance} disabled={isSaving}>
             <RotateCcw className="mr-2 h-4 w-4" />
             Reset
           </Button>
-          <Button onClick={saveAttendance} disabled={!hasChanges}>
-            <Save className="mr-2 h-4 w-4" />
+          <Button onClick={handleSaveAttendance} disabled={!hasChanges || isSaving}>
+            {isSaving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
             Save Attendance
           </Button>
         </div>
@@ -172,7 +263,7 @@ export default function TeacherAttendance() {
                 <SelectContent>
                   {classes.map((cls) => (
                     <SelectItem key={cls.id} value={cls.id}>
-                      {cls.subject} - {cls.section} ({cls.time})
+                      {cls.subjectName} - Section {cls.section || "A"} ({cls.subjectCode})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -191,17 +282,16 @@ export default function TeacherAttendance() {
             <div className="mt-4 flex items-center gap-6 text-sm">
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="font-mono">
-                  {selectedClassData.code}
+                  {selectedClassData.subjectCode}
                 </Badge>
-                <span className="font-medium">{selectedClassData.subject}</span>
+                <span className="font-medium">{selectedClassData.subjectName}</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Users className="h-4 w-4" />
-                {selectedClassData.students} students
+                {selectedClassData.studentCount} students
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                {selectedClassData.time}
+                {selectedClassData.department}
               </div>
             </div>
           )}
@@ -290,67 +380,84 @@ export default function TeacherAttendance() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">#</TableHead>
-                <TableHead>Roll No</TableHead>
-                <TableHead>Student Name</TableHead>
-                <TableHead className="text-center">Present</TableHead>
-                <TableHead className="text-center">Absent</TableHead>
-                <TableHead className="text-center">Late</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredStudents.map((student, index) => (
-                <TableRow key={student.id}>
-                  <TableCell className="font-medium">{index + 1}</TableCell>
-                  <TableCell className="font-mono">{student.rollNo}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="text-xs">
-                          {student.name.split(" ").map(n => n[0]).join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      {student.name}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={attendance[student.id] === "present"}
-                      onCheckedChange={(checked) =>
-                        updateAttendance(student.id, checked ? "present" : "not_marked")
-                      }
-                      className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={attendance[student.id] === "absent"}
-                      onCheckedChange={(checked) =>
-                        updateAttendance(student.id, checked ? "absent" : "not_marked")
-                      }
-                      className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Checkbox
-                      checked={attendance[student.id] === "late"}
-                      onCheckedChange={(checked) =>
-                        updateAttendance(student.id, checked ? "late" : "not_marked")
-                      }
-                      className="data-[state=checked]:bg-yellow-500 data-[state=checked]:border-yellow-500"
-                    />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {getStatusBadge(attendance[student.id])}
-                  </TableCell>
-                </TableRow>
+          {isLoadingAttendance ? (
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} className="h-12" />
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          ) : attendanceError ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {attendanceError instanceof Error ? attendanceError.message : "Failed to load attendance"}
+            </div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No students found in this class
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">#</TableHead>
+                  <TableHead>Roll No</TableHead>
+                  <TableHead>Student Name</TableHead>
+                  <TableHead className="text-center">Present</TableHead>
+                  <TableHead className="text-center">Absent</TableHead>
+                  <TableHead className="text-center">Late</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredStudents.map((student, index) => (
+                  <TableRow key={student.id}>
+                    <TableCell className="font-medium">{index + 1}</TableCell>
+                    <TableCell className="font-mono">{student.rollNo}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          {student.photoUrl && <AvatarImage src={student.photoUrl} />}
+                          <AvatarFallback className="text-xs">
+                            {student.name.split(" ").map(n => n[0]).join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        {student.name}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={localAttendance[student.id] === "present"}
+                        onCheckedChange={(checked) =>
+                          updateAttendance(student.id, checked ? "present" : "not_marked")
+                        }
+                        className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                      />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={localAttendance[student.id] === "absent"}
+                        onCheckedChange={(checked) =>
+                          updateAttendance(student.id, checked ? "absent" : "not_marked")
+                        }
+                        className="data-[state=checked]:bg-red-500 data-[state=checked]:border-red-500"
+                      />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={localAttendance[student.id] === "late"}
+                        onCheckedChange={(checked) =>
+                          updateAttendance(student.id, checked ? "late" : "not_marked")
+                        }
+                        className="data-[state=checked]:bg-yellow-500 data-[state=checked]:border-yellow-500"
+                      />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {getStatusBadge(localAttendance[student.id])}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
