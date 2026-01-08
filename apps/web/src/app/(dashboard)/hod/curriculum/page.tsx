@@ -17,6 +17,7 @@ import {
   Beaker,
   MoreVertical,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -61,82 +62,81 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useTenantId } from "@/hooks/use-tenant";
-
-// TODO: Replace mock data with API calls when backend endpoints are implemented
-// Required endpoints:
-// - GET /hod/curriculum/stats - Curriculum statistics for department
-// - GET /hod/curriculum/subjects?semester=X - Subjects by semester for department
-// - GET /hod/curriculum/syllabus/:subjectId - Syllabus details for a subject
-// - GET /hod/curriculum/assignments - Faculty-subject assignments
-
-// Mock curriculum data
-const curriculumStats = {
-  totalSubjects: 32,
-  theorySubjects: 20,
-  labSubjects: 12,
-  avgSyllabusCompletion: 72,
-  subjectsOnTrack: 24,
-  subjectsBehind: 8,
-};
-
-// Mock subjects data by semester
-const semesterSubjects: Record<number, Array<{
-  id: string;
-  code: string;
-  name: string;
-  type: "theory" | "lab";
-  credits: number;
-  faculty: string;
-  hoursPerWeek: number;
-  syllabusCompletion: number;
-  totalUnits: number;
-  completedUnits: number;
-}>> = {
-  5: [
-    { id: "s1", code: "CS501", name: "Data Structures & Algorithms", type: "theory", credits: 4, faculty: "Prof. Vijay Kumar", hoursPerWeek: 4, syllabusCompletion: 75, totalUnits: 5, completedUnits: 4 },
-    { id: "s2", code: "CS502", name: "Computer Networks", type: "theory", credits: 4, faculty: "Dr. Priya Sharma", hoursPerWeek: 4, syllabusCompletion: 70, totalUnits: 5, completedUnits: 3 },
-    { id: "s3", code: "CS503", name: "Operating Systems", type: "theory", credits: 4, faculty: "Dr. Arun Menon", hoursPerWeek: 4, syllabusCompletion: 80, totalUnits: 5, completedUnits: 4 },
-    { id: "s4", code: "CS504", name: "Software Engineering", type: "theory", credits: 3, faculty: "Prof. Kavitha Nair", hoursPerWeek: 3, syllabusCompletion: 65, totalUnits: 4, completedUnits: 3 },
-    { id: "s5", code: "CS505", name: "Data Structures Lab", type: "lab", credits: 2, faculty: "Prof. Vijay Kumar", hoursPerWeek: 3, syllabusCompletion: 85, totalUnits: 10, completedUnits: 8 },
-    { id: "s6", code: "CS506", name: "Computer Networks Lab", type: "lab", credits: 2, faculty: "Dr. Priya Sharma", hoursPerWeek: 3, syllabusCompletion: 60, totalUnits: 10, completedUnits: 6 },
-  ],
-  3: [
-    { id: "s7", code: "CS301", name: "Object Oriented Programming", type: "theory", credits: 4, faculty: "Prof. Kavitha Nair", hoursPerWeek: 4, syllabusCompletion: 78, totalUnits: 5, completedUnits: 4 },
-    { id: "s8", code: "CS302", name: "Database Management Systems", type: "theory", credits: 4, faculty: "Dr. Suresh Pillai", hoursPerWeek: 4, syllabusCompletion: 72, totalUnits: 5, completedUnits: 4 },
-    { id: "s9", code: "CS303", name: "Discrete Mathematics", type: "theory", credits: 3, faculty: "Dr. Meera Nair", hoursPerWeek: 3, syllabusCompletion: 85, totalUnits: 4, completedUnits: 3 },
-    { id: "s10", code: "CS304", name: "OOP Lab", type: "lab", credits: 2, faculty: "Prof. Kavitha Nair", hoursPerWeek: 3, syllabusCompletion: 90, totalUnits: 10, completedUnits: 9 },
-  ],
-};
-
-// Mock syllabus details
-const syllabusDetails = {
-  "CS501": {
-    units: [
-      { unit: 1, title: "Introduction to Data Structures", topics: ["Arrays", "Linked Lists", "Stacks", "Queues"], status: "completed" },
-      { unit: 2, title: "Trees", topics: ["Binary Trees", "BST", "AVL Trees", "B-Trees"], status: "completed" },
-      { unit: 3, title: "Graphs", topics: ["Graph Representation", "BFS", "DFS", "Shortest Path"], status: "completed" },
-      { unit: 4, title: "Sorting & Searching", topics: ["Quick Sort", "Merge Sort", "Heap Sort", "Binary Search"], status: "in_progress" },
-      { unit: 5, title: "Advanced Topics", topics: ["Hashing", "String Algorithms", "Dynamic Programming"], status: "pending" },
-    ],
-  },
-};
-
-// Mock faculty assignments
-const facultyAssignments = [
-  { faculty: "Dr. Priya Sharma", subjects: ["Computer Networks", "Data Communication"], totalHours: 8, sections: 2 },
-  { faculty: "Dr. Arun Menon", subjects: ["Operating Systems", "System Programming"], totalHours: 7, sections: 2 },
-  { faculty: "Prof. Kavitha Nair", subjects: ["Software Engineering", "Web Development", "OOP"], totalHours: 10, sections: 3 },
-  { faculty: "Dr. Suresh Pillai", subjects: ["Database Systems", "Big Data Analytics"], totalHours: 8, sections: 2 },
-  { faculty: "Prof. Vijay Kumar", subjects: ["Data Structures", "Algorithms"], totalHours: 8, sections: 2 },
-  { faculty: "Dr. Meera Nair", subjects: ["Artificial Intelligence", "Machine Learning"], totalHours: 6, sections: 2 },
-];
+import {
+  useCurriculumStats,
+  useCurriculumSubjects,
+  useFacultyAssignments,
+  useSubjectDetail,
+  useUpdateSyllabusUnit,
+  Subject,
+} from "@/hooks/use-hod-curriculum";
 
 export default function HODCurriculum() {
-  const tenantId = useTenantId() || '';
-  const [selectedSemester, setSelectedSemester] = useState("5");
+  const tenantIdValue = useTenantId();
+  const tenantId = tenantIdValue || "";
+  const [selectedSemester, setSelectedSemester] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState("all");
+  const [filterType, setFilterType] = useState<"all" | "theory" | "lab">("all");
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
+
+  // Queries
+  const { data: stats, isLoading: statsLoading, error: statsError } = useCurriculumStats(tenantId);
+  const { data: subjectsData, isLoading: subjectsLoading } = useCurriculumSubjects(tenantId, {
+    semester: selectedSemester !== "all" ? parseInt(selectedSemester) : undefined,
+    type: filterType,
+    search: searchQuery || undefined,
+  });
+  const { data: facultyData, isLoading: facultyLoading } = useFacultyAssignments(tenantId);
+  const { data: subjectDetail } = useSubjectDetail(tenantId, selectedSubjectId || "");
+
+  // Mutations
+  const updateSyllabusUnitMutation = useUpdateSyllabusUnit(tenantId);
+
+  const subjects = subjectsData?.subjects || [];
+  const facultyAssignments = facultyData?.assignments || [];
+
+  const curriculumStats = stats || {
+    totalSubjects: 0,
+    theorySubjects: 0,
+    labSubjects: 0,
+    avgSyllabusCompletion: 0,
+    subjectsOnTrack: 0,
+    subjectsBehind: 0,
+    totalCredits: 0,
+    totalHoursPerWeek: 0,
+  };
+
+  const isLoading = statsLoading || subjectsLoading;
+
+  const handleUpdateUnitStatus = async (unitId: string, status: "pending" | "in_progress" | "completed") => {
+    try {
+      await updateSyllabusUnitMutation.mutateAsync({
+        id: unitId,
+        data: { status },
+      });
+    } catch (error) {
+      console.error("Failed to update unit status:", error);
+    }
+  };
+
+  const getCompletionBadge = (completion: number) => {
+    if (completion >= 80) return <Badge className="bg-green-500">{completion}%</Badge>;
+    if (completion >= 60) return <Badge className="bg-yellow-500">{completion}%</Badge>;
+    return <Badge variant="destructive">{completion}%</Badge>;
+  };
+
+  const getUnitStatusBadge = (status: string) => {
+    switch (status) {
+      case "completed":
+        return <Badge className="bg-green-500">Completed</Badge>;
+      case "in_progress":
+        return <Badge className="bg-blue-500">In Progress</Badge>;
+      default:
+        return <Badge variant="secondary">Pending</Badge>;
+    }
+  };
 
   // Loading state
   if (!tenantId) {
@@ -162,32 +162,24 @@ export default function HODCurriculum() {
     );
   }
 
-  const currentSubjects = semesterSubjects[parseInt(selectedSemester)] || [];
-
-  const filteredSubjects = currentSubjects.filter((subject) => {
-    const matchesSearch =
-      subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      subject.code.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = filterType === "all" || subject.type === filterType;
-    return matchesSearch && matchesType;
-  });
-
-  const getCompletionBadge = (completion: number) => {
-    if (completion >= 80) return <Badge className="bg-green-500">{completion}%</Badge>;
-    if (completion >= 60) return <Badge className="bg-yellow-500">{completion}%</Badge>;
-    return <Badge variant="destructive">{completion}%</Badge>;
-  };
-
-  const getUnitStatusBadge = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <Badge className="bg-green-500">Completed</Badge>;
-      case "in_progress":
-        return <Badge className="bg-blue-500">In Progress</Badge>;
-      default:
-        return <Badge variant="secondary">Pending</Badge>;
-    }
-  };
+  if (statsError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Curriculum Management</h1>
+          <p className="text-muted-foreground">
+            Manage subjects, syllabus, and faculty assignments
+          </p>
+        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load curriculum data. Please try again later.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -241,7 +233,9 @@ export default function HODCurriculum() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Subjects</p>
-                <p className="text-2xl font-bold">{curriculumStats.totalSubjects}</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : curriculumStats.totalSubjects}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -254,7 +248,9 @@ export default function HODCurriculum() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Theory</p>
-                <p className="text-2xl font-bold">{curriculumStats.theorySubjects}</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : curriculumStats.theorySubjects}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -267,7 +263,9 @@ export default function HODCurriculum() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Labs</p>
-                <p className="text-2xl font-bold">{curriculumStats.labSubjects}</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : curriculumStats.labSubjects}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -280,7 +278,9 @@ export default function HODCurriculum() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg Completion</p>
-                <p className="text-2xl font-bold">{curriculumStats.avgSyllabusCompletion}%</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : `${curriculumStats.avgSyllabusCompletion}%`}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -293,7 +293,9 @@ export default function HODCurriculum() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">On Track</p>
-                <p className="text-2xl font-bold text-green-600">{curriculumStats.subjectsOnTrack}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : curriculumStats.subjectsOnTrack}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -306,7 +308,9 @@ export default function HODCurriculum() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Behind</p>
-                <p className="text-2xl font-bold text-red-600">{curriculumStats.subjectsBehind}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : curriculumStats.subjectsBehind}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -333,9 +337,10 @@ export default function HODCurriculum() {
                 <div className="flex items-center gap-2">
                   <Select value={selectedSemester} onValueChange={setSelectedSemester}>
                     <SelectTrigger className="w-[140px]">
-                      <SelectValue />
+                      <SelectValue placeholder="All Semesters" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">All Semesters</SelectItem>
                       {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
                         <SelectItem key={sem} value={sem.toString()}>
                           Semester {sem}
@@ -352,7 +357,7 @@ export default function HODCurriculum() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
-                  <Select value={filterType} onValueChange={setFilterType}>
+                  <Select value={filterType} onValueChange={(v) => setFilterType(v as "all" | "theory" | "lab")}>
                     <SelectTrigger className="w-[120px]">
                       <Filter className="h-4 w-4 mr-2" />
                       <SelectValue />
@@ -367,77 +372,91 @@ export default function HODCurriculum() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-center">Credits</TableHead>
-                    <TableHead>Faculty</TableHead>
-                    <TableHead className="text-center">Hours/Week</TableHead>
-                    <TableHead className="w-[150px]">Syllabus Progress</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSubjects.map((subject) => (
-                    <TableRow key={subject.id}>
-                      <TableCell>
-                        <div>
-                          <Badge variant="outline" className="font-mono mb-1">
-                            {subject.code}
-                          </Badge>
-                          <p className="font-medium">{subject.name}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={subject.type === "theory" ? "default" : "secondary"}>
-                          {subject.type === "theory" ? (
-                            <><FileText className="h-3 w-3 mr-1" /> Theory</>
-                          ) : (
-                            <><Beaker className="h-3 w-3 mr-1" /> Lab</>
-                          )}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center font-medium">{subject.credits}</TableCell>
-                      <TableCell>{subject.faculty}</TableCell>
-                      <TableCell className="text-center">{subject.hoursPerWeek}</TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <Progress value={subject.syllabusCompletion} className="h-2" />
-                          <div className="flex justify-between text-xs">
-                            <span>{subject.completedUnits}/{subject.totalUnits} units</span>
-                            {getCompletionBadge(subject.syllabusCompletion)}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Syllabus
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Users className="h-4 w-4 mr-2" />
-                              Change Faculty
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+              {subjectsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : subjects.length === 0 ? (
+                <div className="py-12 text-center">
+                  <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">No subjects found</h3>
+                  <p className="text-muted-foreground mt-1">
+                    No subjects match your current filters
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead className="text-center">Credits</TableHead>
+                      <TableHead>Faculty</TableHead>
+                      <TableHead className="text-center">Hours/Week</TableHead>
+                      <TableHead className="w-[150px]">Syllabus Progress</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {subjects.map((subject) => (
+                      <TableRow key={subject.id}>
+                        <TableCell>
+                          <div>
+                            <Badge variant="outline" className="font-mono mb-1">
+                              {subject.code}
+                            </Badge>
+                            <p className="font-medium">{subject.name}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={subject.type === "theory" ? "default" : "secondary"}>
+                            {subject.type === "theory" ? (
+                              <><FileText className="h-3 w-3 mr-1" /> Theory</>
+                            ) : (
+                              <><Beaker className="h-3 w-3 mr-1" /> Lab</>
+                            )}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center font-medium">{subject.credits}</TableCell>
+                        <TableCell>{subject.faculty || "Not assigned"}</TableCell>
+                        <TableCell className="text-center">{subject.hoursPerWeek}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <Progress value={subject.syllabusCompletion} className="h-2" />
+                            <div className="flex justify-between text-xs">
+                              <span>{subject.completedUnits}/{subject.totalUnits} units</span>
+                              {getCompletionBadge(subject.syllabusCompletion)}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setSelectedSubjectId(subject.id)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Syllabus
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Users className="h-4 w-4 mr-2" />
+                                Change Faculty
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -450,46 +469,89 @@ export default function HODCurriculum() {
               <CardDescription>Unit-wise progress for each subject</CardDescription>
             </CardHeader>
             <CardContent>
-              <Accordion type="single" collapsible className="w-full">
-                {currentSubjects.map((subject) => (
-                  <AccordionItem key={subject.id} value={subject.code}>
-                    <AccordionTrigger>
-                      <div className="flex items-center justify-between w-full pr-4">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="font-mono">{subject.code}</Badge>
-                          <span className="font-medium">{subject.name}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm text-muted-foreground">{subject.faculty}</span>
-                          {getCompletionBadge(subject.syllabusCompletion)}
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-4 pt-4">
-                        {syllabusDetails["CS501"]?.units.map((unit) => (
-                          <div key={unit.unit} className="p-4 rounded-lg border">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">Unit {unit.unit}:</span>
-                                <span>{unit.title}</span>
-                              </div>
-                              {getUnitStatusBadge(unit.status)}
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              {unit.topics.map((topic, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs">
-                                  {topic}
-                                </Badge>
-                              ))}
-                            </div>
+              {subjectsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : subjects.length === 0 ? (
+                <div className="py-12 text-center">
+                  <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">No subjects found</h3>
+                  <p className="text-muted-foreground mt-1">
+                    Add subjects to track syllabus progress
+                  </p>
+                </div>
+              ) : (
+                <Accordion type="single" collapsible className="w-full">
+                  {subjects.map((subject) => (
+                    <AccordionItem key={subject.id} value={subject.code}>
+                      <AccordionTrigger>
+                        <div className="flex items-center justify-between w-full pr-4">
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className="font-mono">{subject.code}</Badge>
+                            <span className="font-medium">{subject.name}</span>
                           </div>
-                        ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm text-muted-foreground">{subject.faculty || "Not assigned"}</span>
+                            {getCompletionBadge(subject.syllabusCompletion)}
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="space-y-4 pt-4">
+                          {subject.totalUnits === 0 ? (
+                            <p className="text-muted-foreground text-center py-4">
+                              No syllabus units defined for this subject
+                            </p>
+                          ) : subjectDetail && subjectDetail.id === subject.id ? (
+                            subjectDetail.syllabusUnits.map((unit) => (
+                              <div key={unit.id} className="p-4 rounded-lg border">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">Unit {unit.unitNumber}:</span>
+                                    <span>{unit.title}</span>
+                                  </div>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        {getUnitStatusBadge(unit.status)}
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleUpdateUnitStatus(unit.id, "pending")}>
+                                        Mark as Pending
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleUpdateUnitStatus(unit.id, "in_progress")}>
+                                        Mark as In Progress
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleUpdateUnitStatus(unit.id, "completed")}>
+                                        Mark as Completed
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {unit.topics.map((topic, idx) => (
+                                    <Badge key={idx} variant="secondary" className="text-xs">
+                                      {topic}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-4">
+                              <Button variant="outline" onClick={() => setSelectedSubjectId(subject.id)}>
+                                Load Syllabus Details
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -510,30 +572,44 @@ export default function HODCurriculum() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                {facultyAssignments.map((assignment, idx) => (
-                  <Card key={idx}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="font-semibold">{assignment.faculty}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {assignment.totalHours} hours/week • {assignment.sections} sections
-                          </p>
+              {facultyLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : facultyAssignments.length === 0 ? (
+                <div className="py-12 text-center">
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">No faculty assignments</h3>
+                  <p className="text-muted-foreground mt-1">
+                    Assign faculty to subjects to see them here
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {facultyAssignments.map((assignment) => (
+                    <Card key={assignment.facultyId}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h3 className="font-semibold">{assignment.facultyName}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {assignment.totalHours} hours/week - {assignment.sections} sections
+                            </p>
+                          </div>
+                          <Button variant="ghost" size="sm">
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button variant="ghost" size="sm">
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {assignment.subjects.map((subject, idx) => (
-                          <Badge key={idx} variant="outline">{subject}</Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                        <div className="flex flex-wrap gap-1">
+                          {assignment.subjects.map((subject, idx) => (
+                            <Badge key={idx} variant="outline">{subject}</Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

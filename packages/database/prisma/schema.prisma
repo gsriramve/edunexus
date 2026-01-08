@@ -444,25 +444,48 @@ model Course {
 
 /// Subjects
 model Subject {
-  id        String   @id @default(cuid())
-  tenantId  String
-  courseId  String
-  name      String
-  code      String
-  semester  Int
-  credits   Int      @default(3)
-  isLab     Boolean  @default(false)
-  syllabus  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  tenantId     String
+  courseId     String
+  name         String
+  code         String
+  semester     Int
+  credits      Int      @default(3)
+  hoursPerWeek Int      @default(3)
+  isLab        Boolean  @default(false)
+  syllabus     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   course          Course           @relation(fields: [courseId], references: [id])
   teacherSubjects TeacherSubject[]
   exams           Exam[]
+  syllabusUnits   SyllabusUnit[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
   @@map("subjects")
+}
+
+/// Syllabus units for tracking progress
+model SyllabusUnit {
+  id          String    @id @default(cuid())
+  tenantId    String
+  subjectId   String
+  unitNumber  Int
+  title       String
+  topics      Json      @default("[]") // Array of topic strings
+  status      String    @default("pending") // pending, in_progress, completed
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([subjectId, unitNumber])
+  @@index([tenantId])
+  @@index([subjectId])
+  @@map("syllabus_units")
 }
 
 /// Teacher-Subject assignment
