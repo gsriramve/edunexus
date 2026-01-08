@@ -56,6 +56,14 @@ This session completed the **Frontend UI implementation** for the Student-Centri
 | Contribute | `/alumni/contribute/` | 6 contribution types, form submission, wall of honor |
 | Testimonials | `/alumni/testimonials/` | Featured stories, category filter, create with video support |
 
+### Alumni Components (3 components)
+
+| Component | Path | Features |
+|-----------|------|----------|
+| AlumniStatsRow | `components/alumni/AlumniStatsRow.tsx` | 4-card stats display with loading skeleton |
+| MentorshipRequestCard | `components/alumni/MentorshipRequestCard.tsx` | Request card, skeleton, empty state |
+| EventCard | `components/alumni/EventCard.tsx` | Full/compact modes, skeleton, empty state |
+
 ### API Modules (Backend - 7 modules)
 
 | Module | Path | Status |
@@ -152,7 +160,21 @@ npx prisma generate
 ## Git Summary
 
 **Branch:** main
-**Commit Message:** feat: Complete Student & Alumni Portal UI (14 pages)
+
+### Latest Commit (ae80508)
+**Message:** feat: Add alumni dashboard components and integrate real API hooks
+
+**Changes:**
+- Updated Alumni Dashboard to use real API hooks (removed mock data)
+- Added 3 reusable components in `apps/web/src/components/alumni/`:
+  - `AlumniStatsRow.tsx` - Dashboard statistics display
+  - `MentorshipRequestCard.tsx` - Request cards with skeleton/empty states
+  - `EventCard.tsx` - Event display with compact mode
+- Integrated hooks: `useMyAlumniProfile`, `useMyMentorStats`, `usePendingMentorshipRequests`, `useUpcomingAlumniEvents`, `useMyContributions`
+- Added proper loading states and empty state handling
+
+### Previous Commits
+**Message:** feat: Complete Student & Alumni Portal UI (14 pages)
 
 **Files Changed:**
 - 7 Student portal pages created
