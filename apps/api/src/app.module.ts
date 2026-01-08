@@ -51,6 +51,7 @@ import { PrincipalDashboardModule } from './modules/principal-dashboard/principa
 import { LabAssistantModule } from './modules/lab-assistant/lab-assistant.module';
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
 import { ParentDashboardModule } from './modules/parent-dashboard/parent-dashboard.module';
+import { StudentCareerModule } from './modules/student-career/student-career.module';
 
 @Module({
   imports: [
@@ -120,6 +121,7 @@ import { ParentDashboardModule } from './modules/parent-dashboard/parent-dashboa
     LabAssistantModule,
     AdminDashboardModule,
     ParentDashboardModule,
+    StudentCareerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
