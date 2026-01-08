@@ -203,7 +203,14 @@ export class StudentsService {
             id: true,
             email: true,
             name: true,
-            profile: true,
+            profile: {
+              include: {
+                addresses: true,
+                contacts: true,
+                emergency: true,
+                documents: true,
+              },
+            },
           },
         },
         department: {
@@ -211,6 +218,22 @@ export class StudentsService {
             id: true,
             name: true,
             code: true,
+          },
+        },
+        parent: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                profile: {
+                  include: {
+                    contacts: true,
+                  },
+                },
+              },
+            },
           },
         },
       },

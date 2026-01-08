@@ -13,6 +13,7 @@ export const UserRole = {
   LAB_ASSISTANT: "lab_assistant",
   STUDENT: "student",
   PARENT: "parent",
+  ALUMNI: "alumni",
 } as const;
 
 export type UserRoleType = (typeof UserRole)[keyof typeof UserRole];
@@ -27,6 +28,7 @@ export const ROLE_HIERARCHY: Record<UserRoleType, number> = {
   [UserRole.LAB_ASSISTANT]: 50,
   [UserRole.STUDENT]: 20,
   [UserRole.PARENT]: 10,
+  [UserRole.ALUMNI]: 15, // Between parent and student
 };
 
 // Resources that can be accessed
@@ -69,6 +71,27 @@ export const Resource = {
   // Reports
   REPORTS: "reports",
   ANALYTICS: "analytics",
+
+  // Student Growth & Career (SGI/CRI)
+  STUDENT_GROWTH: "student_growth",
+  CAREER_READINESS: "career_readiness",
+  STUDENT_JOURNEY: "student_journey",
+  STUDENT_GOALS: "student_goals",
+  AI_GUIDANCE: "ai_guidance",
+
+  // Feedback System
+  FEEDBACK: "feedback",
+  FEEDBACK_CYCLES: "feedback_cycles",
+
+  // Alumni
+  ALUMNI_PROFILE: "alumni_profile",
+  ALUMNI_DIRECTORY: "alumni_directory",
+  ALUMNI_MENTORSHIP: "alumni_mentorship",
+  ALUMNI_EVENTS: "alumni_events",
+  ALUMNI_CONTRIBUTIONS: "alumni_contributions",
+
+  // Accreditation
+  ACCREDITATION: "accreditation",
 } as const;
 
 export type ResourceType = (typeof Resource)[keyof typeof Resource];
@@ -119,6 +142,22 @@ export const ROLE_PERMISSIONS: Record<UserRoleType, Permission[]> = {
     { resource: Resource.TRANSPORT, actions: [Action.MANAGE], scope: "college" },
     { resource: Resource.HOSTEL, actions: [Action.MANAGE], scope: "college" },
     { resource: Resource.LIBRARY, actions: [Action.MANAGE], scope: "college" },
+    // Student Growth & Career Indices - full college view
+    { resource: Resource.STUDENT_GROWTH, actions: [Action.READ], scope: "college" },
+    { resource: Resource.CAREER_READINESS, actions: [Action.READ], scope: "college" },
+    { resource: Resource.STUDENT_JOURNEY, actions: [Action.READ], scope: "college" },
+    { resource: Resource.AI_GUIDANCE, actions: [Action.READ], scope: "college" },
+    // Feedback system management
+    { resource: Resource.FEEDBACK, actions: [Action.READ], scope: "college" },
+    { resource: Resource.FEEDBACK_CYCLES, actions: [Action.MANAGE], scope: "college" },
+    // Alumni management
+    { resource: Resource.ALUMNI_PROFILE, actions: [Action.MANAGE], scope: "college" },
+    { resource: Resource.ALUMNI_DIRECTORY, actions: [Action.READ], scope: "college" },
+    { resource: Resource.ALUMNI_MENTORSHIP, actions: [Action.READ], scope: "college" },
+    { resource: Resource.ALUMNI_EVENTS, actions: [Action.MANAGE], scope: "college" },
+    { resource: Resource.ALUMNI_CONTRIBUTIONS, actions: [Action.MANAGE], scope: "college" },
+    // Accreditation management
+    { resource: Resource.ACCREDITATION, actions: [Action.MANAGE], scope: "college" },
   ],
 
   [UserRole.HOD]: [
@@ -130,6 +169,14 @@ export const ROLE_PERMISSIONS: Record<UserRoleType, Permission[]> = {
     { resource: Resource.RESULTS, actions: [Action.READ], scope: "department" },
     { resource: Resource.REPORTS, actions: [Action.READ], scope: "department" },
     { resource: Resource.ANNOUNCEMENTS, actions: [Action.CREATE, Action.READ], scope: "department" },
+    // HOD can view SGI/CRI for all department students
+    { resource: Resource.STUDENT_GROWTH, actions: [Action.READ], scope: "department" },
+    { resource: Resource.CAREER_READINESS, actions: [Action.READ], scope: "department" },
+    // HOD manages feedback cycles for department
+    { resource: Resource.FEEDBACK, actions: [Action.READ], scope: "department" },
+    { resource: Resource.FEEDBACK_CYCLES, actions: [Action.MANAGE], scope: "department" },
+    // HOD can view disengagement alerts
+    { resource: Resource.AI_GUIDANCE, actions: [Action.READ], scope: "department" },
   ],
 
   [UserRole.ADMIN_STAFF]: [
@@ -150,6 +197,11 @@ export const ROLE_PERMISSIONS: Record<UserRoleType, Permission[]> = {
     { resource: Resource.RESULTS, actions: [Action.CREATE, Action.READ, Action.UPDATE], scope: "own" },
     { resource: Resource.MESSAGES, actions: [Action.CREATE, Action.READ], scope: "own" },
     { resource: Resource.REPORTS, actions: [Action.READ], scope: "own" },
+    // Teacher can give feedback to students in their classes
+    { resource: Resource.FEEDBACK, actions: [Action.CREATE, Action.READ], scope: "own" },
+    // Teacher can view SGI of students in their classes (for mentoring)
+    { resource: Resource.STUDENT_GROWTH, actions: [Action.READ], scope: "own" },
+    { resource: Resource.AI_GUIDANCE, actions: [Action.READ], scope: "own" }, // View student alerts
   ],
 
   [UserRole.LAB_ASSISTANT]: [
@@ -172,6 +224,17 @@ export const ROLE_PERMISSIONS: Record<UserRoleType, Permission[]> = {
     { resource: Resource.HOSTEL, actions: [Action.READ], scope: "own" },
     { resource: Resource.MESSAGES, actions: [Action.CREATE, Action.READ], scope: "own" },
     { resource: Resource.NOTIFICATIONS, actions: [Action.READ], scope: "own" },
+    // Student Growth & Career Indices
+    { resource: Resource.STUDENT_GROWTH, actions: [Action.READ], scope: "own" },
+    { resource: Resource.CAREER_READINESS, actions: [Action.READ], scope: "own" },
+    { resource: Resource.STUDENT_JOURNEY, actions: [Action.READ], scope: "own" },
+    { resource: Resource.STUDENT_GOALS, actions: [Action.MANAGE], scope: "own" },
+    { resource: Resource.AI_GUIDANCE, actions: [Action.READ, Action.UPDATE], scope: "own" },
+    // Feedback - can give peer feedback and view own summary
+    { resource: Resource.FEEDBACK, actions: [Action.CREATE, Action.READ], scope: "own" },
+    // Alumni mentorship - can request mentorship
+    { resource: Resource.ALUMNI_DIRECTORY, actions: [Action.READ], scope: "college" },
+    { resource: Resource.ALUMNI_MENTORSHIP, actions: [Action.CREATE, Action.READ], scope: "own" },
   ],
 
   [UserRole.PARENT]: [
@@ -182,6 +245,23 @@ export const ROLE_PERMISSIONS: Record<UserRoleType, Permission[]> = {
     { resource: Resource.MESSAGES, actions: [Action.CREATE, Action.READ], scope: "own" },
     { resource: Resource.NOTIFICATIONS, actions: [Action.READ], scope: "own" },
     { resource: Resource.PREDICTIONS, actions: [Action.READ], scope: "own" },
+    // Parent can view child's growth indices
+    { resource: Resource.STUDENT_GROWTH, actions: [Action.READ], scope: "own" },
+    { resource: Resource.CAREER_READINESS, actions: [Action.READ], scope: "own" },
+    { resource: Resource.STUDENT_JOURNEY, actions: [Action.READ], scope: "own" },
+  ],
+
+  [UserRole.ALUMNI]: [
+    // Alumni profile management
+    { resource: Resource.ALUMNI_PROFILE, actions: [Action.MANAGE], scope: "own" },
+    { resource: Resource.ALUMNI_DIRECTORY, actions: [Action.READ], scope: "college" },
+    { resource: Resource.ALUMNI_MENTORSHIP, actions: [Action.MANAGE], scope: "own" },
+    { resource: Resource.ALUMNI_EVENTS, actions: [Action.READ], scope: "college" },
+    { resource: Resource.ALUMNI_CONTRIBUTIONS, actions: [Action.CREATE, Action.READ], scope: "own" },
+    // Can view college announcements
+    { resource: Resource.ANNOUNCEMENTS, actions: [Action.READ], scope: "college" },
+    { resource: Resource.NOTIFICATIONS, actions: [Action.READ], scope: "own" },
+    { resource: Resource.MESSAGES, actions: [Action.CREATE, Action.READ], scope: "own" },
   ],
 };
 
@@ -237,6 +317,7 @@ export const ROLE_DISPLAY_NAMES: Record<UserRoleType, string> = {
   [UserRole.LAB_ASSISTANT]: "Lab Assistant",
   [UserRole.STUDENT]: "Student",
   [UserRole.PARENT]: "Parent",
+  [UserRole.ALUMNI]: "Alumni",
 };
 
 // Role colors for UI
@@ -249,4 +330,5 @@ export const ROLE_COLORS: Record<UserRoleType, string> = {
   [UserRole.LAB_ASSISTANT]: "bg-teal-500",
   [UserRole.STUDENT]: "bg-indigo-500",
   [UserRole.PARENT]: "bg-pink-500",
+  [UserRole.ALUMNI]: "bg-amber-500",
 };

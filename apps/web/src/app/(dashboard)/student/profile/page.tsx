@@ -17,6 +17,12 @@ import {
   Camera,
   Save,
   Loader2,
+  CreditCard,
+  FileText,
+  AlertTriangle,
+  ExternalLink,
+  CheckCircle,
+  Clock,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +33,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
-import { useStudentByUserId, useUpdateStudent } from "@/hooks/use-api";
+import { useStudentByUserId, useUpdateStudent, useStudentIdCard, useGenerateIdCard, useDownloadIdCardPdf, useTenant } from "@/hooks/use-api";
+import { StudentIDCard } from "@/components/student/StudentIDCard";
+import { toast } from "sonner";
 
 export default function StudentProfile() {
   const { user, isLoaded: userLoaded } = useUser();
@@ -37,6 +45,37 @@ export default function StudentProfile() {
   // Fetch student data
   const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
   const updateStudentMutation = useUpdateStudent(tenantId);
+
+  // Fetch tenant data for college name
+  const { data: tenantData } = useTenant(tenantId);
+
+  // Fetch ID card data
+  const { data: idCard, isLoading: idCardLoading, error: idCardError } = useStudentIdCard(
+    tenantId,
+    studentData?.id || ''
+  );
+  const generateIdCardMutation = useGenerateIdCard(tenantId);
+  const downloadPdfMutation = useDownloadIdCardPdf(tenantId);
+
+  const handleGenerateIdCard = async () => {
+    if (!studentData?.id) return;
+    try {
+      await generateIdCardMutation.mutateAsync({ studentId: studentData.id });
+      toast.success('ID card generated successfully!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to generate ID card');
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!idCard?.id) return;
+    try {
+      await downloadPdfMutation.mutateAsync(idCard.id);
+      toast.success('ID card PDF downloaded!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to download PDF');
+    }
+  };
 
   // Form state for editable fields
   const [editedPhone, setEditedPhone] = useState('');
@@ -198,13 +237,52 @@ export default function StudentProfile() {
         </CardContent>
       </Card>
 
+      {/* Student ID Card Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Student ID Card
+          </CardTitle>
+          <CardDescription>
+            Your digital student identification card with QR verification
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <StudentIDCard
+            idCard={idCardError ? null : idCard ? {
+              id: idCard.id,
+              cardNumber: idCard.cardNumber,
+              status: idCard.status,
+              issueDate: idCard.issueDate,
+              validUntil: idCard.validUntil,
+              qrVerificationToken: idCard.qrVerificationToken,
+              cachedName: idCard.cachedName,
+              cachedRollNo: idCard.cachedRollNo,
+              cachedDepartment: idCard.cachedDepartment,
+              cachedBatch: idCard.cachedBatch,
+              cachedBloodGroup: idCard.cachedBloodGroup,
+              cachedPhotoUrl: idCard.cachedPhotoUrl,
+            } : null}
+            collegeName={tenantData?.displayName || tenantData?.name || 'EduNexus College'}
+            collegeLogo={tenantData?.logo || undefined}
+            isLoading={idCardLoading || studentLoading}
+            onGenerateCard={handleGenerateIdCard}
+            onDownloadPdf={handleDownloadPdf}
+            isGenerating={generateIdCardMutation.isPending}
+            isDownloading={downloadPdfMutation.isPending}
+          />
+        </CardContent>
+      </Card>
+
       {/* Profile Details Tabs */}
       <Tabs defaultValue="personal" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="personal">Personal</TabsTrigger>
           <TabsTrigger value="academic">Academic</TabsTrigger>
           <TabsTrigger value="parent">Parent/Guardian</TabsTrigger>
           <TabsTrigger value="address">Address</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
         {/* Personal Information */}
@@ -369,15 +447,53 @@ export default function StudentProfile() {
           <Card>
             <CardHeader>
               <CardTitle>Parent/Guardian Information</CardTitle>
-              <CardDescription>Emergency contact details</CardDescription>
+              <CardDescription>Your registered parents and guardians</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* TODO: Fetch parent data from ParentStudent relationship when API is available */}
-              <div className="text-center py-8 text-muted-foreground">
-                <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Parent/Guardian information will be available soon.</p>
-                <p className="text-sm mt-2">Contact your administrator to update this information.</p>
-              </div>
+              {studentData?.parent && studentData.parent.length > 0 ? (
+                <div className="space-y-6">
+                  {studentData.parent.map((parent: any) => (
+                    <div key={parent.id} className="border rounded-lg p-4 space-y-4">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-16 w-16">
+                          <AvatarImage src={parent.user?.profile?.photoUrl} />
+                          <AvatarFallback className="text-lg bg-secondary">
+                            {parent.user?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'PG'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-semibold text-lg">{parent.user?.name || 'N/A'}</h3>
+                          <Badge variant="outline" className="capitalize">{parent.relation}</Badge>
+                        </div>
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Mail className="h-3 w-3" />
+                            Email
+                          </Label>
+                          <p className="text-sm font-medium">{parent.user?.email || 'Not provided'}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Phone className="h-3 w-3" />
+                            Phone
+                          </Label>
+                          <p className="text-sm font-medium">
+                            {parent.user?.profile?.contacts?.[0]?.value || 'Not provided'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No parent/guardian information on record.</p>
+                  <p className="text-sm mt-2">Contact your administrator to update this information.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -390,17 +506,124 @@ export default function StudentProfile() {
                 <MapPin className="h-5 w-5" />
                 Address Information
               </CardTitle>
-              <CardDescription>Your residential address</CardDescription>
+              <CardDescription>Your registered addresses</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* TODO: Fetch address from UserProfile when API is available */}
-              <div className="text-center py-8 text-muted-foreground">
-                <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Address information will be available soon.</p>
-                <p className="text-sm mt-2">Contact your administrator to update this information.</p>
-              </div>
+              {studentData?.user?.profile?.addresses && studentData.user.profile.addresses.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {studentData.user.profile.addresses.map((address: any) => (
+                    <div key={address.id} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className="capitalize">{address.type} Address</Badge>
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        <p className="font-medium">{address.line1}</p>
+                        {address.line2 && <p className="text-muted-foreground">{address.line2}</p>}
+                        <p>
+                          {address.city}, {address.state} - {address.pincode}
+                        </p>
+                        <p className="text-muted-foreground">{address.country}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No address information on record.</p>
+                  <p className="text-sm mt-2">Contact your administrator to update this information.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Documents */}
+        <TabsContent value="documents">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Documents
+              </CardTitle>
+              <CardDescription>Your uploaded documents and certificates</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {studentData?.user?.profile?.documents && studentData.user.profile.documents.length > 0 ? (
+                <div className="space-y-4">
+                  {studentData.user.profile.documents.map((doc: any) => (
+                    <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <FileText className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium capitalize">{doc.type.replace(/_/g, ' ')}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Uploaded {new Date(doc.createdAt).toLocaleDateString('en-IN')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {doc.verifiedAt ? (
+                          <Badge className="bg-green-500">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Verified
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending
+                          </Badge>
+                        )}
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            View
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No documents uploaded yet.</p>
+                  <p className="text-sm mt-2">Contact your administrator to upload documents.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Emergency Contacts */}
+          {studentData?.user?.profile?.emergency && studentData.user.profile.emergency.length > 0 && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-orange-500" />
+                  Emergency Contacts
+                </CardTitle>
+                <CardDescription>People to contact in case of emergency</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {studentData.user.profile.emergency.map((contact: any) => (
+                    <div key={contact.id} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold">{contact.name}</h4>
+                        <Badge variant="outline" className="capitalize">{contact.relationship}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Phone className="h-4 w-4" />
+                        <a href={`tel:${contact.phone}`} className="hover:underline">{contact.phone}</a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

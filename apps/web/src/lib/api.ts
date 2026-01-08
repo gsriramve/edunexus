@@ -578,6 +578,55 @@ export const studentsApi = {
     api<StudentAcademics>(`/students/${studentId}/academics`, { tenantId }),
 };
 
+// Profile sub-types
+export interface UserAddress {
+  id: string;
+  type: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+}
+
+export interface UserContact {
+  id: string;
+  type: string;
+  value: string;
+  isPrimary: boolean;
+}
+
+export interface UserDocument {
+  id: string;
+  type: string;
+  fileUrl: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  createdAt: string;
+}
+
+export interface EmergencyContact {
+  id: string;
+  name: string;
+  relationship: string;
+  phone: string;
+}
+
+export interface Parent {
+  id: string;
+  relation: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    profile?: {
+      photoUrl?: string;
+      contacts?: UserContact[];
+    };
+  };
+}
+
 // Student Types
 export interface Student {
   id: string;
@@ -601,6 +650,10 @@ export interface Student {
       gender?: string;
       bloodGroup?: string;
       nationality?: string;
+      addresses?: UserAddress[];
+      contacts?: UserContact[];
+      documents?: UserDocument[];
+      emergency?: EmergencyContact[];
     } | null;
   };
   department: {
@@ -608,6 +661,7 @@ export interface Student {
     name: string;
     code: string;
   };
+  parent?: Parent[];
   createdAt: string;
   updatedAt: string;
 }
@@ -5565,6 +5619,161 @@ export const attendanceApi = {
       lowAttendanceCount: number;
     }>(`/attendance/stats${query ? `?${query}` : ''}`, { tenantId });
   },
+};
+
+// ============ ID Cards API ============
+
+export interface IdCard {
+  id: string;
+  tenantId: string;
+  studentId: string;
+  cardNumber: string;
+  issueDate: string;
+  validUntil: string;
+  qrCodeData: string;
+  qrVerificationToken: string;
+  status: 'active' | 'expired' | 'revoked';
+  cachedPhotoUrl?: string | null;
+  cachedName: string;
+  cachedRollNo: string;
+  cachedDepartment: string;
+  cachedBatch: string;
+  cachedBloodGroup?: string | null;
+  pdfGeneratedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  student?: {
+    id: string;
+    rollNo: string;
+    batch: string;
+    semester: number;
+    section?: string;
+    user: {
+      name: string;
+      email: string;
+    };
+    department: {
+      name: string;
+      code: string;
+    };
+  };
+}
+
+export interface IdCardVerification {
+  valid: boolean;
+  message: string;
+  card?: {
+    cardNumber: string;
+    studentName: string;
+    rollNo: string;
+    department: string;
+    batch: string;
+    status: string;
+    validUntil: string;
+    photoUrl?: string;
+  };
+  collegeName?: string;
+}
+
+export interface IdCardStats {
+  totalCards: number;
+  activeCards: number;
+  expiredCards: number;
+  revokedCards: number;
+  cardsByDepartment: Record<string, number>;
+  cardsByBatch: Record<string, number>;
+  recentlyGenerated: IdCard[];
+  // Aliases for backwards compatibility
+  total?: number;
+  active?: number;
+  expired?: number;
+  revoked?: number;
+  byDepartment?: Record<string, number>;
+  byBatch?: Record<string, number>;
+}
+
+export interface GenerateIdCardInput {
+  validUntil?: string;
+}
+
+export interface BulkGenerateIdCardsInput {
+  studentIds?: string[];
+  departmentId?: string;
+  batch?: string;
+  validUntil?: string;
+}
+
+export interface BulkGenerateResult {
+  total: number;
+  generated: number;
+  skipped: number;
+  errors: Array<{ studentId: string; error: string }>;
+  cards: IdCard[];
+}
+
+export interface IdCardQueryParams {
+  departmentId?: string;
+  batch?: string;
+  status?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export const idCardsApi = {
+  // Get ID card by student ID
+  getByStudentId: (tenantId: string, studentId: string) =>
+    api<IdCard>(`/id-cards/student/${studentId}`, { tenantId }),
+
+  // Get ID card by ID
+  get: (tenantId: string, id: string) =>
+    api<IdCard>(`/id-cards/${id}`, { tenantId }),
+
+  // List all ID cards
+  list: (tenantId: string, params?: IdCardQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.departmentId) searchParams.set('departmentId', params.departmentId);
+    if (params?.batch) searchParams.set('batch', params.batch);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ cards: IdCard[]; total: number }>(`/id-cards${query ? `?${query}` : ''}`, { tenantId });
+  },
+
+  // Generate ID card for a student
+  generate: (tenantId: string, studentId: string, data?: GenerateIdCardInput) =>
+    api<IdCard>(`/id-cards/generate/${studentId}`, { method: 'POST', body: data || {}, tenantId }),
+
+  // Bulk generate ID cards
+  bulkGenerate: (tenantId: string, data: BulkGenerateIdCardsInput) =>
+    api<BulkGenerateResult>('/id-cards/bulk-generate', { method: 'POST', body: data, tenantId }),
+
+  // Get PDF download URL (returns blob)
+  downloadPdf: async (tenantId: string, id: string): Promise<Blob> => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/id-cards/${id}/pdf`, {
+      headers: {
+        'x-tenant-id': tenantId,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Failed to download PDF');
+    }
+    return response.blob();
+  },
+
+  // Verify ID card (public endpoint)
+  verify: (token: string) =>
+    api<IdCardVerification>(`/id-cards/verify/${token}`),
+
+  // Revoke ID card
+  revoke: (tenantId: string, id: string, reason?: string) =>
+    api<IdCard>(`/id-cards/${id}/revoke`, { method: 'PATCH', body: { reason }, tenantId }),
+
+  // Get statistics
+  stats: (tenantId: string) =>
+    api<IdCardStats>('/id-cards/stats', { tenantId }),
 };
 
 export { ApiError };

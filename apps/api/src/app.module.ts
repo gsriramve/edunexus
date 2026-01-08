@@ -24,6 +24,10 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { PlatformModule } from './modules/platform/platform.module';
+import { IdCardsModule } from './modules/id-cards/id-cards.module';
+import { StudentIndicesModule } from './modules/student-indices/student-indices.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
+import { AiGuidanceModule } from './modules/ai-guidance/ai-guidance.module';
 
 @Module({
   imports: [
@@ -66,6 +70,10 @@ import { PlatformModule } from './modules/platform/platform.module';
     InvitationsModule,
     AuthModule,
     PlatformModule,
+    IdCardsModule,
+    StudentIndicesModule,
+    FeedbackModule,
+    AiGuidanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

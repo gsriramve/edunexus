@@ -8,6 +8,7 @@ import {
   studentsApi,
   paymentsApi,
   platformApi,
+  idCardsApi,
   type Tenant,
   type Department,
   type Staff,
@@ -32,6 +33,11 @@ import {
   type TenantStatusInput,
   type TenantQueryParams,
   type PlatformAuditLogQueryParams,
+  type IdCard,
+  type IdCardStats,
+  type IdCardQueryParams,
+  type GenerateIdCardInput,
+  type BulkGenerateIdCardsInput,
 } from '@/lib/api';
 
 // ============ Tenants Hooks ============
@@ -538,7 +544,139 @@ export function useTenantAuditLogs(tenantId: string, params?: PlatformAuditLogQu
   });
 }
 
+// ============ ID Cards Hooks ============
+
+export const idCardKeys = {
+  all: ['id-cards'] as const,
+  lists: () => [...idCardKeys.all, 'list'] as const,
+  list: (tenantId: string, params?: IdCardQueryParams) => [...idCardKeys.lists(), tenantId, params] as const,
+  details: () => [...idCardKeys.all, 'detail'] as const,
+  detail: (tenantId: string, id: string) => [...idCardKeys.details(), tenantId, id] as const,
+  byStudent: (tenantId: string, studentId: string) => [...idCardKeys.all, 'student', tenantId, studentId] as const,
+  stats: (tenantId: string) => [...idCardKeys.all, 'stats', tenantId] as const,
+};
+
+export function useStudentIdCard(tenantId: string, studentId: string) {
+  return useQuery({
+    queryKey: idCardKeys.byStudent(tenantId, studentId),
+    queryFn: () => idCardsApi.getByStudentId(tenantId, studentId),
+    enabled: !!tenantId && !!studentId,
+    retry: false, // Don't retry if student doesn't have an ID card
+  });
+}
+
+export function useIdCard(tenantId: string, id: string) {
+  return useQuery({
+    queryKey: idCardKeys.detail(tenantId, id),
+    queryFn: () => idCardsApi.get(tenantId, id),
+    enabled: !!tenantId && !!id,
+  });
+}
+
+export function useIdCards(tenantId: string, params?: IdCardQueryParams) {
+  return useQuery({
+    queryKey: idCardKeys.list(tenantId, params),
+    queryFn: () => idCardsApi.list(tenantId, params),
+    enabled: !!tenantId,
+  });
+}
+
+export function useIdCardStats(tenantId: string) {
+  return useQuery({
+    queryKey: idCardKeys.stats(tenantId),
+    queryFn: () => idCardsApi.stats(tenantId),
+    enabled: !!tenantId,
+  });
+}
+
+export function useGenerateIdCard(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ studentId, data }: { studentId: string; data?: GenerateIdCardInput }) =>
+      idCardsApi.generate(tenantId, studentId, data),
+    onSuccess: (newCard, { studentId }) => {
+      queryClient.invalidateQueries({ queryKey: idCardKeys.byStudent(tenantId, studentId) });
+      queryClient.invalidateQueries({ queryKey: idCardKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: idCardKeys.stats(tenantId) });
+    },
+  });
+}
+
+export function useBulkGenerateIdCards(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: BulkGenerateIdCardsInput) => idCardsApi.bulkGenerate(tenantId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: idCardKeys.all });
+    },
+  });
+}
+
+export function useDownloadIdCardPdf(tenantId: string) {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const blob = await idCardsApi.downloadPdf(tenantId, id);
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `id-card-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+  });
+}
+
+export function useRevokeIdCard(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      idCardsApi.revoke(tenantId, id, reason),
+    onSuccess: (revokedCard) => {
+      queryClient.invalidateQueries({ queryKey: idCardKeys.byStudent(tenantId, revokedCard.studentId) });
+      queryClient.invalidateQueries({ queryKey: idCardKeys.detail(tenantId, revokedCard.id) });
+      queryClient.invalidateQueries({ queryKey: idCardKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: idCardKeys.stats(tenantId) });
+    },
+  });
+}
+
 // ============ Parent Hooks ============
 // Parent hooks are in a separate file: use-parents.ts
 // Re-export them for convenience
 export { useParentChildren, useParentProfile, useParentChild, parentKeys } from './use-parents';
+
+// ============ Student Indices Hooks (SGI/CRI) ============
+// Student indices hooks are in a separate file: use-student-indices.ts
+export {
+  // SGI hooks
+  useStudentSgi,
+  useSgiStats,
+  useSgiAlerts,
+  useCalculateSgi,
+  useBulkCalculateSgi,
+  // CRI hooks
+  useStudentCri,
+  useCriStats,
+  useCriAlerts,
+  useCalculateCri,
+  useBulkCalculateCri,
+  // Config hooks
+  useIndexConfig,
+  useUpdateIndexConfig,
+  // Dashboard hooks
+  useStudentIndicesDashboard,
+  useDepartmentOverview,
+  // Query keys
+  studentIndicesKeys,
+  // Types
+  type SgiData,
+  type CriData,
+  type SgiStats,
+  type CriStats,
+  type AlertData,
+  type IndexConfig,
+  type StudentDashboardData,
+} from './use-student-indices';

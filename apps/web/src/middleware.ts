@@ -11,6 +11,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/webhooks(.*)",
   "/unauthorized",
   "/setup-pending",
+  "/verify(.*)", // Public ID card verification
 ]);
 
 // Define routes by role
@@ -22,6 +23,7 @@ const isTeacherRoute = createRouteMatcher(["/teacher(.*)"]);
 const isLabAssistantRoute = createRouteMatcher(["/lab-assistant(.*)"]);
 const isStudentRoute = createRouteMatcher(["/student(.*)"]);
 const isParentRoute = createRouteMatcher(["/parent(.*)"]);
+const isAlumniRoute = createRouteMatcher(["/alumni(.*)"]);
 
 // Type for session claims with metadata
 interface SessionClaimsWithMetadata {
@@ -89,6 +91,10 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (isParentRoute(req) && !["platform_owner", "principal", "parent"].includes(userRole)) {
+    return Response.redirect(new URL("/unauthorized", req.url));
+  }
+
+  if (isAlumniRoute(req) && !["platform_owner", "principal", "alumni"].includes(userRole)) {
     return Response.redirect(new URL("/unauthorized", req.url));
   }
 });

@@ -21,7 +21,20 @@ import {
   FileText,
   Brain,
   Briefcase,
+  LogOut,
+  CreditCard,
+  TrendingUp,
+  Target,
+  Route,
+  MessageSquare,
+  Star,
+  UserCheck,
+  Award,
+  Handshake,
+  Calendar,
+  Shield,
 } from "lucide-react";
+import { useClerk } from "@clerk/nextjs";
 import {
   Sidebar,
   SidebarContent,
@@ -46,9 +59,14 @@ const platformOwnerNav = [
 
 const principalNav = [
   { title: "Dashboard", href: "/principal", icon: LayoutDashboard },
+  { title: "Institution Metrics", href: "/principal/institution-metrics", icon: TrendingUp },
+  { title: "Accreditation", href: "/principal/accreditation", icon: Shield },
+  { title: "Alumni", href: "/principal/alumni", icon: GraduationCap },
+  { title: "Feedback Cycles", href: "/principal/feedback-cycles", icon: MessageSquare },
   { title: "Departments", href: "/principal/departments", icon: Building2 },
   { title: "Staff", href: "/principal/staff", icon: Users },
   { title: "Students", href: "/principal/students", icon: GraduationCap },
+  { title: "ID Cards", href: "/admin/id-cards", icon: CreditCard },
   { title: "Academics", href: "/principal/academics", icon: BookOpen },
   { title: "Exams", href: "/principal/exams", icon: CalendarDays },
   { title: "Fees", href: "/principal/fees", icon: Wallet },
@@ -58,6 +76,9 @@ const principalNav = [
 
 const hodNav = [
   { title: "Dashboard", href: "/hod", icon: LayoutDashboard },
+  { title: "Department Health", href: "/hod/department-health", icon: TrendingUp },
+  { title: "Skill Gaps", href: "/hod/skill-gaps", icon: Target },
+  { title: "Feedback Cycles", href: "/hod/feedback-cycles", icon: MessageSquare },
   { title: "Faculty", href: "/hod/faculty", icon: Users },
   { title: "Students", href: "/hod/students", icon: GraduationCap },
   { title: "Subjects", href: "/hod/subjects", icon: BookOpen },
@@ -68,6 +89,8 @@ const hodNav = [
 
 const teacherNav = [
   { title: "Dashboard", href: "/teacher", icon: LayoutDashboard },
+  { title: "Give Feedback", href: "/teacher/feedback", icon: MessageSquare },
+  { title: "Student Alerts", href: "/teacher/alerts", icon: Bell },
   { title: "My Classes", href: "/teacher/classes", icon: BookOpen },
   { title: "Attendance", href: "/teacher/attendance", icon: CalendarDays },
   { title: "Assignments", href: "/teacher/assignments", icon: FileText },
@@ -77,6 +100,13 @@ const teacherNav = [
 
 const studentNav = [
   { title: "Dashboard", href: "/student", icon: LayoutDashboard },
+  { title: "My Growth", href: "/student/growth", icon: TrendingUp },
+  { title: "Career Readiness", href: "/student/career-readiness", icon: Target },
+  { title: "My Journey", href: "/student/journey", icon: Route },
+  { title: "My Goals", href: "/student/goals", icon: Star },
+  { title: "Guidance", href: "/student/guidance", icon: Brain },
+  { title: "Feedback", href: "/student/feedback", icon: MessageSquare },
+  { title: "Find Mentor", href: "/student/mentorship", icon: Handshake },
   { title: "Academics", href: "/student/academics", icon: BookOpen },
   { title: "Attendance", href: "/student/attendance", icon: CalendarDays },
   { title: "Exams", href: "/student/exams", icon: FileText },
@@ -98,6 +128,16 @@ const parentNav = [
   { title: "Messages", href: "/parent/messages", icon: Bell },
 ];
 
+const alumniNav = [
+  { title: "Dashboard", href: "/alumni", icon: LayoutDashboard },
+  { title: "My Profile", href: "/alumni/profile", icon: UserCheck },
+  { title: "Mentorship", href: "/alumni/mentorship", icon: Handshake },
+  { title: "Events", href: "/alumni/events", icon: Calendar },
+  { title: "Directory", href: "/alumni/directory", icon: Users },
+  { title: "Contribute", href: "/alumni/contribute", icon: Award },
+  { title: "Testimonials", href: "/alumni/testimonials", icon: Star },
+];
+
 const NAV_BY_ROLE: Record<string, typeof platformOwnerNav> = {
   [UserRole.PLATFORM_OWNER]: platformOwnerNav,
   [UserRole.PRINCIPAL]: principalNav,
@@ -107,6 +147,7 @@ const NAV_BY_ROLE: Record<string, typeof platformOwnerNav> = {
   [UserRole.LAB_ASSISTANT]: teacherNav.slice(0, 4), // Subset of teacher nav
   [UserRole.STUDENT]: studentNav,
   [UserRole.PARENT]: parentNav,
+  [UserRole.ALUMNI]: alumniNav,
 };
 
 export function AppSidebar() {
@@ -114,6 +155,11 @@ export function AppSidebar() {
   const { role, roleName } = useRole();
   const tenantId = useTenantId();
   const { data: tenant } = useTenant(tenantId || "");
+  const { signOut } = useClerk();
+
+  const handleSignOut = () => {
+    signOut({ redirectUrl: "/" });
+  };
 
   const navItems = role ? NAV_BY_ROLE[role] || studentNav : [];
 
@@ -176,6 +222,15 @@ export function AppSidebar() {
                 <HelpCircle className="h-4 w-4" />
                 <span>Help & Support</span>
               </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={handleSignOut}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

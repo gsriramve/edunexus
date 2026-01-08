@@ -85,7 +85,7 @@ export default function StudentHostelPage() {
 
   // Transform menu data into day-indexed format (dayOfWeek is 0-6, map to day names)
   const menu: Record<string, Array<{ mealType: string; timing: string; items: string[] }>> = {};
-  if (menuData) {
+  if (menuData && Array.isArray(menuData)) {
     menuData.forEach((item) => {
       const dayName = days[item.dayOfWeek];
       if (!menu[dayName]) menu[dayName] = [];

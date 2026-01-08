@@ -30,22 +30,22 @@ model PlatformAdmin {
 
 /// Tenant (College) registration
 model Tenant {
-  id           String    @id @default(cuid())
-  name         String
-  domain       String    @unique // e.g., "abc-college"
-  displayName  String
-  logo         String?
-  theme        Json      @default("{}")
-  config       Json      @default("{}")
-  status       String    @default("trial") // trial, active, suspended, cancelled
-  onboardedAt  DateTime  @default(now())
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  domain      String   @unique // e.g., "abc-college"
+  displayName String
+  logo        String?
+  theme       Json     @default("{}")
+  config      Json     @default("{}")
+  status      String   @default("trial") // trial, active, suspended, cancelled
+  onboardedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Trial management fields
-  trialEndsAt  DateTime? // When the trial period ends (null = no trial / converted to active)
-  activatedAt  DateTime? // When trial was converted to active
-  suspendedAt  DateTime? // When tenant was suspended
+  trialEndsAt DateTime? // When the trial period ends (null = no trial / converted to active)
+  activatedAt DateTime? // When trial was converted to active
+  suspendedAt DateTime? // When tenant was suspended
 
   subscription      TenantSubscription?
   invoices          PlatformInvoice[]
@@ -112,20 +112,20 @@ model PlatformSupportTicket {
 /// Platform-level audit log (separate from tenant audit logs)
 /// Tracks Super Admin actions like tenant creation, trial management, invitations
 model PlatformAuditLog {
-  id          String   @id @default(cuid())
-  action      String   // TENANT_CREATED, INVITATION_SENT, TRIAL_EXTENDED, TENANT_ACTIVATED, TENANT_SUSPENDED, etc.
-  targetType  String   // tenant, invitation, user
-  targetId    String
-  performedBy String   // Super Admin user ID
+  id               String   @id @default(cuid())
+  action           String // TENANT_CREATED, INVITATION_SENT, TRIAL_EXTENDED, TENANT_ACTIVATED, TENANT_SUSPENDED, etc.
+  targetType       String // tenant, invitation, user
+  targetId         String
+  performedBy      String // Super Admin user ID
   performedByEmail String? // Denormalized for display
   performedByName  String? // Denormalized for display
-  details     Json?    // Additional context
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
+  details          Json? // Additional context
+  ipAddress        String?
+  userAgent        String?
+  createdAt        DateTime @default(now())
 
-  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
-  tenantId    String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+  tenantId String?
 
   @@index([action])
   @@index([targetType])
@@ -142,7 +142,7 @@ model PlatformAuditLog {
 /// User accounts (all personas)
 model User {
   id           String    @id @default(cuid())
-  tenantId     String?   // Nullable for platform_owner role
+  tenantId     String? // Nullable for platform_owner role
   clerkUserId  String?   @unique // Clerk authentication user ID
   email        String
   passwordHash String?
@@ -175,23 +175,24 @@ enum UserRole {
   lab_assistant
   student
   parent
+  alumni
 }
 
 /// User invitations - track pending user invitations
 model Invitation {
-  id          String   @id @default(cuid())
-  tenantId    String
-  email       String
-  role        UserRole
-  invitedById String   // User ID of who sent the invitation
+  id            String    @id @default(cuid())
+  tenantId      String
+  email         String
+  role          UserRole
+  invitedById   String // User ID of who sent the invitation
   invitedByName String? // Name of who sent the invitation
-  token       String   @unique @default(uuid())
-  status      String   @default("pending") // pending, accepted, expired, cancelled
-  message     String?  // Optional welcome message
-  expiresAt   DateTime
-  acceptedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  token         String    @unique @default(uuid())
+  status        String    @default("pending") // pending, accepted, expired, cancelled
+  message       String? // Optional welcome message
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@unique([tenantId, email])
   @@index([token])
@@ -212,7 +213,7 @@ model UserProfile {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   addresses UserAddress[]
   contacts  UserContact[]
   documents UserDocument[]
@@ -303,6 +304,7 @@ model Department {
   staff    Staff[]
   courses  Course[]
   students Student[]
+  alumniProfiles AlumniProfile[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -321,8 +323,8 @@ model Staff {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  department     Department?       @relation(fields: [departmentId], references: [id])
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department      Department?      @relation(fields: [departmentId], references: [id])
   teacherSubjects TeacherSubject[]
 
   @@unique([tenantId, employeeId])
@@ -336,18 +338,18 @@ model Staff {
 
 /// Student records
 model Student {
-  id           String   @id @default(cuid())
-  tenantId     String
-  userId       String   @unique
-  rollNo       String
-  batch        String   // e.g., "2021-2025"
-  departmentId String
-  semester     Int      @default(1)
-  section      String?
-  status       String   @default("active") // active, graduated, dropped, suspended
+  id            String   @id @default(cuid())
+  tenantId      String
+  userId        String   @unique
+  rollNo        String
+  batch         String // e.g., "2021-2025"
+  departmentId  String
+  semester      Int      @default(1)
+  section       String?
+  status        String   @default("active") // active, graduated, dropped, suspended
   admissionDate DateTime
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   department          Department           @relation(fields: [departmentId], references: [id])
@@ -367,6 +369,29 @@ model Student {
   eventRegistrations  EventRegistration[]
   achievements        Achievement[]
   activityCredits     ActivityCredit[]
+  idCard              StudentIdCard?
+  faceEnrollment      FaceEnrollment?
+
+  // Student Growth & Career Indices
+  growthIndices         StudentGrowthIndex[]
+  careerReadinessIndices CareerReadinessIndex[]
+
+  // Feedback System
+  feedbackEntries       FeedbackEntry[]
+  feedbackSummaries     FeedbackSummary[]
+
+  // AI Guidance & Goals
+  aiGuidance            AiGuidance[]
+  studentGoals          StudentGoal[]
+  disengagementAlerts   DisengagementAlert[]
+
+  // Journey Timeline
+  journeyMilestones     JourneyMilestone[]
+  semesterSnapshots     SemesterSnapshot[]
+
+  // Alumni (post-graduation link)
+  alumniProfile         AlumniProfile?
+  alumniMentorships     AlumniMentorship[]
 
   @@unique([tenantId, rollNo])
   @@index([tenantId])
@@ -379,7 +404,7 @@ model Parent {
   tenantId  String
   userId    String   @unique
   studentId String
-  relation  String   // father, mother, guardian
+  relation  String // father, mother, guardian
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -396,15 +421,15 @@ model Parent {
 
 /// Courses/Programs
 model Course {
-  id           String   @id @default(cuid())
-  tenantId     String
-  name         String
-  code         String
-  departmentId String
-  credits      Int
-  durationYears Int     @default(4)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  code          String
+  departmentId  String
+  credits       Int
+  durationYears Int      @default(4)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   department Department @relation(fields: [departmentId], references: [id])
   subjects   Subject[]
@@ -462,20 +487,143 @@ model TeacherSubject {
 
 /// Student attendance records
 model StudentAttendance {
-  id        String   @id @default(cuid())
-  tenantId  String
-  studentId String
-  date      DateTime
-  status    String   @default("present") // present, absent, late, excused
-  markedBy  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  tenantId        String
+  studentId       String
+  date            DateTime
+  status          String   @default("present") // present, absent, late, excused
+  markedBy        String
+  markedByType    String   @default("manual") // manual, face_recognition
+  sessionId       String? // AttendanceSession ID if marked via face recognition
+  matchConfidence Float? // Face match confidence (0-100)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, studentId, date])
   @@index([tenantId])
+  @@index([sessionId])
   @@map("student_attendance")
+}
+
+// =============================================================================
+// STUDENT ID CARD
+// =============================================================================
+
+/// Student ID cards for identification and verification
+model StudentIdCard {
+  id                  String   @id @default(cuid())
+  tenantId            String
+  studentId           String   @unique
+  cardNumber          String // e.g., "STID2025001"
+  issueDate           DateTime @default(now())
+  validUntil          DateTime
+  qrCodeData          String // Encoded QR code data
+  qrVerificationToken String   @unique // Unique token for verification
+  status              String   @default("active") // active, expired, revoked
+
+  // Cached data for PDF generation
+  cachedPhotoUrl   String?
+  cachedName       String
+  cachedRollNo     String
+  cachedDepartment String
+  cachedBatch      String
+  cachedBloodGroup String?
+
+  // PDF storage (S3)
+  pdfS3Key       String?
+  pdfGeneratedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, cardNumber])
+  @@index([tenantId])
+  @@index([qrVerificationToken])
+  @@map("student_id_cards")
+}
+
+// =============================================================================
+// FACE RECOGNITION ATTENDANCE
+// =============================================================================
+
+/// Face enrollment for students (for face recognition attendance)
+model FaceEnrollment {
+  id                String    @id @default(cuid())
+  tenantId          String
+  studentId         String    @unique
+  collectionId      String // AWS Rekognition collection ID
+  faceId            String // AWS Rekognition Face ID
+  sourceImageUrl    String // Image used for enrollment
+  enrollmentQuality Float? // Quality score from AWS
+  status            String    @default("pending") // pending, active, failed
+  enrolledAt        DateTime?
+  enrolledBy        String? // Staff ID who enrolled
+  failureReason     String? // If enrollment failed
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([faceId])
+  @@map("face_enrollments")
+}
+
+/// Attendance session from class photo capture
+model AttendanceSession {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  departmentId       String?
+  section            String?
+  subjectId          String? // Optional: link to specific subject/class
+  classPhotoUrl      String // S3 URL of uploaded class photo
+  totalFacesDetected Int       @default(0)
+  matchedFaces       Int       @default(0)
+  unmatchedFaces     Int       @default(0)
+  status             String    @default("pending") // pending, processing, review, confirmed, cancelled
+  confirmedBy        String? // Staff ID who confirmed
+  confirmedAt        DateTime?
+  date               DateTime  @db.Date
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String // Staff ID who created
+
+  detectedFaces DetectedFace[]
+
+  @@index([tenantId])
+  @@index([departmentId])
+  @@index([date])
+  @@index([status])
+  @@map("attendance_sessions")
+}
+
+/// Individual detected faces in an attendance session
+model DetectedFace {
+  id                String  @id @default(cuid())
+  tenantId          String
+  sessionId         String
+  boundingBox       Json // {left, top, width, height} - face location
+  matchedStudentId  String? // Matched student (if any)
+  matchConfidence   Float? // AWS Rekognition confidence score
+  status            String  @default("pending") // pending, matched, unmatched, manual_override
+  overrideStudentId String? // If manually corrected
+  attendanceStatus  String  @default("present") // present, absent, late
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([sessionId])
+  @@index([matchedStudentId])
+  @@map("detected_faces")
 }
 
 // =============================================================================
@@ -487,7 +635,7 @@ model StudentFee {
   id                String    @id @default(cuid())
   tenantId          String
   studentId         String
-  feeType           String    // tuition, hostel, transport, exam, etc.
+  feeType           String // tuition, hostel, transport, exam, etc.
   amount            Decimal   @db.Decimal(10, 2)
   dueDate           DateTime
   paidDate          DateTime?
@@ -496,7 +644,7 @@ model StudentFee {
   // Razorpay payment fields
   razorpayOrderId   String?
   razorpayPaymentId String?
-  paymentMethod     String?   // upi, card, netbanking, wallet
+  paymentMethod     String? // upi, card, netbanking, wallet
   transactionId     String?
   receiptNumber     String?
   failureReason     String?
@@ -522,7 +670,7 @@ model PaymentTransaction {
   razorpayOrderId   String   @unique
   razorpayPaymentId String?
   razorpaySignature String?
-  paymentMethod     String?  // upi, card, netbanking, wallet
+  paymentMethod     String? // upi, card, netbanking, wallet
   status            String   @default("created") // created, authorized, captured, failed, refunded
   receiptNumber     String?
   notes             Json?
@@ -549,7 +697,7 @@ model Exam {
   tenantId   String
   subjectId  String
   name       String
-  type       String   // internal, external, practical, assignment
+  type       String // internal, external, practical, assignment
   date       DateTime
   totalMarks Int
   createdAt  DateTime @default(now())
@@ -588,15 +736,15 @@ model ExamResult {
 
 /// Student career profile
 model CareerProfile {
-  id          String   @id @default(cuid())
-  tenantId    String
-  studentId   String   @unique
-  resumeUrl   String?
-  linkedin    String?
-  portfolio   String?
-  skills      String[] @default([])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String
+  studentId String   @unique
+  resumeUrl String?
+  linkedin  String?
+  portfolio String?
+  skills    String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
@@ -613,7 +761,7 @@ model Notification {
   id        String    @id @default(cuid())
   tenantId  String
   userId    String
-  type      String    // info, warning, success, error
+  type      String // info, warning, success, error
   title     String
   content   String
   readAt    DateTime?
@@ -628,18 +776,18 @@ model Notification {
 
 /// Device tokens for push notifications (FCM)
 model DeviceToken {
-  id           String   @id @default(cuid())
-  tenantId     String
-  userId       String
-  token        String   @unique
-  deviceType   String   @default("web") // web, android, ios
-  deviceName   String?
-  deviceModel  String?
-  appVersion   String?
-  isActive     Boolean  @default(true)
-  lastUsedAt   DateTime @default(now())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  tenantId    String
+  userId      String
+  token       String   @unique
+  deviceType  String   @default("web") // web, android, ios
+  deviceName  String?
+  deviceModel String?
+  appVersion  String?
+  isActive    Boolean  @default(true)
+  lastUsedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -654,23 +802,23 @@ model DeviceToken {
 
 /// Transport routes
 model TransportRoute {
-  id           String   @id @default(cuid())
-  tenantId     String
-  name         String   // e.g., "Route 1 - North Campus"
-  code         String   // e.g., "R001"
-  description  String?
-  startPoint   String   // Starting location name
-  endPoint     String   // Ending location name
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String // e.g., "Route 1 - North Campus"
+  code          String // e.g., "R001"
+  description   String?
+  startPoint    String // Starting location name
+  endPoint      String // Ending location name
   totalDistance Decimal? @db.Decimal(6, 2) // Distance in km
-  estimatedTime Int?    // Estimated time in minutes
-  fare         Decimal  @db.Decimal(8, 2) @default(0) // Monthly fare
-  status       String   @default("active") // active, inactive, suspended
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  estimatedTime Int? // Estimated time in minutes
+  fare          Decimal  @default(0) @db.Decimal(8, 2) // Monthly fare
+  status        String   @default("active") // active, inactive, suspended
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  stops        TransportStop[]
-  vehicles     TransportVehicle[]
-  passes       TransportPass[]
+  stops    TransportStop[]
+  vehicles TransportVehicle[]
+  passes   TransportPass[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -679,19 +827,19 @@ model TransportRoute {
 
 /// Transport stops along routes
 model TransportStop {
-  id           String   @id @default(cuid())
-  tenantId     String
-  routeId      String
-  name         String   // Stop name
-  address      String?  // Full address
-  latitude     Decimal? @db.Decimal(10, 8) // GPS coordinates
-  longitude    Decimal? @db.Decimal(11, 8)
-  sequence     Int      // Order in route (1, 2, 3...)
-  pickupTime   String?  // Morning pickup time (e.g., "07:30")
-  dropTime     String?  // Evening drop time (e.g., "17:30")
-  landmark     String?  // Nearby landmark
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id         String   @id @default(cuid())
+  tenantId   String
+  routeId    String
+  name       String // Stop name
+  address    String? // Full address
+  latitude   Decimal? @db.Decimal(10, 8) // GPS coordinates
+  longitude  Decimal? @db.Decimal(11, 8)
+  sequence   Int // Order in route (1, 2, 3...)
+  pickupTime String? // Morning pickup time (e.g., "07:30")
+  dropTime   String? // Evening drop time (e.g., "17:30")
+  landmark   String? // Nearby landmark
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   route TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
 
@@ -702,32 +850,32 @@ model TransportStop {
 
 /// Transport vehicles (buses)
 model TransportVehicle {
-  id             String   @id @default(cuid())
-  tenantId       String
-  routeId        String?  // Assigned route
-  vehicleNumber  String   // Registration number (e.g., "KA-01-AB-1234")
-  vehicleType    String   @default("bus") // bus, mini_bus, van
-  capacity       Int      @default(40) // Seating capacity
-  make           String?  // Manufacturer (e.g., "Tata", "Ashok Leyland")
-  model          String?  // Model name
-  year           Int?     // Manufacturing year
-  color          String?
-  fuelType       String   @default("diesel") // diesel, petrol, cng, electric
+  id              String    @id @default(cuid())
+  tenantId        String
+  routeId         String? // Assigned route
+  vehicleNumber   String // Registration number (e.g., "KA-01-AB-1234")
+  vehicleType     String    @default("bus") // bus, mini_bus, van
+  capacity        Int       @default(40) // Seating capacity
+  make            String? // Manufacturer (e.g., "Tata", "Ashok Leyland")
+  model           String? // Model name
+  year            Int? // Manufacturing year
+  color           String?
+  fuelType        String    @default("diesel") // diesel, petrol, cng, electric
   insuranceExpiry DateTime?
   fitnessExpiry   DateTime?
   permitExpiry    DateTime?
-  driverName     String?
-  driverPhone    String?
-  driverLicense  String?
-  conductorName  String?
-  conductorPhone String?
-  gpsDeviceId    String?  // GPS tracker device ID
-  status         String   @default("active") // active, maintenance, inactive
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  driverName      String?
+  driverPhone     String?
+  driverLicense   String?
+  conductorName   String?
+  conductorPhone  String?
+  gpsDeviceId     String? // GPS tracker device ID
+  status          String    @default("active") // active, maintenance, inactive
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  route     TransportRoute?     @relation(fields: [routeId], references: [id])
-  tracking  TransportTracking[]
+  route    TransportRoute?     @relation(fields: [routeId], references: [id])
+  tracking TransportTracking[]
 
   @@unique([tenantId, vehicleNumber])
   @@index([tenantId])
@@ -736,21 +884,21 @@ model TransportVehicle {
 
 /// Student transport passes
 model TransportPass {
-  id           String    @id @default(cuid())
-  tenantId     String
-  studentId    String
-  routeId      String
-  passNumber   String    // Unique pass number
-  stopName     String    // Pickup/drop stop
-  validFrom    DateTime
-  validUntil   DateTime
-  fare         Decimal   @db.Decimal(8, 2)
-  paidAmount   Decimal   @db.Decimal(8, 2) @default(0)
+  id            String   @id @default(cuid())
+  tenantId      String
+  studentId     String
+  routeId       String
+  passNumber    String // Unique pass number
+  stopName      String // Pickup/drop stop
+  validFrom     DateTime
+  validUntil    DateTime
+  fare          Decimal  @db.Decimal(8, 2)
+  paidAmount    Decimal  @default(0) @db.Decimal(8, 2)
   paymentStatus String   @default("pending") // pending, paid, partial
-  status       String    @default("active") // active, expired, cancelled, suspended
-  issuedAt     DateTime  @default(now())
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  status        String   @default("active") // active, expired, cancelled, suspended
+  issuedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   student Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
   route   TransportRoute @relation(fields: [routeId], references: [id])
@@ -763,17 +911,17 @@ model TransportPass {
 
 /// Real-time vehicle tracking data
 model TransportTracking {
-  id          String   @id @default(cuid())
-  tenantId    String
-  vehicleId   String
-  latitude    Decimal  @db.Decimal(10, 8)
-  longitude   Decimal  @db.Decimal(11, 8)
-  speed       Decimal? @db.Decimal(5, 2) // Speed in km/h
-  heading     Int?     // Direction in degrees (0-360)
-  altitude    Decimal? @db.Decimal(8, 2) // Altitude in meters
-  accuracy    Decimal? @db.Decimal(6, 2) // GPS accuracy in meters
-  recordedAt  DateTime @default(now()) // When the GPS reading was taken
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  tenantId   String
+  vehicleId  String
+  latitude   Decimal  @db.Decimal(10, 8)
+  longitude  Decimal  @db.Decimal(11, 8)
+  speed      Decimal? @db.Decimal(5, 2) // Speed in km/h
+  heading    Int? // Direction in degrees (0-360)
+  altitude   Decimal? @db.Decimal(8, 2) // Altitude in meters
+  accuracy   Decimal? @db.Decimal(6, 2) // GPS accuracy in meters
+  recordedAt DateTime @default(now()) // When the GPS reading was taken
+  createdAt  DateTime @default(now())
 
   vehicle TransportVehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
@@ -789,25 +937,25 @@ model TransportTracking {
 
 /// Hostel blocks/buildings
 model HostelBlock {
-  id           String   @id @default(cuid())
-  tenantId     String
-  name         String   // e.g., "Block A", "Boys Hostel 1"
-  code         String   // e.g., "BH1", "GH1"
-  type         String   @default("boys") // boys, girls, mixed
-  totalFloors  Int      @default(4)
-  totalRooms   Int      @default(0)
-  totalCapacity Int     @default(0)
-  wardenId     String?  // Staff ID of warden
-  wardenName   String?
-  wardenPhone  String?
-  address      String?
-  amenities    String[] @default([]) // wifi, laundry, gym, etc.
-  status       String   @default("active") // active, maintenance, closed
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String // e.g., "Block A", "Boys Hostel 1"
+  code          String // e.g., "BH1", "GH1"
+  type          String   @default("boys") // boys, girls, mixed
+  totalFloors   Int      @default(4)
+  totalRooms    Int      @default(0)
+  totalCapacity Int      @default(0)
+  wardenId      String? // Staff ID of warden
+  wardenName    String?
+  wardenPhone   String?
+  address       String?
+  amenities     String[] @default([]) // wifi, laundry, gym, etc.
+  status        String   @default("active") // active, maintenance, closed
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  rooms        HostelRoom[]
-  complaints   HostelComplaint[]
+  rooms      HostelRoom[]
+  complaints HostelComplaint[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -816,23 +964,23 @@ model HostelBlock {
 
 /// Hostel rooms
 model HostelRoom {
-  id           String   @id @default(cuid())
-  tenantId     String
-  blockId      String
-  roomNumber   String   // e.g., "101", "A-201"
-  floor        Int
-  roomType     String   @default("double") // single, double, triple, dormitory
-  capacity     Int      @default(2)
-  occupancy    Int      @default(0) // Current occupants
-  monthlyRent  Decimal  @db.Decimal(8, 2) @default(0)
-  amenities    String[] @default([]) // ac, attached_bath, balcony, etc.
-  status       String   @default("available") // available, occupied, full, maintenance
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  tenantId    String
+  blockId     String
+  roomNumber  String // e.g., "101", "A-201"
+  floor       Int
+  roomType    String   @default("double") // single, double, triple, dormitory
+  capacity    Int      @default(2)
+  occupancy   Int      @default(0) // Current occupants
+  monthlyRent Decimal  @default(0) @db.Decimal(8, 2)
+  amenities   String[] @default([]) // ac, attached_bath, balcony, etc.
+  status      String   @default("available") // available, occupied, full, maintenance
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  block        HostelBlock         @relation(fields: [blockId], references: [id], onDelete: Cascade)
-  allocations  HostelAllocation[]
-  complaints   HostelComplaint[]
+  block       HostelBlock        @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  allocations HostelAllocation[]
+  complaints  HostelComplaint[]
 
   @@unique([blockId, roomNumber])
   @@index([tenantId])
@@ -841,21 +989,21 @@ model HostelRoom {
 
 /// Student hostel allocations
 model HostelAllocation {
-  id           String    @id @default(cuid())
-  tenantId     String
-  studentId    String
-  roomId       String
-  bedNumber    Int?      // Bed number in room (1, 2, 3...)
-  checkInDate  DateTime
-  checkOutDate DateTime?
+  id               String    @id @default(cuid())
+  tenantId         String
+  studentId        String
+  roomId           String
+  bedNumber        Int? // Bed number in room (1, 2, 3...)
+  checkInDate      DateTime
+  checkOutDate     DateTime?
   expectedCheckOut DateTime? // Expected end date
-  status       String    @default("active") // active, checked_out, transferred
-  remarks      String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  status           String    @default("active") // active, checked_out, transferred
+  remarks          String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  student      Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  room         HostelRoom  @relation(fields: [roomId], references: [id])
+  student Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  room    HostelRoom @relation(fields: [roomId], references: [id])
 
   @@index([tenantId])
   @@index([studentId])
@@ -865,26 +1013,26 @@ model HostelAllocation {
 
 /// Hostel fees
 model HostelFee {
-  id              String    @id @default(cuid())
-  tenantId        String
-  studentId       String
-  academicYear    String    // e.g., "2024-25"
-  semester        Int?
-  roomRent        Decimal   @db.Decimal(8, 2) @default(0)
-  messCharges     Decimal   @db.Decimal(8, 2) @default(0)
-  electricityCharges Decimal @db.Decimal(8, 2) @default(0)
-  otherCharges    Decimal   @db.Decimal(8, 2) @default(0)
-  totalAmount     Decimal   @db.Decimal(10, 2)
-  paidAmount      Decimal   @db.Decimal(10, 2) @default(0)
-  dueDate         DateTime
-  paidDate        DateTime?
-  paymentStatus   String    @default("pending") // pending, paid, partial, overdue
-  receiptNumber   String?
-  remarks         String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  tenantId           String
+  studentId          String
+  academicYear       String // e.g., "2024-25"
+  semester           Int?
+  roomRent           Decimal   @default(0) @db.Decimal(8, 2)
+  messCharges        Decimal   @default(0) @db.Decimal(8, 2)
+  electricityCharges Decimal   @default(0) @db.Decimal(8, 2)
+  otherCharges       Decimal   @default(0) @db.Decimal(8, 2)
+  totalAmount        Decimal   @db.Decimal(10, 2)
+  paidAmount         Decimal   @default(0) @db.Decimal(10, 2)
+  dueDate            DateTime
+  paidDate           DateTime?
+  paymentStatus      String    @default("pending") // pending, paid, partial, overdue
+  receiptNumber      String?
+  remarks            String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  student         Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([studentId])
@@ -893,19 +1041,19 @@ model HostelFee {
 
 /// Mess menu
 model MessMenu {
-  id           String   @id @default(cuid())
-  tenantId     String
-  blockId      String?  // Optional: specific block or all hostels
-  dayOfWeek    Int      // 0=Sunday, 1=Monday, ... 6=Saturday
-  mealType     String   // breakfast, lunch, snacks, dinner
-  items        String[] @default([]) // List of food items
-  timing       String?  // e.g., "07:00 - 09:00"
-  isVeg        Boolean  @default(true)
-  specialDay   String?  // Festival/special day name
-  validFrom    DateTime @default(now())
-  validUntil   DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id         String    @id @default(cuid())
+  tenantId   String
+  blockId    String? // Optional: specific block or all hostels
+  dayOfWeek  Int // 0=Sunday, 1=Monday, ... 6=Saturday
+  mealType   String // breakfast, lunch, snacks, dinner
+  items      String[]  @default([]) // List of food items
+  timing     String? // e.g., "07:00 - 09:00"
+  isVeg      Boolean   @default(true)
+  specialDay String? // Festival/special day name
+  validFrom  DateTime  @default(now())
+  validUntil DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@unique([tenantId, blockId, dayOfWeek, mealType, validFrom])
   @@index([tenantId])
@@ -914,28 +1062,28 @@ model MessMenu {
 
 /// Hostel complaints/requests
 model HostelComplaint {
-  id           String    @id @default(cuid())
-  tenantId     String
-  studentId    String
-  blockId      String
-  roomId       String?
-  complaintNumber String @unique
-  category     String    // maintenance, cleanliness, food, security, ragging, other
-  subject      String
-  description  String
-  priority     String    @default("medium") // low, medium, high, urgent
-  status       String    @default("open") // open, in_progress, resolved, closed, escalated
-  assignedTo   String?   // Staff ID handling the complaint
-  resolvedAt   DateTime?
-  resolution   String?   // Resolution details
-  feedback     String?   // Student feedback after resolution
-  rating       Int?      // Rating 1-5 after resolution
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  tenantId        String
+  studentId       String
+  blockId         String
+  roomId          String?
+  complaintNumber String    @unique
+  category        String // maintenance, cleanliness, food, security, ragging, other
+  subject         String
+  description     String
+  priority        String    @default("medium") // low, medium, high, urgent
+  status          String    @default("open") // open, in_progress, resolved, closed, escalated
+  assignedTo      String? // Staff ID handling the complaint
+  resolvedAt      DateTime?
+  resolution      String? // Resolution details
+  feedback        String? // Student feedback after resolution
+  rating          Int? // Rating 1-5 after resolution
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  student      Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  block        HostelBlock @relation(fields: [blockId], references: [id])
-  room         HostelRoom? @relation(fields: [roomId], references: [id])
+  student Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  block   HostelBlock @relation(fields: [blockId], references: [id])
+  room    HostelRoom? @relation(fields: [roomId], references: [id])
 
   @@index([tenantId])
   @@index([studentId])
@@ -949,18 +1097,18 @@ model HostelComplaint {
 
 /// Book categories
 model BookCategory {
-  id           String   @id @default(cuid())
-  tenantId     String
-  name         String   // e.g., "Computer Science", "Fiction", "Reference"
-  code         String   // e.g., "CS", "FIC", "REF"
-  description  String?
-  parentId     String?  // For subcategories
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String // e.g., "Computer Science", "Fiction", "Reference"
+  code        String // e.g., "CS", "FIC", "REF"
+  description String?
+  parentId    String? // For subcategories
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  parent       BookCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children     BookCategory[] @relation("CategoryHierarchy")
-  books        LibraryBook[]
+  parent   BookCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children BookCategory[] @relation("CategoryHierarchy")
+  books    LibraryBook[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -969,31 +1117,31 @@ model BookCategory {
 
 /// Library books catalog
 model LibraryBook {
-  id             String   @id @default(cuid())
-  tenantId       String
-  categoryId     String
-  isbn           String?  // ISBN-10 or ISBN-13
-  title          String
-  author         String
-  publisher      String?
-  publishYear    Int?
-  edition        String?
-  language       String   @default("English")
-  pages          Int?
-  description    String?
-  coverImage     String?  // URL to cover image
-  location       String?  // Shelf/rack location e.g., "A-12-3"
-  totalCopies    Int      @default(1)
-  availableCopies Int     @default(1)
-  price          Decimal? @db.Decimal(8, 2)
-  tags           String[] @default([])
-  status         String   @default("available") // available, limited, unavailable
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  tenantId        String
+  categoryId      String
+  isbn            String? // ISBN-10 or ISBN-13
+  title           String
+  author          String
+  publisher       String?
+  publishYear     Int?
+  edition         String?
+  language        String   @default("English")
+  pages           Int?
+  description     String?
+  coverImage      String? // URL to cover image
+  location        String? // Shelf/rack location e.g., "A-12-3"
+  totalCopies     Int      @default(1)
+  availableCopies Int      @default(1)
+  price           Decimal? @db.Decimal(8, 2)
+  tags            String[] @default([])
+  status          String   @default("available") // available, limited, unavailable
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  category       BookCategory    @relation(fields: [categoryId], references: [id])
-  issues         BookIssue[]
-  reservations   BookReservation[]
+  category     BookCategory      @relation(fields: [categoryId], references: [id])
+  issues       BookIssue[]
+  reservations BookReservation[]
 
   @@unique([tenantId, isbn])
   @@index([tenantId])
@@ -1004,20 +1152,20 @@ model LibraryBook {
 
 /// Library cards for students/staff
 model LibraryCard {
-  id           String    @id @default(cuid())
+  id           String   @id @default(cuid())
   tenantId     String
-  studentId    String?   @unique // Either student or staff (unique for one-to-one)
+  studentId    String?  @unique // Either student or staff (unique for one-to-one)
   staffId      String?
-  cardNumber   String    // Unique card number
-  issueDate    DateTime  @default(now())
+  cardNumber   String // Unique card number
+  issueDate    DateTime @default(now())
   expiryDate   DateTime
-  maxBooks     Int       @default(5) // Maximum books allowed
-  currentBooks Int       @default(0) // Currently issued books
-  status       String    @default("active") // active, suspended, expired, lost
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  maxBooks     Int      @default(5) // Maximum books allowed
+  currentBooks Int      @default(0) // Currently issued books
+  status       String   @default("active") // active, suspended, expired, lost
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  student      Student?    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student      Student?          @relation(fields: [studentId], references: [id], onDelete: Cascade)
   issues       BookIssue[]
   reservations BookReservation[]
 
@@ -1028,27 +1176,27 @@ model LibraryCard {
 
 /// Book issue/return records
 model BookIssue {
-  id            String    @id @default(cuid())
-  tenantId      String
-  bookId        String
-  cardId        String
-  issueDate     DateTime  @default(now())
-  dueDate       DateTime
-  returnDate    DateTime?
-  renewCount    Int       @default(0)
-  maxRenewals   Int       @default(2)
-  fineAmount    Decimal   @db.Decimal(8, 2) @default(0)
-  finePaid      Boolean   @default(false)
-  fineWaived    Boolean   @default(false)
-  status        String    @default("issued") // issued, returned, overdue, lost
-  remarks       String?
-  issuedBy      String?   // Staff who issued
-  returnedTo    String?   // Staff who received return
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  tenantId    String
+  bookId      String
+  cardId      String
+  issueDate   DateTime  @default(now())
+  dueDate     DateTime
+  returnDate  DateTime?
+  renewCount  Int       @default(0)
+  maxRenewals Int       @default(2)
+  fineAmount  Decimal   @default(0) @db.Decimal(8, 2)
+  finePaid    Boolean   @default(false)
+  fineWaived  Boolean   @default(false)
+  status      String    @default("issued") // issued, returned, overdue, lost
+  remarks     String?
+  issuedBy    String? // Staff who issued
+  returnedTo  String? // Staff who received return
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  book          LibraryBook  @relation(fields: [bookId], references: [id])
-  card          LibraryCard  @relation(fields: [cardId], references: [id])
+  book LibraryBook @relation(fields: [bookId], references: [id])
+  card LibraryCard @relation(fields: [cardId], references: [id])
 
   @@index([tenantId])
   @@index([bookId])
@@ -1064,14 +1212,14 @@ model BookReservation {
   bookId          String
   cardId          String
   reservationDate DateTime  @default(now())
-  expiryDate      DateTime  // Reservation expires if not collected
+  expiryDate      DateTime // Reservation expires if not collected
   notifiedAt      DateTime?
   status          String    @default("pending") // pending, ready, collected, expired, cancelled
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  book            LibraryBook  @relation(fields: [bookId], references: [id])
-  card            LibraryCard  @relation(fields: [cardId], references: [id])
+  book LibraryBook @relation(fields: [bookId], references: [id])
+  card LibraryCard @relation(fields: [cardId], references: [id])
 
   @@index([tenantId])
   @@index([bookId])
@@ -1081,27 +1229,27 @@ model BookReservation {
 
 /// E-resources (digital content)
 model EResource {
-  id           String   @id @default(cuid())
-  tenantId     String
-  title        String
-  author       String?
-  type         String   // ebook, journal, paper, video, course
-  category     String?  // Subject category
-  description  String?
-  url          String?  // External URL or file URL
-  fileUrl      String?  // Uploaded file URL (S3)
-  fileSize     Int?     // File size in bytes
-  format       String?  // pdf, epub, mp4, etc.
-  accessType   String   @default("open") // open, restricted, subscription
-  subjectId    String?  // Link to academic subject
-  publisher    String?
-  publishYear  Int?
-  tags         String[] @default([])
-  downloads    Int      @default(0)
-  views        Int      @default(0)
-  status       String   @default("active") // active, inactive, archived
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  tenantId    String
+  title       String
+  author      String?
+  type        String // ebook, journal, paper, video, course
+  category    String? // Subject category
+  description String?
+  url         String? // External URL or file URL
+  fileUrl     String? // Uploaded file URL (S3)
+  fileSize    Int? // File size in bytes
+  format      String? // pdf, epub, mp4, etc.
+  accessType  String   @default("open") // open, restricted, subscription
+  subjectId   String? // Link to academic subject
+  publisher   String?
+  publishYear Int?
+  tags        String[] @default([])
+  downloads   Int      @default(0)
+  views       Int      @default(0)
+  status      String   @default("active") // active, inactive, archived
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([tenantId])
   @@index([type])
@@ -1111,18 +1259,18 @@ model EResource {
 
 /// Library fine settings
 model LibrarySettings {
-  id                String   @id @default(cuid())
-  tenantId          String   @unique
-  finePerDay        Decimal  @db.Decimal(6, 2) @default(5) // Fine per day for overdue
-  maxFineAmount     Decimal  @db.Decimal(8, 2) @default(500) // Max fine cap
-  loanPeriodDays    Int      @default(14) // Default loan period
-  renewalPeriodDays Int      @default(7) // Days added on renewal
-  maxRenewals       Int      @default(2)
-  reservationDays   Int      @default(3) // Days to collect reserved book
-  gracePeriodDays   Int      @default(1) // Grace period before fine
-  lostBookMultiplier Decimal @db.Decimal(3, 1) @default(2) // Fine = price * multiplier
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  tenantId           String   @unique
+  finePerDay         Decimal  @default(5) @db.Decimal(6, 2) // Fine per day for overdue
+  maxFineAmount      Decimal  @default(500) @db.Decimal(8, 2) // Max fine cap
+  loanPeriodDays     Int      @default(14) // Default loan period
+  renewalPeriodDays  Int      @default(7) // Days added on renewal
+  maxRenewals        Int      @default(2)
+  reservationDays    Int      @default(3) // Days to collect reserved book
+  gracePeriodDays    Int      @default(1) // Grace period before fine
+  lostBookMultiplier Decimal  @default(2) @db.Decimal(3, 1) // Fine = price * multiplier
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@map("library_settings")
 }
@@ -1133,20 +1281,20 @@ model LibrarySettings {
 
 /// Sports teams (cricket, football, basketball, etc.)
 model SportsTeam {
-  id           String   @id @default(cuid())
-  tenantId     String
-  name         String   // Team name (e.g., "CS Cricket Team")
-  sport        String   // cricket, football, basketball, volleyball, badminton, etc.
-  category     String   @default("men") // men, women, mixed
-  description  String?
-  logoUrl      String?
-  coachId      String?  // Staff member as coach
-  captainId    String?  // Student captain
-  maxMembers   Int      @default(20)
-  foundedYear  Int?
-  status       String   @default("active") // active, inactive, disbanded
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String // Team name (e.g., "CS Cricket Team")
+  sport       String // cricket, football, basketball, volleyball, badminton, etc.
+  category    String   @default("men") // men, women, mixed
+  description String?
+  logoUrl     String?
+  coachId     String? // Staff member as coach
+  captainId   String? // Student captain
+  maxMembers  Int      @default(20)
+  foundedYear Int?
+  status      String   @default("active") // active, inactive, disbanded
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   members      TeamMember[]
   events       SportsEvent[] @relation("TeamEvents")
@@ -1154,65 +1302,65 @@ model SportsTeam {
   awayEvents   SportsEvent[] @relation("AwayTeam")
   achievements Achievement[]
 
+  @@unique([tenantId, name, sport])
   @@index([tenantId])
   @@index([sport])
-  @@unique([tenantId, name, sport])
   @@map("sports_teams")
 }
 
 /// Team memberships
 model TeamMember {
-  id          String    @id @default(cuid())
-  tenantId    String
-  teamId      String
-  studentId   String
-  position    String?   // Position in the team (goalkeeper, batsman, etc.)
-  jerseyNo    Int?
-  role        String    @default("member") // captain, vice-captain, member
-  joinedAt    DateTime  @default(now())
-  leftAt      DateTime?
-  status      String    @default("active") // active, inactive, suspended
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  tenantId  String
+  teamId    String
+  studentId String
+  position  String? // Position in the team (goalkeeper, batsman, etc.)
+  jerseyNo  Int?
+  role      String    @default("member") // captain, vice-captain, member
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+  status    String    @default("active") // active, inactive, suspended
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  team        SportsTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  student     Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  team    SportsTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  student Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
+  @@unique([teamId, studentId])
   @@index([tenantId])
   @@index([teamId])
   @@index([studentId])
-  @@unique([teamId, studentId])
   @@map("team_members")
 }
 
 /// Clubs and societies (coding, music, drama, photography, etc.)
 model Club {
-  id             String   @id @default(cuid())
-  tenantId       String
-  name           String   // Club name
-  code           String   // Short code (e.g., "GDSC", "IEEE")
-  category       String   // technical, cultural, literary, social, hobby
-  description    String?
-  logoUrl        String?
-  advisorId      String?  // Faculty advisor (Staff)
-  presidentId    String?  // Student president
-  maxMembers     Int?     // Optional member limit
+  id              String   @id @default(cuid())
+  tenantId        String
+  name            String // Club name
+  code            String // Short code (e.g., "GDSC", "IEEE")
+  category        String // technical, cultural, literary, social, hobby
+  description     String?
+  logoUrl         String?
+  advisorId       String? // Faculty advisor (Staff)
+  presidentId     String? // Student president
+  maxMembers      Int? // Optional member limit
   meetingSchedule String? // e.g., "Every Saturday 4 PM"
-  roomNo         String?  // Club room allocation
-  foundedYear    Int?
-  website        String?
-  socialLinks    Json?    // { instagram: "...", linkedin: "..." }
-  status         String   @default("active") // active, inactive, suspended
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  roomNo          String? // Club room allocation
+  foundedYear     Int?
+  website         String?
+  socialLinks     Json? // { instagram: "...", linkedin: "..." }
+  status          String   @default("active") // active, inactive, suspended
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  members        ClubMember[]
-  events         ClubEvent[]
-  achievements   Achievement[]
+  members      ClubMember[]
+  events       ClubEvent[]
+  achievements Achievement[]
 
+  @@unique([tenantId, code])
   @@index([tenantId])
   @@index([category])
-  @@unique([tenantId, code])
   @@map("clubs")
 }
 
@@ -1223,52 +1371,52 @@ model ClubMember {
   clubId      String
   studentId   String
   role        String    @default("member") // president, vice-president, secretary, treasurer, member
-  designation String?   // Custom title (e.g., "Technical Lead")
+  designation String? // Custom title (e.g., "Technical Lead")
   joinedAt    DateTime  @default(now())
   leftAt      DateTime?
   status      String    @default("active") // active, inactive, alumni
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  club        Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  club    Club    @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
+  @@unique([clubId, studentId])
   @@index([tenantId])
   @@index([clubId])
   @@index([studentId])
-  @@unique([clubId, studentId])
   @@map("club_members")
 }
 
 /// Sports events (matches, tournaments, practice sessions)
 model SportsEvent {
-  id            String    @id @default(cuid())
-  tenantId      String
-  teamId        String?   // Primary team organizing/participating
-  name          String    // Event name
-  type          String    // match, tournament, practice, training, trials
-  sport         String    // Sport type
-  description   String?
-  venue         String?
-  startDate     DateTime
-  endDate       DateTime?
-  homeTeamId    String?   // For matches
-  awayTeamId    String?   // For matches
-  homeScore     String?   // Score can be "3-2", "156/4", etc.
-  awayScore     String?
-  result        String?   // won, lost, draw, cancelled, upcoming
-  level         String    @default("college") // college, inter-college, state, national, international
-  organizer     String?   // Organizing body
+  id                   String    @id @default(cuid())
+  tenantId             String
+  teamId               String? // Primary team organizing/participating
+  name                 String // Event name
+  type                 String // match, tournament, practice, training, trials
+  sport                String // Sport type
+  description          String?
+  venue                String?
+  startDate            DateTime
+  endDate              DateTime?
+  homeTeamId           String? // For matches
+  awayTeamId           String? // For matches
+  homeScore            String? // Score can be "3-2", "156/4", etc.
+  awayScore            String?
+  result               String? // won, lost, draw, cancelled, upcoming
+  level                String    @default("college") // college, inter-college, state, national, international
+  organizer            String? // Organizing body
   registrationDeadline DateTime?
-  maxParticipants Int?
-  entryFee      Decimal?  @db.Decimal(8, 2)
-  status        String    @default("scheduled") // scheduled, ongoing, completed, cancelled, postponed
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  maxParticipants      Int?
+  entryFee             Decimal?  @db.Decimal(8, 2)
+  status               String    @default("scheduled") // scheduled, ongoing, completed, cancelled, postponed
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  team          SportsTeam? @relation("TeamEvents", fields: [teamId], references: [id])
-  homeTeam      SportsTeam? @relation("HomeTeam", fields: [homeTeamId], references: [id])
-  awayTeam      SportsTeam? @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  team          SportsTeam?         @relation("TeamEvents", fields: [teamId], references: [id])
+  homeTeam      SportsTeam?         @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam      SportsTeam?         @relation("AwayTeam", fields: [awayTeamId], references: [id])
   registrations EventRegistration[]
 
   @@index([tenantId])
@@ -1280,26 +1428,26 @@ model SportsEvent {
 
 /// Club events (workshops, competitions, meetups)
 model ClubEvent {
-  id            String    @id @default(cuid())
-  tenantId      String
-  clubId        String
-  name          String    // Event name
-  type          String    // workshop, competition, meetup, seminar, hackathon, cultural
-  description   String?
-  venue         String?
-  startDate     DateTime
-  endDate       DateTime?
+  id                   String    @id @default(cuid())
+  tenantId             String
+  clubId               String
+  name                 String // Event name
+  type                 String // workshop, competition, meetup, seminar, hackathon, cultural
+  description          String?
+  venue                String?
+  startDate            DateTime
+  endDate              DateTime?
   registrationDeadline DateTime?
-  maxParticipants Int?
-  entryFee      Decimal?  @db.Decimal(8, 2)
-  isPublic      Boolean   @default(true) // Open to non-members?
-  resourceUrl   String?   // Event materials link
-  posterUrl     String?
-  status        String    @default("scheduled") // scheduled, ongoing, completed, cancelled
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  maxParticipants      Int?
+  entryFee             Decimal?  @db.Decimal(8, 2)
+  isPublic             Boolean   @default(true) // Open to non-members?
+  resourceUrl          String? // Event materials link
+  posterUrl            String?
+  status               String    @default("scheduled") // scheduled, ongoing, completed, cancelled
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  club          Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  club          Club                @relation(fields: [clubId], references: [id], onDelete: Cascade)
   registrations EventRegistration[]
 
   @@index([tenantId])
@@ -1310,23 +1458,23 @@ model ClubEvent {
 
 /// Event registrations (for both sports and club events)
 model EventRegistration {
-  id             String    @id @default(cuid())
-  tenantId       String
-  studentId      String
-  sportsEventId  String?
-  clubEventId    String?
-  registeredAt   DateTime  @default(now())
-  attended       Boolean   @default(false)
-  attendedAt     DateTime?
-  feedback       String?
-  rating         Int?      // 1-5 rating
-  status         String    @default("registered") // registered, confirmed, attended, cancelled, no-show
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  tenantId      String
+  studentId     String
+  sportsEventId String?
+  clubEventId   String?
+  registeredAt  DateTime  @default(now())
+  attended      Boolean   @default(false)
+  attendedAt    DateTime?
+  feedback      String?
+  rating        Int? // 1-5 rating
+  status        String    @default("registered") // registered, confirmed, attended, cancelled, no-show
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  sportsEvent    SportsEvent? @relation(fields: [sportsEventId], references: [id], onDelete: Cascade)
-  clubEvent      ClubEvent?   @relation(fields: [clubEventId], references: [id], onDelete: Cascade)
+  student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  sportsEvent SportsEvent? @relation(fields: [sportsEventId], references: [id], onDelete: Cascade)
+  clubEvent   ClubEvent?   @relation(fields: [clubEventId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([studentId])
@@ -1340,28 +1488,28 @@ model Achievement {
   id             String    @id @default(cuid())
   tenantId       String
   studentId      String
-  teamId         String?   // If team achievement
-  clubId         String?   // If club achievement
-  title          String    // Achievement title
-  type           String    // medal, trophy, certificate, award, recognition
-  category       String    // sports, academic, cultural, technical, social
+  teamId         String? // If team achievement
+  clubId         String? // If club achievement
+  title          String // Achievement title
+  type           String // medal, trophy, certificate, award, recognition
+  category       String // sports, academic, cultural, technical, social
   description    String?
   awardedDate    DateTime
-  awardedBy      String?   // Awarding organization
-  eventName      String?   // Related event
+  awardedBy      String? // Awarding organization
+  eventName      String? // Related event
   level          String    @default("college") // college, inter-college, state, national, international
-  position       String?   // 1st, 2nd, 3rd, finalist, participant
-  certificateUrl String?   // Certificate/proof document
-  verifiedBy     String?   // Staff who verified
+  position       String? // 1st, 2nd, 3rd, finalist, participant
+  certificateUrl String? // Certificate/proof document
+  verifiedBy     String? // Staff who verified
   verifiedAt     DateTime?
   creditsAwarded Int       @default(0) // Activity credits
   status         String    @default("active") // active, revoked
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  student        Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  team           SportsTeam? @relation(fields: [teamId], references: [id])
-  club           Club?       @relation(fields: [clubId], references: [id])
+  student Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  team    SportsTeam? @relation(fields: [teamId], references: [id])
+  club    Club?       @relation(fields: [clubId], references: [id])
 
   @@index([tenantId])
   @@index([studentId])
@@ -1371,22 +1519,22 @@ model Achievement {
 
 /// Activity credits tracking
 model ActivityCredit {
-  id             String   @id @default(cuid())
-  tenantId       String
-  studentId      String
-  academicYear   String   // e.g., "2025-26"
-  semester       Int?
-  category       String   // sports, cultural, technical, social, ncc, nss
-  activity       String   // Description of activity
-  credits        Int      // Credits earned
-  maxCredits     Int      @default(10) // Max credits per category
-  awardedDate    DateTime @default(now())
-  awardedBy      String?  // Staff who awarded
-  remarks        String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           String   @id @default(cuid())
+  tenantId     String
+  studentId    String
+  academicYear String // e.g., "2025-26"
+  semester     Int?
+  category     String // sports, cultural, technical, social, ncc, nss
+  activity     String // Description of activity
+  credits      Int // Credits earned
+  maxCredits   Int      @default(10) // Max credits per category
+  awardedDate  DateTime @default(now())
+  awardedBy    String? // Staff who awarded
+  remarks      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([studentId])
@@ -1404,21 +1552,21 @@ model Announcement {
   tenantId        String
   title           String
   content         String    @db.Text
-  type            String    // general, academic, event, urgent, holiday, exam, fee, placement
+  type            String // general, academic, event, urgent, holiday, exam, fee, placement
   priority        String    @default("normal") // low, normal, high, urgent
-  audience        String    // all, students, staff, parents, department, course, batch
-  audienceFilters Json?     // { departmentIds: [], courseIds: [], batchYears: [], roles: [] }
-  attachments     Json?     // [{ name, url, type, size }]
+  audience        String // all, students, staff, parents, department, course, batch
+  audienceFilters Json? // { departmentIds: [], courseIds: [], batchYears: [], roles: [] }
+  attachments     Json? // [{ name, url, type, size }]
   publishedAt     DateTime?
   expiresAt       DateTime?
   isPinned        Boolean   @default(false)
   allowComments   Boolean   @default(false)
-  createdById     String    // Staff who created
+  createdById     String // Staff who created
   status          String    @default("draft") // draft, published, archived
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  recipients      AnnouncementRecipient[]
+  recipients AnnouncementRecipient[]
 
   @@index([tenantId])
   @@index([type])
@@ -1430,17 +1578,17 @@ model Announcement {
 
 /// Announcement recipients - track delivery and read status
 model AnnouncementRecipient {
-  id              String    @id @default(cuid())
-  tenantId        String
-  announcementId  String
-  userId          String
-  userType        String    // student, staff, parent
-  deliveredAt     DateTime  @default(now())
-  readAt          DateTime?
-  acknowledged    Boolean   @default(false)
-  acknowledgedAt  DateTime?
+  id             String    @id @default(cuid())
+  tenantId       String
+  announcementId String
+  userId         String
+  userType       String // student, staff, parent
+  deliveredAt    DateTime  @default(now())
+  readAt         DateTime?
+  acknowledged   Boolean   @default(false)
+  acknowledgedAt DateTime?
 
-  announcement    Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
 
   @@unique([announcementId, userId])
   @@index([tenantId])
@@ -1451,21 +1599,21 @@ model AnnouncementRecipient {
 
 /// Message templates for SMS/Email
 model MessageTemplate {
-  id              String   @id @default(cuid())
-  tenantId        String
-  name            String
-  code            String   // Unique code for template
-  type            String   // sms, email, whatsapp, push
-  category        String   // fee_reminder, attendance_alert, exam_notification, general, event, etc.
-  subject         String?  // For email
-  content         String   @db.Text
-  variables       Json?    // [{ name: "studentName", description: "Student's full name" }]
-  isActive        Boolean  @default(true)
-  isSystem        Boolean  @default(false) // System templates can't be deleted
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  code      String // Unique code for template
+  type      String // sms, email, whatsapp, push
+  category  String // fee_reminder, attendance_alert, exam_notification, general, event, etc.
+  subject   String? // For email
+  content   String   @db.Text
+  variables Json? // [{ name: "studentName", description: "Student's full name" }]
+  isActive  Boolean  @default(true)
+  isSystem  Boolean  @default(false) // System templates can't be deleted
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  communications  BulkCommunication[]
+  communications BulkCommunication[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -1479,12 +1627,12 @@ model BulkCommunication {
   id              String    @id @default(cuid())
   tenantId        String
   name            String
-  type            String    // sms, email, whatsapp, push
+  type            String // sms, email, whatsapp, push
   templateId      String?
-  subject         String?   // For email
+  subject         String? // For email
   content         String    @db.Text
-  audience        String    // all, students, staff, parents, custom
-  audienceFilters Json?     // { departmentIds: [], courseIds: [], batchYears: [], feeDefaulters: true }
+  audience        String // all, students, staff, parents, custom
+  audienceFilters Json? // { departmentIds: [], courseIds: [], batchYears: [], feeDefaulters: true }
   recipientCount  Int       @default(0)
   sentCount       Int       @default(0)
   failedCount     Int       @default(0)
@@ -1496,8 +1644,8 @@ model BulkCommunication {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  template        MessageTemplate? @relation(fields: [templateId], references: [id])
-  logs            CommunicationLog[]
+  template MessageTemplate?   @relation(fields: [templateId], references: [id])
+  logs     CommunicationLog[]
 
   @@index([tenantId])
   @@index([type])
@@ -1511,24 +1659,24 @@ model CommunicationLog {
   id                  String    @id @default(cuid())
   tenantId            String
   bulkCommunicationId String?
-  type                String    // sms, email, whatsapp, push
-  recipientId         String?   // User ID
-  recipientType       String?   // student, staff, parent
+  type                String // sms, email, whatsapp, push
+  recipientId         String? // User ID
+  recipientType       String? // student, staff, parent
   recipientName       String?
-  recipientContact    String    // Phone/Email
+  recipientContact    String // Phone/Email
   subject             String?
   content             String    @db.Text
-  variables           Json?     // Variables used in template
+  variables           Json? // Variables used in template
   status              String    @default("pending") // pending, sent, delivered, failed, bounced
   errorMessage        String?
-  externalId          String?   // External provider message ID
+  externalId          String? // External provider message ID
   sentAt              DateTime?
   deliveredAt         DateTime?
   cost                Decimal?  @db.Decimal(6, 4) // Cost per message
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  bulkCommunication   BulkCommunication? @relation(fields: [bulkCommunicationId], references: [id])
+  bulkCommunication BulkCommunication? @relation(fields: [bulkCommunicationId], references: [id])
 
   @@index([tenantId])
   @@index([bulkCommunicationId])
@@ -1541,17 +1689,17 @@ model CommunicationLog {
 
 /// Feedback/Comments on announcements
 model AnnouncementComment {
-  id              String   @id @default(cuid())
-  tenantId        String
-  announcementId  String
-  userId          String
-  userType        String   // student, staff, parent
-  userName        String
-  content         String   @db.Text
-  parentId        String?  // For replies
-  isHidden        Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  tenantId       String
+  announcementId String
+  userId         String
+  userType       String // student, staff, parent
+  userName       String
+  content        String   @db.Text
+  parentId       String? // For replies
+  isHidden       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([tenantId])
   @@index([announcementId])
@@ -1565,24 +1713,24 @@ model AnnouncementComment {
 
 /// Document folders for organizing files
 model DocumentFolder {
-  id           String   @id @default(cuid())
-  tenantId     String
-  name         String
-  description  String?
-  parentId     String?  // For nested folders
-  ownerId      String   // User who created the folder
-  ownerType    String   // student, staff, admin
-  color        String?  // Folder color for UI
-  icon         String?  // Folder icon name
-  visibility   String   @default("private") // private, shared, public
-  path         String   // Full path e.g., "/documents/academics/semester-1"
-  depth        Int      @default(0) // Nesting level
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  parentId    String? // For nested folders
+  ownerId     String // User who created the folder
+  ownerType   String // student, staff, admin
+  color       String? // Folder color for UI
+  icon        String? // Folder icon name
+  visibility  String   @default("private") // private, shared, public
+  path        String // Full path e.g., "/documents/academics/semester-1"
+  depth       Int      @default(0) // Nesting level
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  parent       DocumentFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
-  children     DocumentFolder[] @relation("FolderHierarchy")
-  documents    Document[]
+  parent    DocumentFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  DocumentFolder[] @relation("FolderHierarchy")
+  documents Document[]
 
   @@unique([tenantId, path])
   @@index([tenantId])
@@ -1593,67 +1741,67 @@ model DocumentFolder {
 
 /// Documents stored in S3
 model Document {
-  id              String    @id @default(cuid())
-  tenantId        String
-  folderId        String?   // Optional folder assignment
-  name            String    // Display name
-  originalName    String    // Original uploaded filename
-  description     String?
+  id           String  @id @default(cuid())
+  tenantId     String
+  folderId     String? // Optional folder assignment
+  name         String // Display name
+  originalName String // Original uploaded filename
+  description  String?
 
   // S3 Storage Details
-  s3Key           String    // S3 object key
-  s3Bucket        String    // S3 bucket name
-  s3Region        String    @default("ap-south-1")
-  s3Url           String?   // Public URL (if public)
+  s3Key    String // S3 object key
+  s3Bucket String // S3 bucket name
+  s3Region String  @default("ap-south-1")
+  s3Url    String? // Public URL (if public)
 
   // File metadata
-  mimeType        String    // e.g., application/pdf, image/jpeg
-  fileSize        Int       // Size in bytes
-  extension       String    // File extension e.g., pdf, jpg
-  checksum        String?   // MD5 hash for integrity
+  mimeType  String // e.g., application/pdf, image/jpeg
+  fileSize  Int // Size in bytes
+  extension String // File extension e.g., pdf, jpg
+  checksum  String? // MD5 hash for integrity
 
   // Document classification
-  category        String    // academic, administrative, personal, certificate, identity, financial, etc.
-  subcategory     String?   // More specific categorization
-  tags            String[]  @default([])
+  category    String // academic, administrative, personal, certificate, identity, financial, etc.
+  subcategory String? // More specific categorization
+  tags        String[] @default([])
 
   // Ownership and access
-  uploadedById    String    // User who uploaded
-  uploadedByType  String    // student, staff, admin
-  uploadedByName  String
-  visibility      String    @default("private") // private, shared, department, college, public
+  uploadedById   String // User who uploaded
+  uploadedByType String // student, staff, admin
+  uploadedByName String
+  visibility     String @default("private") // private, shared, department, college, public
 
   // Linked entities (optional - document can be linked to specific entities)
-  studentId       String?   // If document belongs to a student
-  staffId         String?   // If document belongs to staff
-  departmentId    String?   // If document belongs to department
+  studentId    String? // If document belongs to a student
+  staffId      String? // If document belongs to staff
+  departmentId String? // If document belongs to department
 
   // Document status
-  status          String    @default("active") // active, archived, deleted, pending_review
-  isVerified      Boolean   @default(false)    // Admin verified document
-  verifiedById    String?
-  verifiedAt      DateTime?
+  status       String    @default("active") // active, archived, deleted, pending_review
+  isVerified   Boolean   @default(false) // Admin verified document
+  verifiedById String?
+  verifiedAt   DateTime?
 
   // Version control
-  version         Int       @default(1)
+  version           Int     @default(1)
   previousVersionId String? // Link to previous version
 
   // Expiry (for certificates, IDs)
-  expiresAt       DateTime?
+  expiresAt DateTime?
 
   // Statistics
-  downloadCount   Int       @default(0)
-  viewCount       Int       @default(0)
-  lastAccessedAt  DateTime?
+  downloadCount  Int       @default(0)
+  viewCount      Int       @default(0)
+  lastAccessedAt DateTime?
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  folder          DocumentFolder? @relation(fields: [folderId], references: [id])
+  folder          DocumentFolder?     @relation(fields: [folderId], references: [id])
   shares          DocumentShare[]
   accessLogs      DocumentAccessLog[]
-  versions        Document[]  @relation("DocumentVersions")
-  previousVersion Document?   @relation("DocumentVersions", fields: [previousVersionId], references: [id])
+  versions        Document[]          @relation("DocumentVersions")
+  previousVersion Document?           @relation("DocumentVersions", fields: [previousVersionId], references: [id])
 
   @@unique([tenantId, s3Key])
   @@index([tenantId])
@@ -1668,35 +1816,35 @@ model Document {
 
 /// Document sharing with specific users/groups
 model DocumentShare {
-  id            String    @id @default(cuid())
-  tenantId      String
-  documentId    String
+  id         String @id @default(cuid())
+  tenantId   String
+  documentId String
 
   // Share target (one of these will be set)
-  sharedWithUserId   String?    // Specific user
-  sharedWithRole     String?    // Role-based sharing (teacher, student, etc.)
-  sharedWithDeptId   String?    // Department-wide sharing
+  sharedWithUserId String? // Specific user
+  sharedWithRole   String? // Role-based sharing (teacher, student, etc.)
+  sharedWithDeptId String? // Department-wide sharing
 
   // Share permissions
-  permission    String    @default("view") // view, download, edit, admin
+  permission String @default("view") // view, download, edit, admin
 
   // Share settings
   expiresAt     DateTime? // Optional expiry
-  password      String?   // Optional password protection
-  maxDownloads  Int?      // Optional download limit
+  password      String? // Optional password protection
+  maxDownloads  Int? // Optional download limit
   downloadCount Int       @default(0)
 
   // Share link (for external sharing)
-  shareToken    String?   @unique // Unique token for share URL
-  isPublicLink  Boolean   @default(false)
+  shareToken   String? @unique // Unique token for share URL
+  isPublicLink Boolean @default(false)
 
   // Audit
-  sharedById    String    // User who shared
-  sharedByName  String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  sharedById   String // User who shared
+  sharedByName String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  document      Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([documentId])
@@ -1707,19 +1855,19 @@ model DocumentShare {
 
 /// Document access log for audit trail
 model DocumentAccessLog {
-  id          String   @id @default(cuid())
-  tenantId    String
-  documentId  String
-  userId      String
-  userName    String
-  userType    String   // student, staff, admin, external
-  action      String   // view, download, edit, delete, share, restore
-  ipAddress   String?
-  userAgent   String?
-  details     Json?    // Additional action details
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  tenantId   String
+  documentId String
+  userId     String
+  userName   String
+  userType   String // student, staff, admin, external
+  action     String // view, download, edit, delete, share, restore
+  ipAddress  String?
+  userAgent  String?
+  details    Json? // Additional action details
+  createdAt  DateTime @default(now())
 
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([documentId])
@@ -1730,32 +1878,32 @@ model DocumentAccessLog {
 
 /// Storage quota and settings per tenant
 model DocumentSettings {
-  id                    String   @id @default(cuid())
-  tenantId              String   @unique
+  id       String @id @default(cuid())
+  tenantId String @unique
 
   // Storage quotas (in bytes)
-  totalStorageQuota     BigInt   @default(10737418240) // 10 GB default
-  usedStorage           BigInt   @default(0)
-  studentQuota          BigInt   @default(104857600)    // 100 MB per student
-  staffQuota            BigInt   @default(524288000)    // 500 MB per staff
+  totalStorageQuota BigInt @default(10737418240) // 10 GB default
+  usedStorage       BigInt @default(0)
+  studentQuota      BigInt @default(104857600) // 100 MB per student
+  staffQuota        BigInt @default(524288000) // 500 MB per staff
 
   // File settings
-  maxFileSize           Int      @default(52428800)     // 50 MB max file size
-  allowedMimeTypes      String[] @default(["application/pdf", "image/jpeg", "image/png", "image/gif", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"])
-  blockedExtensions     String[] @default(["exe", "bat", "cmd", "sh", "ps1"])
+  maxFileSize       Int      @default(52428800) // 50 MB max file size
+  allowedMimeTypes  String[] @default(["application/pdf", "image/jpeg", "image/png", "image/gif", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"])
+  blockedExtensions String[] @default(["exe", "bat", "cmd", "sh", "ps1"])
 
   // Retention policies
-  autoDeleteDays        Int?     // Auto delete after days (null = never)
-  archiveAfterDays      Int?     // Move to archive after days
+  autoDeleteDays   Int? // Auto delete after days (null = never)
+  archiveAfterDays Int? // Move to archive after days
 
   // Features
-  versioningEnabled     Boolean  @default(true)
-  maxVersions           Int      @default(5)
-  publicSharingEnabled  Boolean  @default(false)
+  versioningEnabled      Boolean @default(true)
+  maxVersions            Int     @default(5)
+  publicSharingEnabled   Boolean @default(false)
   externalSharingEnabled Boolean @default(false)
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("document_settings")
 }
@@ -1766,25 +1914,25 @@ model DocumentSettings {
 
 /// Import job tracking
 model ImportJob {
-  id              String    @id @default(cuid())
-  tenantId        String
-  entityType      String    // students, staff, fees, attendance, marks, etc.
-  fileName        String
-  fileUrl         String?   // S3 URL for the uploaded file
-  fileSize        Int?
-  totalRows       Int       @default(0)
-  processedRows   Int       @default(0)
-  successCount    Int       @default(0)
-  errorCount      Int       @default(0)
-  status          String    @default("pending") // pending, validating, processing, completed, failed, cancelled
-  errorLog        Json?     // Array of { row, field, error }
-  mapping         Json?     // Column to field mapping
-  options         Json?     // Import options (skip headers, update existing, etc.)
-  startedAt       DateTime?
-  completedAt     DateTime?
-  createdById     String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  tenantId      String
+  entityType    String // students, staff, fees, attendance, marks, etc.
+  fileName      String
+  fileUrl       String? // S3 URL for the uploaded file
+  fileSize      Int?
+  totalRows     Int       @default(0)
+  processedRows Int       @default(0)
+  successCount  Int       @default(0)
+  errorCount    Int       @default(0)
+  status        String    @default("pending") // pending, validating, processing, completed, failed, cancelled
+  errorLog      Json? // Array of { row, field, error }
+  mapping       Json? // Column to field mapping
+  options       Json? // Import options (skip headers, update existing, etc.)
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdById   String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([tenantId])
   @@index([status])
@@ -1795,24 +1943,24 @@ model ImportJob {
 
 /// Export job tracking
 model ExportJob {
-  id              String    @id @default(cuid())
-  tenantId        String
-  entityType      String    // students, staff, fees, attendance, marks, etc.
-  fileName        String
-  fileUrl         String?   // S3 URL for the generated file
-  fileSize        Int?
-  format          String    @default("xlsx") // xlsx, csv
-  totalRecords    Int       @default(0)
-  filters         Json?     // Applied filters
-  columns         Json?     // Selected columns to export
-  status          String    @default("pending") // pending, processing, completed, failed
-  expiresAt       DateTime? // When the download link expires
-  downloadCount   Int       @default(0)
-  startedAt       DateTime?
-  completedAt     DateTime?
-  createdById     String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  tenantId      String
+  entityType    String // students, staff, fees, attendance, marks, etc.
+  fileName      String
+  fileUrl       String? // S3 URL for the generated file
+  fileSize      Int?
+  format        String    @default("xlsx") // xlsx, csv
+  totalRecords  Int       @default(0)
+  filters       Json? // Applied filters
+  columns       Json? // Selected columns to export
+  status        String    @default("pending") // pending, processing, completed, failed
+  expiresAt     DateTime? // When the download link expires
+  downloadCount Int       @default(0)
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdById   String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([tenantId])
   @@index([status])
@@ -1823,16 +1971,16 @@ model ExportJob {
 
 /// Import templates for quick mapping
 model ImportTemplate {
-  id              String   @id @default(cuid())
-  tenantId        String
-  name            String
-  entityType      String
-  mapping         Json     // Column to field mapping
-  options         Json?    // Default options
-  isDefault       Boolean  @default(false)
-  createdById     String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id          String   @id @default(cuid())
+  tenantId    String
+  name        String
+  entityType  String
+  mapping     Json // Column to field mapping
+  options     Json? // Default options
+  isDefault   Boolean  @default(false)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([tenantId, name, entityType])
   @@index([tenantId])
@@ -1846,42 +1994,42 @@ model ImportTemplate {
 
 /// Audit log entries for tracking all system activities
 model AuditLog {
-  id              String    @id @default(cuid())
-  tenantId        String
+  id       String @id @default(cuid())
+  tenantId String
 
   // Actor information
-  userId          String?   // Who performed the action (null for system actions)
-  userEmail       String?   // Denormalized for quick display
-  userName        String?   // Denormalized for quick display
-  userRole        String?   // Role at the time of action
+  userId    String? // Who performed the action (null for system actions)
+  userEmail String? // Denormalized for quick display
+  userName  String? // Denormalized for quick display
+  userRole  String? // Role at the time of action
 
   // Action details
-  action          String    // CREATE, UPDATE, DELETE, VIEW, LOGIN, LOGOUT, EXPORT, IMPORT, etc.
-  category        String    // AUTHENTICATION, USER_MANAGEMENT, ACADEMIC, FINANCIAL, SYSTEM, etc.
-  entityType      String?   // Student, Staff, Fee, Exam, etc.
-  entityId        String?   // ID of the affected entity
-  entityName      String?   // Human-readable name of the entity
+  action     String // CREATE, UPDATE, DELETE, VIEW, LOGIN, LOGOUT, EXPORT, IMPORT, etc.
+  category   String // AUTHENTICATION, USER_MANAGEMENT, ACADEMIC, FINANCIAL, SYSTEM, etc.
+  entityType String? // Student, Staff, Fee, Exam, etc.
+  entityId   String? // ID of the affected entity
+  entityName String? // Human-readable name of the entity
 
   // Change tracking
-  oldValue        Json?     // Previous state (for updates/deletes)
-  newValue        Json?     // New state (for creates/updates)
-  changedFields   String[]  // List of fields that were modified
+  oldValue      Json? // Previous state (for updates/deletes)
+  newValue      Json? // New state (for creates/updates)
+  changedFields String[] // List of fields that were modified
 
   // Request context
-  ipAddress       String?
-  userAgent       String?
-  requestMethod   String?   // GET, POST, PUT, DELETE, PATCH
-  requestPath     String?   // API endpoint path
-  requestId       String?   // For correlation
+  ipAddress     String?
+  userAgent     String?
+  requestMethod String? // GET, POST, PUT, DELETE, PATCH
+  requestPath   String? // API endpoint path
+  requestId     String? // For correlation
 
   // Status and metadata
-  status          String    @default("success") // success, failure, pending
-  errorMessage    String?   // If action failed
-  duration        Int?      // Request duration in milliseconds
-  metadata        Json?     // Additional context-specific data
+  status       String  @default("success") // success, failure, pending
+  errorMessage String? // If action failed
+  duration     Int? // Request duration in milliseconds
+  metadata     Json? // Additional context-specific data
 
   // Timestamps
-  timestamp       DateTime  @default(now())
+  timestamp DateTime @default(now())
 
   @@index([tenantId])
   @@index([userId])
@@ -1899,59 +2047,59 @@ model AuditLog {
 
 /// Audit log retention settings per tenant
 model AuditLogSettings {
-  id              String   @id @default(cuid())
-  tenantId        String   @unique
+  id       String @id @default(cuid())
+  tenantId String @unique
 
   // Retention settings
-  retentionDays   Int      @default(365)   // How long to keep logs
+  retentionDays Int @default(365) // How long to keep logs
 
   // What to log (can be configured per tenant)
-  logReads        Boolean  @default(false) // Log VIEW actions
+  logReads          Boolean @default(false) // Log VIEW actions
   logAuthentication Boolean @default(true) // Log LOGIN/LOGOUT
-  logDataChanges  Boolean  @default(true)  // Log CREATE/UPDATE/DELETE
-  logExports      Boolean  @default(true)  // Log data exports
-  logImports      Boolean  @default(true)  // Log data imports
-  logSystemEvents Boolean  @default(true)  // Log system events
+  logDataChanges    Boolean @default(true) // Log CREATE/UPDATE/DELETE
+  logExports        Boolean @default(true) // Log data exports
+  logImports        Boolean @default(true) // Log data imports
+  logSystemEvents   Boolean @default(true) // Log system events
 
   // Excluded entities (e.g., high-frequency low-value logs)
   excludedEntityTypes String[] @default([])
   excludedActions     String[] @default([])
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("audit_log_settings")
 }
 
 /// Audit log summary for dashboards (aggregated daily)
 model AuditLogSummary {
-  id              String   @id @default(cuid())
-  tenantId        String
-  date            DateTime @db.Date
+  id       String   @id @default(cuid())
+  tenantId String
+  date     DateTime @db.Date
 
   // Counts by action
-  createCount     Int      @default(0)
-  updateCount     Int      @default(0)
-  deleteCount     Int      @default(0)
-  viewCount       Int      @default(0)
-  loginCount      Int      @default(0)
-  logoutCount     Int      @default(0)
-  exportCount     Int      @default(0)
-  importCount     Int      @default(0)
-  otherCount      Int      @default(0)
+  createCount Int @default(0)
+  updateCount Int @default(0)
+  deleteCount Int @default(0)
+  viewCount   Int @default(0)
+  loginCount  Int @default(0)
+  logoutCount Int @default(0)
+  exportCount Int @default(0)
+  importCount Int @default(0)
+  otherCount  Int @default(0)
 
   // Counts by status
-  successCount    Int      @default(0)
-  failureCount    Int      @default(0)
+  successCount Int @default(0)
+  failureCount Int @default(0)
 
   // Active users
-  uniqueUsers     Int      @default(0)
+  uniqueUsers Int @default(0)
 
   // Top entities modified
-  topEntities     Json?    // Array of {entityType, count}
+  topEntities Json? // Array of {entityType, count}
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([tenantId, date])
   @@index([tenantId])
@@ -1964,44 +2112,44 @@ model AuditLogSummary {
 // =============================================================================
 
 model ReportTemplate {
-  id              String   @id @default(cuid())
-  tenantId        String?  // null = system template, available to all
-  name            String
-  description     String?
-  category        String   // academic, financial, attendance, exam, student, staff, transport, hostel, library
-  reportType      String   // summary, detailed, comparison, trend
+  id          String  @id @default(cuid())
+  tenantId    String? // null = system template, available to all
+  name        String
+  description String?
+  category    String // academic, financial, attendance, exam, student, staff, transport, hostel, library
+  reportType  String // summary, detailed, comparison, trend
 
   // Template definition
-  dataSource      String   // students, staff, fees, attendance, exams, etc.
-  columns         Json     // Array of {field, label, width, format}
-  filters         Json?    // Available filter options
-  groupBy         String[] // Fields to group by
-  sortBy          String?  // Default sort field
-  sortOrder       String   @default("asc")
+  dataSource String // students, staff, fees, attendance, exams, etc.
+  columns    Json // Array of {field, label, width, format}
+  filters    Json? // Available filter options
+  groupBy    String[] // Fields to group by
+  sortBy     String? // Default sort field
+  sortOrder  String   @default("asc")
 
   // Aggregations
-  aggregations    Json?    // Array of {field, function: sum/avg/count/min/max}
+  aggregations Json? // Array of {field, function: sum/avg/count/min/max}
 
   // Chart configuration (optional)
-  chartType       String?  // bar, line, pie, none
-  chartConfig     Json?    // Chart-specific settings
+  chartType   String? // bar, line, pie, none
+  chartConfig Json? // Chart-specific settings
 
   // Display options
-  orientation     String   @default("portrait") // portrait, landscape
-  pageSize        String   @default("A4")       // A4, Letter, Legal
-  showHeader      Boolean  @default(true)
-  showFooter      Boolean  @default(true)
-  headerTemplate  String?  // Custom header HTML
-  footerTemplate  String?  // Custom footer HTML
+  orientation    String  @default("portrait") // portrait, landscape
+  pageSize       String  @default("A4") // A4, Letter, Legal
+  showHeader     Boolean @default(true)
+  showFooter     Boolean @default(true)
+  headerTemplate String? // Custom header HTML
+  footerTemplate String? // Custom footer HTML
 
-  isSystem        Boolean  @default(false)  // System templates can't be modified
-  isActive        Boolean  @default(true)
+  isSystem Boolean @default(false) // System templates can't be modified
+  isActive Boolean @default(true)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  createdById     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
 
-  reportJobs      ReportJob[]
+  reportJobs       ReportJob[]
   scheduledReports ScheduledReport[]
 
   @@index([tenantId])
@@ -2011,48 +2159,48 @@ model ReportTemplate {
 }
 
 model ReportJob {
-  id              String    @id @default(cuid())
-  tenantId        String
-  templateId      String?   // null for ad-hoc reports
-  name            String
-  description     String?
+  id          String  @id @default(cuid())
+  tenantId    String
+  templateId  String? // null for ad-hoc reports
+  name        String
+  description String?
 
   // Report configuration
-  dataSource      String
-  columns         Json
-  filters         Json?     // Applied filters
-  groupBy         String[]
-  sortBy          String?
-  sortOrder       String    @default("asc")
-  aggregations    Json?
-  dateRange       Json?     // {startDate, endDate}
+  dataSource   String
+  columns      Json
+  filters      Json? // Applied filters
+  groupBy      String[]
+  sortBy       String?
+  sortOrder    String   @default("asc")
+  aggregations Json?
+  dateRange    Json? // {startDate, endDate}
 
   // Output format
-  format          String    @default("pdf")  // pdf, xlsx, csv
-  orientation     String    @default("portrait")
-  pageSize        String    @default("A4")
+  format      String @default("pdf") // pdf, xlsx, csv
+  orientation String @default("portrait")
+  pageSize    String @default("A4")
 
   // Status tracking
-  status          String    @default("pending") // pending, processing, completed, failed
-  progress        Int       @default(0)         // 0-100
-  errorMessage    String?
+  status       String  @default("pending") // pending, processing, completed, failed
+  progress     Int     @default(0) // 0-100
+  errorMessage String?
 
   // Generated file
-  fileUrl         String?
-  fileName        String?
-  fileSize        Int?      // in bytes
-  rowCount        Int?      // number of data rows
+  fileUrl  String?
+  fileName String?
+  fileSize Int? // in bytes
+  rowCount Int? // number of data rows
 
   // Metadata
-  generatedAt     DateTime?
-  expiresAt       DateTime? // File expiration
-  executionTime   Int?      // in milliseconds
+  generatedAt   DateTime?
+  expiresAt     DateTime? // File expiration
+  executionTime Int? // in milliseconds
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  createdById     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
 
-  template        ReportTemplate? @relation(fields: [templateId], references: [id])
+  template ReportTemplate? @relation(fields: [templateId], references: [id])
 
   @@index([tenantId])
   @@index([templateId])
@@ -2062,49 +2210,902 @@ model ReportJob {
 }
 
 model ScheduledReport {
-  id              String    @id @default(cuid())
-  tenantId        String
-  templateId      String
-  name            String
-  description     String?
+  id          String  @id @default(cuid())
+  tenantId    String
+  templateId  String
+  name        String
+  description String?
 
   // Schedule configuration
-  frequency       String    // daily, weekly, monthly, quarterly, yearly
-  dayOfWeek       Int?      // 0-6 for weekly (0 = Sunday)
-  dayOfMonth      Int?      // 1-31 for monthly
-  monthOfYear     Int?      // 1-12 for yearly
-  time            String    // HH:mm format
-  timezone        String    @default("Asia/Kolkata")
+  frequency   String // daily, weekly, monthly, quarterly, yearly
+  dayOfWeek   Int? // 0-6 for weekly (0 = Sunday)
+  dayOfMonth  Int? // 1-31 for monthly
+  monthOfYear Int? // 1-12 for yearly
+  time        String // HH:mm format
+  timezone    String @default("Asia/Kolkata")
 
   // Report configuration overrides
-  filters         Json?
-  dateRangeType   String    @default("auto") // auto, fixed, relative
-  dateRangeValue  Json?     // For relative: {unit: 'days', value: 7}
-  format          String    @default("pdf")
+  filters        Json?
+  dateRangeType  String @default("auto") // auto, fixed, relative
+  dateRangeValue Json? // For relative: {unit: 'days', value: 7}
+  format         String @default("pdf")
 
   // Delivery options
-  deliveryMethod  String    @default("email") // email, download, both
-  recipients      String[]  // Email addresses
-  emailSubject    String?
-  emailBody       String?
+  deliveryMethod String   @default("email") // email, download, both
+  recipients     String[] // Email addresses
+  emailSubject   String?
+  emailBody      String?
 
   // Status
-  isActive        Boolean   @default(true)
-  lastRunAt       DateTime?
-  nextRunAt       DateTime?
-  lastStatus      String?   // success, failed
-  runCount        Int       @default(0)
-  failureCount    Int       @default(0)
+  isActive     Boolean   @default(true)
+  lastRunAt    DateTime?
+  nextRunAt    DateTime?
+  lastStatus   String? // success, failed
+  runCount     Int       @default(0)
+  failureCount Int       @default(0)
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  createdById     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
 
-  template        ReportTemplate @relation(fields: [templateId], references: [id])
+  template ReportTemplate @relation(fields: [templateId], references: [id])
 
   @@index([tenantId])
   @@index([templateId])
   @@index([isActive])
   @@index([nextRunAt])
   @@map("scheduled_reports")
+}
+
+// =============================================================================
+// STUDENT GROWTH & CAREER INDICES
+// =============================================================================
+
+/// Student Growth Index - Monthly holistic development tracking
+model StudentGrowthIndex {
+  id        String @id @default(cuid())
+  tenantId  String
+  studentId String
+  month     Int
+  year      Int
+
+  // Components (0-100 scale)
+  academicScore    Float // 40% weight - CGPA trend, exam improvements
+  engagementScore  Float // 30% weight - clubs, events, attendance
+  skillsScore      Float // 20% weight - certifications, projects
+  behavioralScore  Float // 10% weight - feedback, punctuality
+
+  // Composite score
+  sgiScore   Float // Weighted composite (0-100)
+  sgiTrend   String  @default("stable") // improving, stable, declining
+  trendDelta Float   @default(0) // Change from previous month
+
+  // Explainability - breakdown of each component
+  academicBreakdown   Json? // {cgpaTrend, examImprovement, assignments}
+  engagementBreakdown Json? // {clubActivity, eventsAttended, attendanceRate}
+  skillsBreakdown     Json? // {certifications, projects, internships}
+  behavioralBreakdown Json? // {feedbackScore, punctuality, discipline}
+
+  // AI-generated insights
+  insightsSummary String? // Natural language summary
+  recommendations Json? // Array of {category, action, priority}
+
+  // Visibility controls
+  visibleToStudent Boolean @default(true)
+  visibleToMentor  Boolean @default(true)
+  visibleToHod     Boolean @default(true)
+
+  // Data quality indicator
+  dataCompleteness Float @default(0) // 0-1 indicating data availability
+
+  calculatedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, studentId, month, year])
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([sgiScore])
+  @@map("student_growth_indices")
+}
+
+/// Career Readiness Index - Placement probability prediction
+model CareerReadinessIndex {
+  id             String   @id @default(cuid())
+  tenantId       String
+  studentId      String
+  assessmentDate DateTime @default(now())
+
+  // Main scores
+  criScore             Float // Composite CRI (0-100)
+  placementProbability Float // 0-1 probability
+  salaryBand           String // LPA_3_5, LPA_5_8, LPA_8_12, LPA_12_PLUS
+
+  // Component scores (0-100)
+  resumeScore           Float // Resume quality
+  interviewScore        Float // Mock interview performance
+  skillRoleFitScore     Float // Skills matching target roles
+  industryExposureScore Float // Internships, projects, industry connect
+
+  // AI-generated insights
+  skillGaps            Json? // [{skill, currentLevel, requiredLevel, priority}]
+  targetRoles          Json? // [{role, fitScore, requirements}]
+  topMatchingCompanies Json? // [{company, fitScore, openings}]
+  actionPlan           Json? // [{action, deadline, impact}]
+
+  // Prediction confidence
+  confidenceScore Float @default(0.7) // Model confidence
+
+  isLatest  Boolean  @default(true) // Most recent assessment
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([isLatest])
+  @@index([criScore])
+  @@map("career_readiness_indices")
+}
+
+/// Index Configuration - Per-tenant weight customization
+model IndexConfiguration {
+  id       String @id @default(cuid())
+  tenantId String @unique
+
+  // SGI weights (must sum to 100)
+  sgiAcademicWeight   Int @default(40)
+  sgiEngagementWeight Int @default(30)
+  sgiSkillsWeight     Int @default(20)
+  sgiBehavioralWeight Int @default(10)
+
+  // CRI weights (must sum to 100)
+  criResumeWeight    Int @default(25)
+  criInterviewWeight Int @default(25)
+  criSkillFitWeight  Int @default(25)
+  criExposureWeight  Int @default(25)
+
+  // Alert thresholds
+  sgiAlertThreshold Float @default(40) // Alert if SGI drops below
+  criAlertThreshold Float @default(50) // Alert if CRI below
+
+  // Calculation settings
+  sgiCalculationDay Int     @default(1) // Day of month to calculate
+  criAutoUpdate     Boolean @default(true) // Auto-update on data change
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("index_configurations")
+}
+
+// =============================================================================
+// 360° FEEDBACK SYSTEM
+// =============================================================================
+
+/// Feedback Cycle - Monthly feedback collection period
+model FeedbackCycle {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String // e.g., "January 2025 Feedback"
+  month     Int
+  year      Int
+  startDate DateTime
+  endDate   DateTime
+  status    String   @default("draft") // draft, active, closed, processed
+
+  // Settings
+  enablePeerFeedback    Boolean @default(true)
+  enableSelfAssessment  Boolean @default(true)
+  anonymousPeerFeedback Boolean @default(true)
+  minPeerFeedbacks      Int     @default(3)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  feedbackEntries  FeedbackEntry[]
+  feedbackSummaries FeedbackSummary[]
+
+  @@unique([tenantId, month, year])
+  @@index([tenantId])
+  @@index([status])
+  @@map("feedback_cycles")
+}
+
+/// Feedback Entry - Individual feedback submission
+model FeedbackEntry {
+  id              String  @id @default(cuid())
+  tenantId        String
+  cycleId         String
+  targetStudentId String
+
+  // Evaluator info
+  evaluatorType String // faculty, mentor, peer, self
+  evaluatorId   String? // User ID (null for anonymous)
+  isAnonymous   Boolean @default(false)
+
+  // Ratings (1-5 scale)
+  academicRating      Int? // Academic performance
+  participationRating Int? // Class participation
+  teamworkRating      Int? // Collaboration skills
+  communicationRating Int? // Communication skills
+  leadershipRating    Int? // Leadership qualities
+  punctualityRating   Int? // Punctuality & discipline
+
+  // Qualitative feedback
+  strengths    String? @db.Text // Key strengths observed
+  improvements String? @db.Text // Areas for improvement
+
+  // Normalized scores (after bias correction)
+  rawAverageScore    Float? // Simple average of ratings
+  normalizedScore    Float? // After bias normalization
+  evaluatorBiasFactor Float? // Detected bias factor
+
+  // AI analysis
+  aiSummary      String? // AI-generated summary
+  sentimentScore Float? // Sentiment analysis (-1 to 1)
+
+  submittedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  cycle         FeedbackCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+  targetStudent Student       @relation(fields: [targetStudentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([cycleId])
+  @@index([targetStudentId])
+  @@index([evaluatorId])
+  @@map("feedback_entries")
+}
+
+/// Feedback Summary - Aggregated feedback per student per cycle
+model FeedbackSummary {
+  id        String @id @default(cuid())
+  tenantId  String
+  studentId String
+  cycleId   String
+  month     Int
+  year      Int
+
+  // Aggregated scores by evaluator type
+  facultyAvgScore Float?
+  mentorAvgScore  Float?
+  peerAvgScore    Float?
+  selfScore       Float?
+  overallScore    Float? // Weighted combination
+
+  // Response counts
+  facultyCount Int @default(0)
+  peerCount    Int @default(0)
+
+  // AI-generated summary
+  aiSummary       String?   @db.Text
+  topStrengths    Json? // [{strength, frequency, sources}]
+  topImprovements Json? // [{area, frequency, suggestions}]
+
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  student Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  cycle   FeedbackCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, studentId, cycleId])
+  @@index([tenantId])
+  @@index([studentId])
+  @@map("feedback_summaries")
+}
+
+// =============================================================================
+// AI GUIDANCE & ALERTS
+// =============================================================================
+
+/// AI Guidance - Personalized recommendations for students
+model AiGuidance {
+  id        String @id @default(cuid())
+  tenantId  String
+  studentId String
+
+  guidanceType String // monthly_plan, alert, recommendation, milestone, tip
+  category     String // academic, career, engagement, behavioral, skill
+  priority     String @default("medium") // low, medium, high, urgent
+
+  title       String
+  description String  @db.Text
+  actionItems Json? // [{action, deadline, completed}]
+  resources   Json? // [{title, url, type}]
+
+  // Trigger information
+  triggerReason   String? // Why this guidance was generated
+  triggerMetric   String? // Which metric triggered it
+  triggerValue    Float? // Value that triggered
+  confidenceScore Float? // AI confidence in recommendation
+
+  // User interaction
+  status     String    @default("active") // active, viewed, dismissed, completed
+  viewedAt   DateTime?
+  wasHelpful Boolean? // User feedback
+  feedback   String? // User feedback text
+
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([status])
+  @@index([guidanceType])
+  @@index([priority])
+  @@map("ai_guidance")
+}
+
+/// Student Goals - Personal goals tracking
+model StudentGoal {
+  id        String @id @default(cuid())
+  tenantId  String
+  studentId String
+
+  title       String
+  description String? @db.Text
+  category    String // academic, career, skill, extracurricular, personal
+
+  // Target metrics
+  targetDate  DateTime?
+  targetValue Float?
+  currentValue Float?
+  unit        String? // e.g., "CGPA", "certifications", "%"
+
+  // Goal source
+  isAiSuggested    Boolean @default(false)
+  isMentorAssigned Boolean @default(false)
+  assignedBy       String? // User ID if assigned by mentor
+
+  // Progress tracking
+  status   String @default("active") // active, completed, abandoned, overdue
+  progress Float  @default(0) // 0-100
+
+  // Milestones
+  milestones Json? // [{title, targetDate, completed, completedAt}]
+
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([status])
+  @@index([category])
+  @@map("student_goals")
+}
+
+/// Disengagement Alert - Early warning system
+model DisengagementAlert {
+  id        String @id @default(cuid())
+  tenantId  String
+  studentId String
+
+  alertType String // attendance_drop, grade_decline, activity_drop, feedback_concern
+  severity  String @default("warning") // info, warning, critical
+
+  // Metric details
+  metricName    String // e.g., "attendance_rate", "cgpa", "club_activity"
+  currentValue  Float
+  previousValue Float?
+  thresholdValue Float
+  changePercent Float?
+
+  // Context
+  timeframe   String? // e.g., "last 30 days"
+  description String? @db.Text
+  suggestedActions Json? // [{action, priority, assignedTo}]
+
+  // Resolution tracking
+  status         String    @default("new") // new, acknowledged, in_progress, resolved, false_positive
+  acknowledgedBy String? // User ID
+  acknowledgedAt DateTime?
+  resolvedBy     String?
+  resolvedAt     DateTime?
+  resolution     String? // How it was resolved
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([status])
+  @@index([severity])
+  @@index([alertType])
+  @@map("disengagement_alerts")
+}
+
+// =============================================================================
+// STUDENT JOURNEY TIMELINE
+// =============================================================================
+
+/// Journey Milestone - Key events in student's journey
+model JourneyMilestone {
+  id        String @id @default(cuid())
+  tenantId  String
+  studentId String
+
+  milestoneType String // admission, semester_start, semester_end, exam, internship, placement, achievement, graduation
+  title         String
+  description   String? @db.Text
+
+  occurredAt   DateTime
+  academicYear String?
+  semester     Int?
+
+  // Snapshot of metrics at this milestone
+  snapshotData Json? // {cgpa, sgi, cri, attendance, achievements}
+
+  // Categorization
+  category   String  @default("academic") // academic, career, extracurricular, personal
+  isPositive Boolean @default(true) // Positive or negative milestone
+  isPublic   Boolean @default(false) // Visible on public profile
+
+  // Linked entities
+  linkedEntityType String? // exam, achievement, internship, etc.
+  linkedEntityId   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([milestoneType])
+  @@index([occurredAt])
+  @@map("journey_milestones")
+}
+
+/// Semester Snapshot - End-of-semester metrics capture
+model SemesterSnapshot {
+  id           String @id @default(cuid())
+  tenantId     String
+  studentId    String
+  academicYear String
+  semester     Int
+
+  // Academic metrics
+  sgpa              Float?
+  cgpa              Float?
+  backlogs          Int    @default(0)
+  overallAttendance Float?
+
+  // Index scores at semester end
+  endSgiScore Float?
+  endCriScore Float?
+
+  // Activity metrics
+  clubsActive       Int @default(0)
+  eventsAttended    Int @default(0)
+  achievementsCount Int @default(0)
+
+  // Comparison data
+  departmentAvgCgpa Float?
+  batchRank         Int?
+  batchSize         Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, studentId, academicYear, semester])
+  @@index([tenantId])
+  @@index([studentId])
+  @@map("semester_snapshots")
+}
+
+// =============================================================================
+// ALUMNI MANAGEMENT
+// =============================================================================
+
+/// Alumni Profile - Graduated student profiles
+model AlumniProfile {
+  id        String  @id @default(cuid())
+  tenantId  String
+  studentId String? @unique // Link to original student record
+  userId    String? @unique // User account for alumni login
+
+  // Personal info
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  photoUrl    String?
+  linkedinUrl String?
+  twitterUrl  String?
+  websiteUrl  String?
+
+  // Academic info
+  graduationYear Int
+  batch          String // e.g., "2021-2025"
+  departmentId   String?
+  degree         String? // e.g., "B.Tech Computer Science"
+  finalCgpa      Float?
+
+  // Registration
+  registrationStatus String    @default("pending") // pending, approved, rejected
+  registrationDate   DateTime?
+  approvedBy         String?
+
+  // Current status
+  currentStatus String @default("employed") // employed, entrepreneur, higher_studies, unemployed, other
+
+  // Profile visibility
+  visibleInDirectory Boolean @default(true)
+  showEmail          Boolean @default(false)
+  showPhone          Boolean @default(false)
+  showEmployment     Boolean @default(true)
+
+  // Mentorship
+  openToMentoring Boolean @default(false)
+  mentorshipAreas String[] @default([]) // Areas willing to mentor
+
+  // Bio
+  bio          String? @db.Text
+  achievements String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student    Student?    @relation(fields: [studentId], references: [id])
+  department Department? @relation(fields: [departmentId], references: [id])
+
+  employmentHistory AlumniEmployment[]
+  mentorships       AlumniMentorship[] @relation("AlumniMentor")
+  contributions     AlumniContribution[]
+  testimonials      AlumniTestimonial[]
+  eventAttendances  AlumniEventAttendance[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([graduationYear])
+  @@index([departmentId])
+  @@index([currentStatus])
+  @@map("alumni_profiles")
+}
+
+/// Alumni Employment - Work history
+model AlumniEmployment {
+  id       String @id @default(cuid())
+  tenantId String
+  alumniId String
+
+  companyName String
+  role        String
+  location    String?
+
+  startDate DateTime
+  endDate   DateTime?
+  isCurrent Boolean   @default(true)
+
+  salaryBand  String? // Not displayed publicly
+  industry    String?
+  companySize String? // startup, small, medium, large, enterprise
+
+  description String? @db.Text
+
+  isVerified Boolean   @default(false) // Admin verified
+  verifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  alumni AlumniProfile @relation(fields: [alumniId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([alumniId])
+  @@index([companyName])
+  @@index([isCurrent])
+  @@map("alumni_employment")
+}
+
+/// Alumni Mentorship - Mentor-mentee relationships
+model AlumniMentorship {
+  id        String @id @default(cuid())
+  tenantId  String
+  alumniId  String
+  studentId String
+
+  focusArea String // career_guidance, technical, interview_prep, etc.
+  status    String @default("pending") // pending, active, completed, cancelled
+
+  // Request details
+  requestMessage String? @db.Text
+  responseMessage String? @db.Text
+
+  startDate     DateTime?
+  endDate       DateTime?
+  meetingsCount Int       @default(0)
+
+  // Ratings
+  studentRating  Int? // 1-5
+  studentReview  String?
+  alumniRating   Int? // 1-5
+  alumniReview   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  alumni  AlumniProfile @relation("AlumniMentor", fields: [alumniId], references: [id], onDelete: Cascade)
+  student Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([alumniId, studentId])
+  @@index([tenantId])
+  @@index([alumniId])
+  @@index([studentId])
+  @@index([status])
+  @@map("alumni_mentorships")
+}
+
+/// Alumni Contribution - Donations and contributions
+model AlumniContribution {
+  id       String @id @default(cuid())
+  tenantId String
+  alumniId String
+
+  contributionType String // monetary, scholarship, equipment, time, guest_lecture
+  title            String
+  description      String? @db.Text
+
+  // For monetary
+  amount   Decimal? @db.Decimal(12, 2)
+  currency String   @default("INR")
+
+  // For non-monetary
+  estimatedValue Decimal? @db.Decimal(12, 2)
+  hoursContributed Int?
+
+  // Allocation
+  allocatedTo     String? // scholarship_fund, department, infrastructure, etc.
+  beneficiaryInfo String?
+
+  // Status
+  status       String    @default("pending") // pending, approved, received, acknowledged
+  receivedDate DateTime?
+  acknowledgedBy String?
+
+  // Recognition
+  isPubliclyAcknowledged Boolean @default(true)
+  acknowledgementText    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  alumni AlumniProfile @relation(fields: [alumniId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([alumniId])
+  @@index([contributionType])
+  @@index([status])
+  @@map("alumni_contributions")
+}
+
+/// Alumni Testimonial - Success stories
+model AlumniTestimonial {
+  id       String @id @default(cuid())
+  tenantId String
+  alumniId String
+
+  title    String
+  content  String  @db.Text
+  videoUrl String?
+  imageUrl String?
+  category String // career_success, entrepreneurship, higher_studies, gratitude
+
+  // Approval
+  isApproved Boolean   @default(false)
+  approvedBy String?
+  approvedAt DateTime?
+
+  // Display
+  isFeatured   Boolean @default(false)
+  displayOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  alumni AlumniProfile @relation(fields: [alumniId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([alumniId])
+  @@index([isApproved])
+  @@index([isFeatured])
+  @@map("alumni_testimonials")
+}
+
+/// Alumni Event - Reunions, networking events
+model AlumniEvent {
+  id       String @id @default(cuid())
+  tenantId String
+
+  title       String
+  description String? @db.Text
+  eventType   String // reunion, networking, guest_lecture, workshop, homecoming
+
+  startDate DateTime
+  endDate   DateTime?
+  venue     String?
+  isVirtual Boolean  @default(false)
+  meetLink  String?
+
+  // Registration
+  registrationDeadline DateTime?
+  maxAttendees         Int?
+  registrationFee      Decimal?  @db.Decimal(8, 2)
+
+  // Target audience
+  targetBatches   String[] @default([]) // Empty = all batches
+  targetDepartments String[] @default([]) // Empty = all departments
+
+  // Status
+  status String @default("draft") // draft, published, ongoing, completed, cancelled
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  attendances AlumniEventAttendance[]
+
+  @@index([tenantId])
+  @@index([startDate])
+  @@index([status])
+  @@map("alumni_events")
+}
+
+/// Alumni Event Attendance
+model AlumniEventAttendance {
+  id       String @id @default(cuid())
+  tenantId String
+  eventId  String
+  alumniId String
+
+  registeredAt DateTime @default(now())
+  attended     Boolean  @default(false)
+  attendedAt   DateTime?
+
+  feedback String?
+  rating   Int? // 1-5
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event  AlumniEvent   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  alumni AlumniProfile @relation(fields: [alumniId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, alumniId])
+  @@index([tenantId])
+  @@index([eventId])
+  @@index([alumniId])
+  @@map("alumni_event_attendances")
+}
+
+// =============================================================================
+// ACCREDITATION MANAGEMENT (NBA, NAAC, NIRF)
+// =============================================================================
+
+/// Accreditation Metric - Criteria definitions
+model AccreditationMetric {
+  id       String @id @default(cuid())
+  tenantId String
+
+  framework     String // NBA, NAAC, NIRF
+  criterionCode String // e.g., "1.1.1", "C1", "TLR"
+  criterionName String
+  category      String // e.g., "Teaching-Learning", "Research", "Infrastructure"
+
+  description String? @db.Text
+  maxScore    Float
+  weightage   Float   @default(1) // Weight in overall score
+
+  // Data source mapping
+  dataSource     String? // Which table/field to pull data from
+  calculationFormula String? @db.Text // Formula for calculation
+  mappedEntities Json? // [{entity, field, aggregation}]
+
+  // Benchmarks
+  minThreshold Float? // Minimum acceptable value
+  maxThreshold Float? // Maximum/target value
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  values AccreditationValue[]
+
+  @@unique([tenantId, framework, criterionCode])
+  @@index([tenantId])
+  @@index([framework])
+  @@index([category])
+  @@map("accreditation_metrics")
+}
+
+/// Accreditation Value - Actual metric values
+model AccreditationValue {
+  id       String @id @default(cuid())
+  tenantId String
+  metricId String
+
+  academicYear String // e.g., "2024-25"
+
+  // Values
+  rawValue        Float? // Original calculated value
+  normalizedValue Float? // Normalized to 0-100
+  score           Float? // Final score (after weightage)
+
+  // Supporting data
+  supportingData Json? // Evidence/source data
+  remarks        String?
+
+  // Trend
+  previousValue Float?
+  trend         String? // improving, stable, declining
+
+  // Audit
+  calculatedAt   DateTime?
+  verifiedBy     String?
+  verifiedAt     DateTime?
+  isLatest       Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  metric AccreditationMetric @relation(fields: [metricId], references: [id], onDelete: Cascade)
+
+  @@unique([metricId, academicYear])
+  @@index([tenantId])
+  @@index([metricId])
+  @@index([academicYear])
+  @@index([isLatest])
+  @@map("accreditation_values")
+}
+
+/// Accreditation Report - Generated reports for submission
+model AccreditationReport {
+  id       String @id @default(cuid())
+  tenantId String
+
+  framework    String // NBA, NAAC, NIRF
+  academicYear String
+  title        String
+  description  String?
+
+  // Scores
+  totalScore    Float?
+  maxScore      Float?
+  percentage    Float?
+  grade         String? // A++, A+, A, B++, etc. for NAAC
+
+  // Report file
+  reportUrl    String?
+  reportS3Key  String?
+  generatedAt  DateTime?
+
+  // Status
+  status      String @default("draft") // draft, in_progress, review, submitted, approved
+  submittedAt DateTime?
+  submittedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, framework, academicYear])
+  @@index([tenantId])
+  @@index([framework])
+  @@index([status])
+  @@map("accreditation_reports")
 }

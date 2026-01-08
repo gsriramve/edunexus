@@ -11,7 +11,8 @@ export type UserRole =
   | 'teacher'
   | 'lab_assistant'
   | 'student'
-  | 'parent';
+  | 'parent'
+  | 'alumni';
 
 export const ROLES_KEY = 'roles';
 
@@ -37,6 +38,7 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
   teacher: 50,
   lab_assistant: 40,
   student: 20,
+  alumni: 15,
   parent: 10,
 };
 

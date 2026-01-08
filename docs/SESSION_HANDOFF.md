@@ -1,14 +1,14 @@
 # EduNexus - Session Handoff Document
 
-## Project Status as of January 7, 2026 (End of Day)
+## Project Status as of January 8, 2026 (End of Day)
 
 ---
 
 ## Executive Summary
 
-EduNexus is **96% complete** (66/69 tasks). All technical development is done. Only pilot deployments and production launch remain.
+EduNexus **Core ERP is 96% complete** (66/69 tasks). **Phase 6: Student-Centric Platform is 43% complete** (3/7 modules).
 
-**Today's Focus:** Created comprehensive sales & marketing documentation for college partnerships.
+**Today's Focus:** Completed AI Guidance Module with recommendation engine, alert detection, and goals tracking.
 
 ---
 
@@ -16,182 +16,152 @@ EduNexus is **96% complete** (66/69 tasks). All technical development is done. O
 
 | Phase | Description | Status | Progress |
 |-------|-------------|--------|----------|
-| Phase 1 | Foundation & Setup | ✅ Complete | 100% |
-| Phase 2 | Core Modules | ✅ Complete | 100% |
-| Phase 3 | Advanced Modules | ✅ Complete | 100% |
-| Phase 4 | AI Features | ✅ Complete | 100% |
+| Phase 1 | Foundation & Setup | 🟢 Complete | 100% |
+| Phase 2 | Core Modules | 🟢 Complete | 100% |
+| Phase 3 | Advanced Modules | 🟢 Complete | 100% |
+| Phase 4 | AI Features | 🟢 Complete | 100% |
 | Phase 5 | Polish & Launch | 🟡 In Progress | 70% |
+| **Phase 6** | **Student-Centric Platform** | 🟡 **In Progress** | **43% (3/7 modules)** |
 
-### Remaining Tasks (3 items)
-1. **Pilot Deployment - College 1** - Requires college partner
-2. **Pilot Deployment - College 2** - Requires college partner
-3. **Production Launch** - After pilot feedback
+### Phase 6 - Student-Centric Features Progress
+
+| Module | Status | Files Created |
+|--------|--------|---------------|
+| Student Growth Index (SGI) | ✅ Complete | API module, calculator, hooks |
+| Career Readiness Index (CRI) | ✅ Complete | API module, calculator, hooks |
+| 360° Feedback System | ✅ Complete | API module, normalizer, hooks |
+| **AI-Driven Guidance** | ✅ **Complete** | API module, recommendation engine, alert detection, hooks |
+| Student Journey Timeline | ⬜ Pending | - |
+| Face Recognition Attendance | ⬜ Pending | - |
+| Alumni Management | ⬜ Pending | - |
+| Accreditation Dashboards | ⬜ Pending | - |
 
 ---
 
 ## Today's Accomplishments
 
-### 1. Sales & Marketing Documentation Created
+### AI Guidance Module Complete
+
+Created comprehensive AI-driven guidance system with:
+
+#### 1. Recommendation Engine (`recommendation-engine.service.ts`)
+- Rule-based recommendation generation
+- Academic recommendations (CGPA trends, exam prep)
+- Career recommendations (skill gaps, certifications)
+- Engagement recommendations (club participation, events)
+- Skills recommendations (technical courses, projects)
+- Monthly plan generation with personalized action items
+
+#### 2. Alert Detection System (`alert-detection.service.ts`)
+- Attendance drop detection (warning: <75%, critical: <60%)
+- Grade decline detection (warning: 0.3 drop, critical: 0.5 drop)
+- Activity drop detection (50% decrease threshold)
+- Feedback concern detection (score < 2.5)
+- Configurable thresholds per tenant
+
+#### 3. Main Service (`ai-guidance.service.ts`)
+- Full CRUD for guidance, goals, and alerts
+- Student dashboard with aggregated data
+- Generation methods for recommendations and alerts
+- Role-based access control
+
+#### 4. Controller (`ai-guidance.controller.ts`)
+REST endpoints:
+- `POST /guidance` - Create guidance
+- `GET /guidance/my` - Get student's own guidance
+- `POST /goals` - Create goals
+- `GET /goals/my` - Get student's own goals
+- `GET /alerts` - Get alerts (teachers/admin)
+- `POST /generate-recommendations/:studentId` - Generate AI recommendations
+- `POST /run-detection` - Run alert detection
+- `GET /dashboard/student/:studentId` - Student guidance dashboard
+
+#### 5. Frontend Hooks (`use-ai-guidance.ts`)
+~600 lines of React Query hooks for all operations
+
+### Files Created Today
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| `docs/sales/FEATURE_LIST.md` | Comprehensive feature document for CMO/BA/Product | ~800 |
-| `docs/sales/PITCH_DECK.md` | 14-slide presentation for colleges | ~500 |
-| `docs/sales/ONE_PAGER.md` | Quick 1-page summary | ~100 |
-| `docs/sales/ROI_CALCULATOR.md` | Value proposition with ROI analysis | ~400 |
-| `docs/sales/DEMO_WALKTHROUGH_SCRIPTS.md` | Demo scripts for all 8 personas | ~900 |
+| `apps/api/src/modules/ai-guidance/dto/ai-guidance.dto.ts` | DTOs and enums | ~350 |
+| `apps/api/src/modules/ai-guidance/recommendation-engine.service.ts` | Recommendation generation | ~550 |
+| `apps/api/src/modules/ai-guidance/alert-detection.service.ts` | Disengagement detection | ~250 |
+| `apps/api/src/modules/ai-guidance/ai-guidance.service.ts` | Main service | ~400 |
+| `apps/api/src/modules/ai-guidance/ai-guidance.controller.ts` | REST endpoints | ~200 |
+| `apps/api/src/modules/ai-guidance/ai-guidance.module.ts` | Module definition | ~20 |
+| `apps/api/src/modules/ai-guidance/index.ts` | Exports | ~10 |
+| `apps/web/src/hooks/use-ai-guidance.ts` | Frontend hooks | ~600 |
 
-### 2. Landing Page Update
-- Added "Powered by QuantumLayer Platform" branding to footer
-- Links to https://www.quantumlayerplatform.com/
-- File: `apps/web/src/app/page.tsx`
+### Files Modified
 
-### 3. Integration Documentation
-- Created `docs/INTEGRATION_CHECKLIST.md`
-- Lists all 12 integrations with setup instructions
-- API keys required for E2E testing
-- Cost estimates included
-
----
-
-## Git Commits Today
-
-| Commit | Description |
-|--------|-------------|
-| `dfad5ce` | docs: Add sales and marketing documentation (4 files) |
-| `f83a050` | docs: Add demo walkthrough scripts for all 8 personas |
-| `f308238` | feat: Add QuantumLayer Platform branding to landing page |
-| `ec51065` | docs: Add integration checklist with all required API keys |
-
-**Branch:** `main`
-**Remote:** `origin/main` (up to date)
+| File | Change |
+|------|--------|
+| `apps/api/src/app.module.ts` | Added AiGuidanceModule import |
+| `docs/PLAN.md` | Added Phase 6 tracker |
 
 ---
 
-## Project Architecture Summary
+## Phase 6 Architecture
 
-### 8 User Personas (Hierarchy)
+### Database Schema (Already Added)
 
-```
-PLATFORM LEVEL
-└── Platform Owner (Multi-college management)
-
-COLLEGE LEVEL
-├── Principal (Full access, super admin)
-│   ├── HOD (Department management)
-│   ├── Admin Staff (Operations, fees, records)
-│   ├── Teacher (Attendance, marks, content)
-│   └── Lab Assistant (Practicals, equipment)
-│
-├── Student (Learning, career, practice)
-└── Parent (Monitor child, pay fees)
-```
-
-### Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Frontend | Next.js 14, React, TypeScript, Tailwind, shadcn/ui |
-| Backend | NestJS, Node.js, PostgreSQL, Redis, Prisma |
-| AI/ML | Python, FastAPI, PyTorch, XGBoost, OpenAI/Claude |
-| Infrastructure | AWS, Docker, Kubernetes, Terraform |
-
-### Key Modules (20+)
-
-**Academic:** Students, Attendance, Exams, Results, CGPA
-**Financial:** Fees, Payments (Razorpay), Receipts
-**Operations:** Transport, Hostel, Library, Sports & Clubs
-**Communication:** SMS (MSG91), Email (SendGrid), WhatsApp, Push (FCM)
-**Career:** Placements, Resume Builder, Predictions
-**AI:** Score Prediction, Placement Prediction, Chatbot, Content Generation
-
----
-
-## Integration Status (For E2E Testing)
-
-### Ready (No Keys Needed)
-- ✅ PostgreSQL (Docker)
-- ✅ Redis (Docker)
-
-### Critical - Need Keys
-```bash
-# Clerk (Authentication)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx
-CLERK_SECRET_KEY=sk_test_xxx
-
-# Razorpay (Payments)
-RAZORPAY_KEY_ID=rzp_test_xxx
-RAZORPAY_KEY_SECRET=xxx
-```
-
-### High Priority - Need Keys
-```bash
-# SendGrid (Email)
-SENDGRID_API_KEY=SG.xxx
-
-# MSG91 (SMS) - Needs DLT registration
-MSG91_AUTH_KEY=xxx
-
-# AWS S3 (Documents)
-AWS_ACCESS_KEY_ID=xxx
-AWS_SECRET_ACCESS_KEY=xxx
-```
-
-### Medium Priority - Need Keys
-```bash
-# Firebase (Push Notifications)
-FIREBASE_PROJECT_ID=xxx
-FIREBASE_PRIVATE_KEY="xxx"
-
-# AI Services
-OPENAI_API_KEY=sk-xxx
-ANTHROPIC_API_KEY=sk-ant-xxx
-```
-
-**Full Details:** See `docs/INTEGRATION_CHECKLIST.md`
-
----
-
-## File Structure (Key Locations)
+20+ new models in `packages/database/prisma/schema.prisma`:
 
 ```
-edunexus/
-├── apps/
-│   ├── web/                    # Next.js Frontend (Port 3000)
-│   │   ├── src/app/
-│   │   │   ├── page.tsx        # Landing page (updated today)
-│   │   │   ├── (auth)/         # Sign in/up pages
-│   │   │   └── (dashboard)/    # All 8 portal dashboards
-│   │   └── .env.local          # Frontend env vars
-│   │
-│   ├── api/                    # NestJS Backend (Port 3001)
-│   │   ├── src/modules/        # All API modules
-│   │   └── .env                # Backend env vars
-│   │
-│   └── ml-service/             # Python FastAPI (Port 8000)
-│       └── app/                # AI/ML services
-│
-├── packages/
-│   └── database/               # Prisma schema
-│       └── prisma/schema.prisma
-│
-├── docs/
-│   ├── sales/                  # Sales materials (created today)
-│   │   ├── FEATURE_LIST.md
-│   │   ├── PITCH_DECK.md
-│   │   ├── ONE_PAGER.md
-│   │   ├── ROI_CALCULATOR.md
-│   │   └── DEMO_WALKTHROUGH_SCRIPTS.md
-│   ├── INTEGRATION_CHECKLIST.md  # Integration setup guide
-│   ├── PLAN.md                 # Master project plan
-│   └── deployment/             # Deployment guides
-│
-├── infrastructure/
-│   ├── terraform/              # AWS infrastructure
-│   └── kubernetes/             # K8s manifests
-│
-├── docker-compose.yml          # Local dev infrastructure
-└── .env.example                # Environment template
+StudentGrowthIndex    - Monthly SGI scores with component breakdown
+CareerReadinessIndex  - CRI with placement probability
+IndexConfiguration    - Per-tenant weight configuration
+FeedbackCycle         - Monthly feedback cycles
+FeedbackEntry         - Individual feedback submissions
+FeedbackSummary       - Aggregated feedback per student
+AiGuidance            - Personalized recommendations
+StudentGoal           - Student goals with milestones
+DisengagementAlert    - Early warning alerts
+JourneyMilestone      - 4-year timeline events
+SemesterSnapshot      - Semester-end captures
+AlumniProfile         - Alumni registration & directory
+AlumniEmployment      - Career history
+AlumniMentorship      - Student-alumni connections
+AlumniContribution    - Donations & scholarships
+AlumniTestimonial     - Success stories
+AlumniEvent           - Reunions & networking
+AccreditationMetric   - NBA/NAAC/NIRF criteria
+AccreditationValue    - Metric values by year
+```
+
+### API Modules Structure
+
+```
+apps/api/src/modules/
+├── student-indices/     ✅ Complete
+│   ├── sgi-calculator.service.ts
+│   ├── cri-calculator.service.ts
+│   └── student-indices.controller.ts
+├── feedback/            ✅ Complete
+│   ├── feedback.service.ts
+│   ├── normalizer.service.ts
+│   └── feedback.controller.ts
+├── ai-guidance/         ✅ Complete (TODAY)
+│   ├── recommendation-engine.service.ts
+│   ├── alert-detection.service.ts
+│   ├── ai-guidance.service.ts
+│   └── ai-guidance.controller.ts
+├── student-journey/     ⬜ Pending
+├── face-recognition/    ⬜ Pending
+├── alumni/              ⬜ Pending
+└── accreditation/       ⬜ Pending
+```
+
+### Frontend Hooks
+
+```
+apps/web/src/hooks/
+├── use-student-indices.ts  ✅ Complete
+├── use-feedback.ts         ✅ Complete
+├── use-ai-guidance.ts      ✅ Complete (TODAY)
+├── use-student-journey.ts  ⬜ Pending
+├── use-alumni.ts           ⬜ Pending
+└── use-accreditation.ts    ⬜ Pending
 ```
 
 ---
@@ -212,37 +182,85 @@ npm run dev
 # Backend:  http://localhost:3001
 ```
 
-### 2. If Setting Up Integrations
+### 2. Continue Phase 6 Development
+
+Next module to implement: **Student Journey Timeline**
+- `student-journey/` module
+- Milestone tracking
+- Semester snapshots
+- Timeline visualization component
+
+### 3. Verify AI Guidance Module
 ```bash
-# Copy environment templates
-cp .env.example .env
-cp apps/api/.env.example apps/api/.env  # if exists
-cp apps/web/.env.example apps/web/.env.local
+# Run typecheck to verify all changes
+npm run typecheck
 
-# Add your API keys (see INTEGRATION_CHECKLIST.md)
-# Then restart: npm run dev
+# Expected: No errors
 ```
-
-### 3. If Working on Sales/Marketing
-- Review docs in `docs/sales/`
-- Demo scripts are ready for all 8 personas
-- Landing page running at localhost:3000
 
 ---
 
-## Pending Decisions / Action Items
+## Next Steps (Priority Order)
 
-### For Tomorrow
-1. **Get API Keys** - Priority: Clerk, Razorpay, SendGrid
-2. **Configure Clerk** - Set up roles for 8 personas
-3. **Test Payment Flow** - With Razorpay test keys
-4. **DLT Registration** - Start MSG91 registration (takes 2-3 days)
+### Immediate (Phase 6 Continuation)
+1. **Student Journey Module** - Milestones, snapshots, timeline visualization
+2. **Face Recognition Module** - AWS Rekognition integration
+3. **Alumni Module** - Registration, mentorship, directory
+4. **Accreditation Module** - NBA/NAAC/NIRF dashboards
 
-### For Pilot Deployment
-1. Identify pilot college partner
-2. Prepare college branding assets (logo, colors)
-3. Plan data migration from existing systems
-4. Schedule training sessions
+### Frontend Pages Needed (Phase 6)
+```
+/student/growth/          - SGI dashboard
+/student/career-readiness/ - CRI & skill gaps
+/student/guidance/        - AI recommendations
+/student/goals/           - Personal goals
+/student/journey/         - 4-year timeline
+/student/mentorship/      - Find alumni mentors
+/teacher/feedback/        - Submit feedback
+/teacher/alerts/          - View disengagement alerts
+/hod/department-health/   - SGI heatmap
+/principal/accreditation/ - NBA/NAAC/NIRF
+/alumni/                  - Alumni portal (new role)
+```
+
+---
+
+## Technical Notes
+
+### Fixes Applied Today
+1. `rollNumber` → `rollNo` (Student model field)
+2. `currentSemester` → `semester` (Student model field)
+3. Date handling: `addDays()` returns `Date`, `addDaysIso()` for string deadlines
+
+### Key Interfaces
+
+```typescript
+// Recommendation Engine Output
+interface GeneratedRecommendation {
+  guidanceType: GuidanceType;
+  category: GuidanceCategory;
+  priority: GuidancePriority;
+  title: string;
+  description: string;
+  actionItems: ActionItem[];
+  resources: Resource[];
+  triggerReason: string;
+  confidenceScore: number;
+  expiresAt?: Date;
+}
+
+// Alert Detection Thresholds
+interface AlertThresholds {
+  attendanceWarning: 75;
+  attendanceCritical: 60;
+  cgpaDropWarning: 0.3;
+  cgpaDropCritical: 0.5;
+  sgiDropWarning: 10;
+  sgiDropCritical: 20;
+  activityDropPercent: 50;
+  feedbackScoreLow: 2.5;
+}
+```
 
 ---
 
@@ -251,17 +269,12 @@ cp apps/web/.env.example apps/web/.env.local
 ```bash
 # Development
 npm run dev              # Start all services
-npm run build            # Build for production
-npm run lint             # Run linting
+npm run typecheck        # Verify TypeScript
 
 # Database
-npm run db:migrate       # Run migrations
-npm run db:seed          # Seed sample data
-npm run db:studio        # Open Prisma Studio
-
-# Testing
-npm run test             # Run tests
-npm run test:e2e         # End-to-end tests
+npx prisma generate      # Regenerate client
+npx prisma db push       # Push schema changes
+npx prisma studio        # Open Prisma Studio
 
 # Git
 git status               # Check current status
@@ -273,22 +286,10 @@ git log --oneline -10    # Recent commits
 ## Contact & Resources
 
 - **Repository:** https://github.com/gsriramve/edunexus
-- **QuantumLayer:** https://www.quantumlayerplatform.com/
-- **Plan Document:** `docs/PLAN.md`
-- **Integration Guide:** `docs/INTEGRATION_CHECKLIST.md`
+- **Plan Document:** `docs/PLAN.md` (updated with Phase 6 tracker)
+- **Plan Mode File:** `.claude/plans/lively-napping-wilkinson.md`
 
 ---
 
-## Quick Reference - Pricing
-
-| Item | Price |
-|------|-------|
-| Per Student/Year | ₹500 |
-| 5,000 students | ₹25,00,000/year |
-| Volume Discount (5K+) | 10% off |
-| Volume Discount (15K+) | 20% off |
-
----
-
-*Document generated: January 7, 2026*
-*Next session: Continue with integration setup and E2E testing*
+*Document generated: January 8, 2026*
+*Next session: Continue with Student Journey module or other Phase 6 features*

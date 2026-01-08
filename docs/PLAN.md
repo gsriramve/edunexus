@@ -10,7 +10,7 @@
 # PART A: EXECUTION TRACKER
 *(Update this section across sessions to track progress)*
 
-## Overall Progress: ~93% Complete (64/69 tasks)
+## Overall Progress: ~93% Complete (Core ERP) + Phase 6 Student-Centric (43%)
 
 ### Phase-wise Status
 
@@ -21,8 +21,9 @@
 | **Phase 3** | Advanced Modules | 🟢 **COMPLETE** | 18/18 tasks (100%) | Month 5-6 |
 | **Phase 4** | AI Features | 🟢 **COMPLETE** | 12/12 tasks (100%) | Month 6-7 |
 | **Phase 5** | Polish & Launch | 🔴 Not Started | 0/10 tasks (0%) | Month 7-8 |
+| **Phase 6** | Student-Centric Platform | 🟡 In Progress | 3/7 modules (43%) | Month 9-12 |
 
-### Pending Tasks Summary (5 remaining)
+### Pending Tasks Summary (5 remaining + Phase 6)
 
 **Phase 1 (2 pending):**
 - 1.10: Setup CI/CD with GitHub Actions
@@ -136,6 +137,32 @@
 | 5.9 | Bug fixes from pilot | - | ⬜ Pending | |
 | 5.10 | Production launch | - | ⬜ Pending | |
 
+#### Phase 6: Student-Centric Platform (Month 9-12) - **NEW**
+
+| # | Task | Owner | Status | Notes |
+|---|------|-------|--------|-------|
+| 6.1 | Student Growth Index (SGI) API Module | Claude | ✅ Completed | SGI calculator, trend analysis, component breakdown |
+| 6.2 | Career Readiness Index (CRI) API Module | Claude | ✅ Completed | CRI calculator, placement probability, skill gaps |
+| 6.3 | 360° Feedback System | Claude | ✅ Completed | Cycles, entries, summaries, bias normalization |
+| 6.4 | AI-Driven Guidance Module | Claude | ✅ Completed | Recommendations, goals, disengagement alerts |
+| 6.5 | Student Journey Timeline | - | ⬜ Pending | Milestones, semester snapshots, longitudinal tracking |
+| 6.6 | Face Recognition Attendance | - | ⬜ Pending | AWS Rekognition, enrollment, class photo processing |
+| 6.7 | Alumni Management Module | - | ⬜ Pending | Registration, mentorship, contributions, events |
+| 6.8 | Accreditation Dashboards | - | ⬜ Pending | NBA, NAAC, NIRF metric tracking |
+
+**Phase 6 Database Schema:** 20+ new models added to `packages/database/prisma/schema.prisma`
+- StudentGrowthIndex, CareerReadinessIndex, IndexConfiguration
+- FeedbackCycle, FeedbackEntry, FeedbackSummary
+- AiGuidance, StudentGoal, DisengagementAlert
+- JourneyMilestone, SemesterSnapshot
+- AlumniProfile, AlumniEmployment, AlumniMentorship, AlumniContribution, AlumniTestimonial, AlumniEvent
+- AccreditationMetric, AccreditationValue
+
+**Phase 6 Frontend Hooks:** Created in `apps/web/src/hooks/`
+- `use-student-indices.ts` - SGI/CRI data fetching
+- `use-feedback.ts` - Feedback operations
+- `use-ai-guidance.ts` - Guidance, goals, alerts
+
 ### Status Legend
 - ⬜ Pending
 - 🟡 In Progress
@@ -174,6 +201,10 @@
 | Jan 7, 2026 | Session 17 | Advanced Reports Engine Complete | PDF/Excel generation, templates, **Phase 3 100% Complete** |
 | Jan 7, 2026 | Session 18 | Push Notifications (FCM) Complete | Firebase SDK frontend, service worker, hooks, UI components |
 | Jan 7, 2026 | Session 19 | **Phase 4 AI Features Complete** | ML service: score/placement prediction, weak topics, content gen, resume builder, chatbot, analytics; Frontend: Career Hub, Placements Admin |
+| Jan 8, 2026 | Session 20 | **Phase 6 Started** | Database schema: 20+ Student-Centric models (SGI, CRI, Feedback, Alumni, Accreditation) |
+| Jan 8, 2026 | Session 21 | Student-Indices Module Complete | SGI/CRI API module, calculators, frontend hooks |
+| Jan 8, 2026 | Session 22 | Feedback Module Complete | 360° feedback with cycles, bias normalization, summaries |
+| Jan 8, 2026 | Session 23 | AI Guidance Module Complete | Recommendations engine, alert detection, goals tracking, frontend hooks (43% Phase 6) |
 
 ---
 

@@ -62,6 +62,17 @@ export function DashboardHeader() {
           {/* TODO: Add real notification count when notifications are implemented */}
         </Button>
 
+        {/* Visible logout button for quick access */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSignOut}
+          className="hidden sm:flex items-center gap-2 text-muted-foreground hover:text-red-600"
+        >
+          <LogOut className="h-4 w-4" />
+          <span className="hidden md:inline">Sign out</span>
+        </Button>
+
         {/* User dropdown with real Clerk data */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
