@@ -3145,3 +3145,103 @@ model AccreditationReport {
   @@index([status])
   @@map("accreditation_reports")
 }
+
+// =============================================================================
+// DIRECT MESSAGING SYSTEM
+// =============================================================================
+
+/// Direct messages between users (teachers, students, parents, staff)
+model DirectMessage {
+  id       String @id @default(cuid())
+  tenantId String
+
+  // Sender information
+  senderId     String
+  senderType   String // teacher, student, parent, staff, hod, principal
+  senderName   String
+
+  // Recipient information (individual or group)
+  recipientType    String // individual, class, department, custom
+  recipientId      String? // User ID for individual, class/department ID for groups
+  recipientName    String? // Display name for recipient
+  recipientUserType String? // student, parent, teacher, staff (for individual)
+
+  // For group messages - store recipient list
+  recipientIds Json? // Array of {id, name, type} for custom groups
+
+  // Message content
+  subject     String
+  content     String   @db.Text
+  messageType String   @default("general") // general, query, request, announcement, reply
+
+  // Parent message for threads/replies
+  parentId    String?
+  threadId    String? // Root message ID for conversation threads
+
+  // Attachments
+  attachments Json? // Array of {name, url, type, size}
+
+  // Status tracking
+  status      String    @default("sent") // draft, sent, delivered, read
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  isStarred   Boolean   @default(false)
+  isArchived  Boolean   @default(false)
+  isDeleted   Boolean   @default(false) // Soft delete
+  deletedAt   DateTime?
+
+  // For sent messages - track delivery
+  deliveredCount Int @default(0)
+  readCount      Int @default(0)
+  totalRecipients Int @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   DirectMessage?  @relation("MessageThread", fields: [parentId], references: [id])
+  replies  DirectMessage[] @relation("MessageThread")
+  receipts MessageReceipt[]
+
+  @@index([tenantId])
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([recipientType])
+  @@index([threadId])
+  @@index([parentId])
+  @@index([status])
+  @@index([isRead])
+  @@index([isArchived])
+  @@index([createdAt])
+  @@map("direct_messages")
+}
+
+/// Message receipts for tracking delivery and read status per recipient
+model MessageReceipt {
+  id        String @id @default(cuid())
+  tenantId  String
+  messageId String
+
+  // Recipient info
+  recipientId   String
+  recipientType String // student, parent, teacher, staff
+  recipientName String
+
+  // Status
+  deliveredAt DateTime?
+  readAt      DateTime?
+  isStarred   Boolean   @default(false)
+  isArchived  Boolean   @default(false)
+  isDeleted   Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  message DirectMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, recipientId])
+  @@index([tenantId])
+  @@index([messageId])
+  @@index([recipientId])
+  @@index([readAt])
+  @@map("message_receipts")
+}
