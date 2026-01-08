@@ -35,6 +35,7 @@ import { FaceRecognitionModule } from './modules/face-recognition/face-recogniti
 import { TeacherClassesModule } from './modules/teacher-classes/teacher-classes.module';
 import { TeacherAttendanceModule } from './modules/teacher-attendance/teacher-attendance.module';
 import { TeacherResultsModule } from './modules/teacher-results/teacher-results.module';
+import { HodSubjectsModule } from './modules/hod-subjects/hod-subjects.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { TeacherResultsModule } from './modules/teacher-results/teacher-results.
     TeacherClassesModule,
     TeacherAttendanceModule,
     TeacherResultsModule,
+    HodSubjectsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
