@@ -35,6 +35,7 @@ import {
 import { useTenantId } from "@/hooks/use-tenant";
 import { useStudentByUserId, useStudentSgi, useCalculateSgi, type SgiData } from "@/hooks/use-api";
 import { useUser } from "@clerk/nextjs";
+import { SGITrendChart } from "@/components/indices";
 
 const getTrendIcon = (trend: string) => {
   switch (trend) {
@@ -428,12 +429,28 @@ export default function StudentGrowthPage() {
         </Card>
       )}
 
-      {/* SGI History */}
+      {/* SGI Trend Chart */}
+      {sgiHistory.length > 0 && (
+        <SGITrendChart
+          history={sgiHistory.map(item => ({
+            ...item,
+            sgiTrend: item.sgiTrend as 'improving' | 'stable' | 'declining',
+            academicBreakdown: item.academicBreakdown || null,
+            engagementBreakdown: item.engagementBreakdown || null,
+            skillsBreakdown: item.skillsBreakdown || null,
+            behavioralBreakdown: item.behavioralBreakdown || null,
+            recommendations: item.recommendations || null,
+            calculatedAt: typeof item.calculatedAt === 'string' ? item.calculatedAt : item.calculatedAt?.toISOString() || new Date().toISOString(),
+          }))}
+        />
+      )}
+
+      {/* SGI History Cards */}
       {sgiHistory.length > 1 && (
         <Card>
           <CardHeader>
-            <CardTitle>SGI History</CardTitle>
-            <CardDescription>Your growth index over time</CardDescription>
+            <CardTitle>Monthly Scores</CardTitle>
+            <CardDescription>Quick view of your recent assessments</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex gap-4 overflow-x-auto pb-2">
