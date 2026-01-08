@@ -13,10 +13,9 @@ import {
   Clock,
   Download,
   Eye,
-  Edit,
+  AlertCircle,
   Settings,
   Cpu,
-  HardDrive,
   Wifi,
   Printer,
 } from "lucide-react";
@@ -51,73 +50,94 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useTenantId } from "@/hooks/use-tenant";
+import {
+  useLabAssistantLabs,
+  useLabEquipment,
+  useEquipmentIssues,
+  useMaintenanceHistory,
+  useReportEquipmentIssue,
+  type Equipment,
+} from "@/hooks/use-lab-assistant";
 
-// TODO: Replace mock data with API calls when backend endpoints are implemented
-// Required endpoints:
-// - GET /lab-assistant/labs - Labs assigned to this assistant
-// - GET /lab-assistant/equipment?labId=X - Equipment inventory by lab
-// - GET /lab-assistant/equipment/stats - Equipment status statistics
-// - POST /lab-assistant/equipment/issues - Report new equipment issue
-// - GET /lab-assistant/equipment/issues - List reported issues
-// - GET /lab-assistant/equipment/maintenance - Maintenance history
-// - PUT /lab-assistant/equipment/:id/status - Update equipment status
-
-// Mock data
-const labs = [
-  { id: "lab-1", name: "Computer Networks Lab", code: "CN-LAB", room: "Lab 201" },
-  { id: "lab-2", name: "Data Structures Lab", code: "DS-LAB", room: "Lab 202" },
-];
-
-const equipmentStats = {
-  total: 75,
-  working: 68,
-  underRepair: 4,
-  faulty: 3,
-};
-
-const equipmentList = [
-  { id: "eq-1", name: "Desktop Computer", assetId: "CSE-PC-001", lab: "CN Lab", location: "System 1", status: "working", lastMaintenance: "Dec 15, 2025", specs: "Intel i5, 8GB RAM, 256GB SSD" },
-  { id: "eq-2", name: "Desktop Computer", assetId: "CSE-PC-002", lab: "CN Lab", location: "System 2", status: "working", lastMaintenance: "Dec 15, 2025", specs: "Intel i5, 8GB RAM, 256GB SSD" },
-  { id: "eq-3", name: "Desktop Computer", assetId: "CSE-PC-003", lab: "CN Lab", location: "System 3", status: "faulty", lastMaintenance: "Nov 20, 2025", specs: "Intel i5, 8GB RAM, 256GB SSD", issue: "Network card not working" },
-  { id: "eq-4", name: "Desktop Computer", assetId: "CSE-PC-015", lab: "CN Lab", location: "System 15", status: "under_repair", lastMaintenance: "Dec 10, 2025", specs: "Intel i5, 8GB RAM, 256GB SSD", issue: "Hard disk failure" },
-  { id: "eq-5", name: "Network Switch", assetId: "CSE-SW-001", lab: "CN Lab", location: "Server Rack", status: "working", lastMaintenance: "Dec 1, 2025", specs: "Cisco 24-port Gigabit" },
-  { id: "eq-6", name: "Router", assetId: "CSE-RT-001", lab: "CN Lab", location: "Server Rack", status: "working", lastMaintenance: "Dec 1, 2025", specs: "Cisco 2900 Series" },
-  { id: "eq-7", name: "Router", assetId: "CSE-RT-002", lab: "CN Lab", location: "Demo Table", status: "faulty", lastMaintenance: "Nov 15, 2025", specs: "Cisco 1900 Series", issue: "Intermittent connectivity" },
-  { id: "eq-8", name: "Desktop Computer", assetId: "CSE-PC-031", lab: "DS Lab", location: "System 1", status: "working", lastMaintenance: "Dec 15, 2025", specs: "Intel i5, 8GB RAM, 256GB SSD" },
-  { id: "eq-9", name: "Desktop Computer", assetId: "CSE-PC-038", lab: "DS Lab", location: "System 8", status: "under_repair", lastMaintenance: "Dec 5, 2025", specs: "Intel i5, 8GB RAM, 256GB SSD", issue: "Monitor display issue" },
-  { id: "eq-10", name: "Projector", assetId: "CSE-PJ-001", lab: "DS Lab", location: "Ceiling Mount", status: "working", lastMaintenance: "Nov 25, 2025", specs: "Epson 3500 Lumens" },
-];
-
-const maintenanceHistory = [
-  { id: 1, assetId: "CSE-PC-015", equipment: "Desktop Computer", lab: "CN Lab", issue: "Hard disk failure", reportedDate: "Jan 5, 2026", status: "in_progress", assignedTo: "IT Support Team", estimatedCompletion: "Jan 8, 2026" },
-  { id: 2, assetId: "CSE-PC-038", equipment: "Desktop Computer", lab: "DS Lab", issue: "Monitor display issue", reportedDate: "Jan 4, 2026", status: "in_progress", assignedTo: "IT Support Team", estimatedCompletion: "Jan 7, 2026" },
-  { id: 3, assetId: "CSE-PC-022", equipment: "Desktop Computer", lab: "CN Lab", issue: "Keyboard not working", reportedDate: "Dec 28, 2025", status: "completed", assignedTo: "IT Support Team", completedDate: "Dec 30, 2025" },
-  { id: 4, assetId: "CSE-SW-002", equipment: "Network Switch", lab: "CN Lab", issue: "Port 12 not working", reportedDate: "Dec 20, 2025", status: "completed", assignedTo: "Network Admin", completedDate: "Dec 22, 2025" },
-];
-
-const issueReports = [
-  { id: 1, assetId: "CSE-PC-003", equipment: "Desktop Computer", lab: "CN Lab", issue: "Network card not working", priority: "high", reportedOn: "Jan 5, 2026", status: "pending" },
-  { id: 2, assetId: "CSE-RT-002", equipment: "Router", lab: "CN Lab", issue: "Intermittent connectivity", priority: "high", reportedOn: "Jan 3, 2026", status: "pending" },
-  { id: 3, assetId: "CSE-PC-025", equipment: "Desktop Computer", lab: "DS Lab", issue: "Mouse not working", priority: "low", reportedOn: "Jan 6, 2026", status: "pending" },
-];
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <Skeleton className="h-9 w-48 mb-2" />
+          <Skeleton className="h-5 w-64" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-10 w-36" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-12 w-12 rounded-lg" />
+                <div>
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-7 w-12" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Skeleton className="h-[400px]" />
+    </div>
+  );
+}
 
 export default function LabEquipment() {
   const tenantId = useTenantId() || '';
   const [selectedLab, setSelectedLab] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "working" | "under_repair" | "faulty">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
-  const [newIssue, setNewIssue] = useState({ equipment: "", issue: "", priority: "medium" });
+  const [newIssue, setNewIssue] = useState({ equipmentId: "", issue: "", priority: "medium" as "high" | "medium" | "low" });
 
-  const filteredEquipment = equipmentList.filter((eq) => {
-    const matchesSearch =
-      eq.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      eq.assetId.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLab = selectedLab === "all" || eq.lab.includes(selectedLab === "lab-1" ? "CN" : "DS");
-    const matchesStatus = filterStatus === "all" || eq.status === filterStatus;
-    return matchesSearch && matchesLab && matchesStatus;
+  // API hooks
+  const { data: labsData, isLoading: labsLoading } = useLabAssistantLabs(tenantId);
+  const { data: equipmentData, isLoading: equipmentLoading, error: equipmentError } = useLabEquipment(tenantId, {
+    labId: selectedLab !== "all" ? selectedLab : undefined,
+    status: filterStatus,
+    search: searchQuery || undefined,
   });
+  const { data: issuesData, isLoading: issuesLoading } = useEquipmentIssues(tenantId, {
+    labId: selectedLab !== "all" ? selectedLab : undefined,
+  });
+  const { data: maintenanceData, isLoading: maintenanceLoading } = useMaintenanceHistory(tenantId);
+  const reportIssueMutation = useReportEquipmentIssue(tenantId);
+
+  const isLoading = labsLoading || equipmentLoading;
+
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  if (equipmentError) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          Failed to load equipment data: {equipmentError.message}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  const labs = labsData?.labs || [];
+  const equipmentStats = equipmentData?.stats || { total: 0, working: 0, underRepair: 0, faulty: 0 };
+  const equipmentList = equipmentData?.equipment || [];
+  const issueReports = issuesData?.issues || [];
+  const maintenanceHistory = maintenanceData?.records || [];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -150,6 +170,32 @@ export default function LabEquipment() {
     if (name.includes("Projector")) return <Settings className="h-5 w-5" />;
     if (name.includes("Printer")) return <Printer className="h-5 w-5" />;
     return <Cpu className="h-5 w-5" />;
+  };
+
+  const handleSubmitIssue = async () => {
+    if (!newIssue.equipmentId || !newIssue.issue) return;
+
+    try {
+      await reportIssueMutation.mutateAsync({
+        equipmentId: newIssue.equipmentId,
+        issue: newIssue.issue,
+        priority: newIssue.priority,
+      });
+      setReportDialogOpen(false);
+      setNewIssue({ equipmentId: "", issue: "", priority: "medium" });
+    } catch (error) {
+      console.error("Failed to report issue:", error);
+    }
+  };
+
+  // Calculate lab-specific stats from equipment list
+  const getLabStats = (labId: string) => {
+    const labEquipment = equipmentList.filter((e) => e.labId === labId);
+    return {
+      working: labEquipment.filter((e) => e.status === "working").length,
+      underRepair: labEquipment.filter((e) => e.status === "under_repair").length,
+      faulty: labEquipment.filter((e) => e.status === "faulty").length,
+    };
   };
 
   return (
@@ -185,15 +231,15 @@ export default function LabEquipment() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Equipment</label>
                   <Select
-                    value={newIssue.equipment}
-                    onValueChange={(v) => setNewIssue({ ...newIssue, equipment: v })}
+                    value={newIssue.equipmentId}
+                    onValueChange={(v) => setNewIssue({ ...newIssue, equipmentId: v })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select equipment" />
                     </SelectTrigger>
                     <SelectContent>
                       {equipmentList.map((eq) => (
-                        <SelectItem key={eq.id} value={eq.assetId}>
+                        <SelectItem key={eq.id} value={eq.id}>
                           {eq.assetId} - {eq.name} ({eq.lab})
                         </SelectItem>
                       ))}
@@ -212,7 +258,7 @@ export default function LabEquipment() {
                   <label className="text-sm font-medium">Priority</label>
                   <Select
                     value={newIssue.priority}
-                    onValueChange={(v) => setNewIssue({ ...newIssue, priority: v })}
+                    onValueChange={(v) => setNewIssue({ ...newIssue, priority: v as "high" | "medium" | "low" })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -229,8 +275,11 @@ export default function LabEquipment() {
                 <Button variant="outline" onClick={() => setReportDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => setReportDialogOpen(false)}>
-                  Submit Report
+                <Button
+                  onClick={handleSubmitIssue}
+                  disabled={reportIssueMutation.isPending || !newIssue.equipmentId || !newIssue.issue}
+                >
+                  {reportIssueMutation.isPending ? "Submitting..." : "Submit Report"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -334,7 +383,7 @@ export default function LabEquipment() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as typeof filterStatus)}>
                     <SelectTrigger className="w-[130px]">
                       <Filter className="h-4 w-4 mr-2" />
                       <SelectValue />
@@ -350,54 +399,58 @@ export default function LabEquipment() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Equipment</TableHead>
-                    <TableHead>Asset ID</TableHead>
-                    <TableHead>Lab</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Specs</TableHead>
-                    <TableHead>Last Maintenance</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredEquipment.map((eq) => (
-                    <TableRow key={eq.id} className={eq.status === "faulty" ? "bg-red-50" : ""}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getEquipmentIcon(eq.name)}
-                          <span className="font-medium">{eq.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">{eq.assetId}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{eq.lab}</Badge>
-                      </TableCell>
-                      <TableCell>{eq.location}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                        {eq.specs}
-                      </TableCell>
-                      <TableCell>{eq.lastMaintenance}</TableCell>
-                      <TableCell>{getStatusBadge(eq.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {eq.status === "faulty" && (
-                            <Button variant="ghost" size="sm">
-                              <Wrench className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
+              {equipmentList.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Equipment</TableHead>
+                      <TableHead>Asset ID</TableHead>
+                      <TableHead>Lab</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Specs</TableHead>
+                      <TableHead>Last Maintenance</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {equipmentList.map((eq) => (
+                      <TableRow key={eq.id} className={eq.status === "faulty" ? "bg-red-50" : ""}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getEquipmentIcon(eq.name)}
+                            <span className="font-medium">{eq.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">{eq.assetId}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{eq.lab}</Badge>
+                        </TableCell>
+                        <TableCell>{eq.location}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                          {eq.specs || "-"}
+                        </TableCell>
+                        <TableCell>{eq.lastMaintenance || "Never"}</TableCell>
+                        <TableCell>{getStatusBadge(eq.status)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {eq.status === "faulty" && (
+                              <Button variant="ghost" size="sm">
+                                <Wrench className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">No equipment found</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -413,45 +466,55 @@ export default function LabEquipment() {
               <CardDescription>Equipment issues awaiting resolution</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {issueReports.map((issue) => (
-                  <div
-                    key={issue.id}
-                    className={`p-4 rounded-lg border ${
-                      issue.priority === "high" ? "border-red-200 bg-red-50" : ""
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-muted">
-                          {getEquipmentIcon(issue.equipment)}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">{issue.equipment}</span>
-                            <Badge variant="outline" className="font-mono text-xs">
-                              {issue.assetId}
-                            </Badge>
+              {issuesLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-24" />
+                  ))}
+                </div>
+              ) : issueReports.length > 0 ? (
+                <div className="space-y-4">
+                  {issueReports.map((issue) => (
+                    <div
+                      key={issue.id}
+                      className={`p-4 rounded-lg border ${
+                        issue.priority === "high" ? "border-red-200 bg-red-50" : ""
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-muted">
+                            {getEquipmentIcon(issue.equipment)}
                           </div>
-                          <p className="text-sm">{issue.issue}</p>
-                          <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                            <span>{issue.lab}</span>
-                            <span>•</span>
-                            <span>Reported: {issue.reportedOn}</span>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium">{issue.equipment}</span>
+                              <Badge variant="outline" className="font-mono text-xs">
+                                {issue.assetId}
+                              </Badge>
+                            </div>
+                            <p className="text-sm">{issue.issue}</p>
+                            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                              <span>{issue.lab}</span>
+                              <span>•</span>
+                              <span>Reported: {issue.reportedOn}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getPriorityBadge(issue.priority)}
-                        <Button size="sm" variant="outline">
-                          <Wrench className="h-4 w-4 mr-1" />
-                          Request Repair
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          {getPriorityBadge(issue.priority)}
+                          <Button size="sm" variant="outline">
+                            <Wrench className="h-4 w-4 mr-1" />
+                            Request Repair
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">No reported issues</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -464,82 +527,95 @@ export default function LabEquipment() {
               <CardDescription>Past and ongoing maintenance activities</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Asset ID</TableHead>
-                    <TableHead>Equipment</TableHead>
-                    <TableHead>Lab</TableHead>
-                    <TableHead>Issue</TableHead>
-                    <TableHead>Reported Date</TableHead>
-                    <TableHead>Assigned To</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Completion</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {maintenanceHistory.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell className="font-mono text-sm">{record.assetId}</TableCell>
-                      <TableCell className="font-medium">{record.equipment}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{record.lab}</Badge>
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate">{record.issue}</TableCell>
-                      <TableCell>{record.reportedDate}</TableCell>
-                      <TableCell>{record.assignedTo}</TableCell>
-                      <TableCell>
-                        {record.status === "completed" ? (
-                          <Badge className="bg-green-500">Completed</Badge>
-                        ) : (
-                          <Badge className="bg-yellow-500">In Progress</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {record.completedDate || record.estimatedCompletion}
-                      </TableCell>
+              {maintenanceLoading ? (
+                <Skeleton className="h-[300px]" />
+              ) : maintenanceHistory.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Asset ID</TableHead>
+                      <TableHead>Equipment</TableHead>
+                      <TableHead>Lab</TableHead>
+                      <TableHead>Issue</TableHead>
+                      <TableHead>Reported Date</TableHead>
+                      <TableHead>Assigned To</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Completion</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {maintenanceHistory.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell className="font-mono text-sm">{record.assetId}</TableCell>
+                        <TableCell className="font-medium">{record.equipment}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{record.lab}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">{record.issue}</TableCell>
+                        <TableCell>{record.reportedDate}</TableCell>
+                        <TableCell>{record.assignedTo || "-"}</TableCell>
+                        <TableCell>
+                          {record.status === "completed" ? (
+                            <Badge className="bg-green-500">Completed</Badge>
+                          ) : record.status === "in_progress" ? (
+                            <Badge className="bg-yellow-500">In Progress</Badge>
+                          ) : (
+                            <Badge variant="secondary">Pending</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {record.completedDate || record.estimatedCompletion || "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">No maintenance history</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
       {/* Lab Overview */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {labs.map((lab) => (
-          <Card key={lab.id}>
-            <CardHeader>
-              <CardTitle>{lab.name}</CardTitle>
-              <CardDescription>{lab.room}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-3 rounded-lg bg-green-50">
-                  <p className="text-2xl font-bold text-green-600">
-                    {equipmentList.filter((e) => e.lab.includes(lab.code.split("-")[0]) && e.status === "working").length}
-                  </p>
-                  <p className="text-sm text-green-700">Working</p>
-                </div>
-                <div className="p-3 rounded-lg bg-yellow-50">
-                  <p className="text-2xl font-bold text-yellow-600">
-                    {equipmentList.filter((e) => e.lab.includes(lab.code.split("-")[0]) && e.status === "under_repair").length}
-                  </p>
-                  <p className="text-sm text-yellow-700">Repair</p>
-                </div>
-                <div className="p-3 rounded-lg bg-red-50">
-                  <p className="text-2xl font-bold text-red-600">
-                    {equipmentList.filter((e) => e.lab.includes(lab.code.split("-")[0]) && e.status === "faulty").length}
-                  </p>
-                  <p className="text-sm text-red-700">Faulty</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {labs.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {labs.map((lab) => {
+            const labStats = getLabStats(lab.id);
+            return (
+              <Card key={lab.id}>
+                <CardHeader>
+                  <CardTitle>{lab.name}</CardTitle>
+                  <CardDescription>{lab.room || lab.code}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="p-3 rounded-lg bg-green-50">
+                      <p className="text-2xl font-bold text-green-600">
+                        {labStats.working}
+                      </p>
+                      <p className="text-sm text-green-700">Working</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-yellow-50">
+                      <p className="text-2xl font-bold text-yellow-600">
+                        {labStats.underRepair}
+                      </p>
+                      <p className="text-sm text-yellow-700">Repair</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-red-50">
+                      <p className="text-2xl font-bold text-red-600">
+                        {labStats.faulty}
+                      </p>
+                      <p className="text-sm text-red-700">Faulty</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

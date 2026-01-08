@@ -12,6 +12,8 @@ import {
   Users,
   Calculator,
   Loader2,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,17 +38,52 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useTenantId } from "@/hooks/use-tenant";
 import {
-  useExams,
-  useExamResultsByExam,
-  useBulkCreateExamResults,
-  useStudents,
-} from "@/hooks/use-api";
+  usePracticalExams,
+  useExamMarks,
+  useSaveMarks,
+  type PracticalExam,
+  type StudentForMarks,
+} from "@/hooks/use-lab-assistant";
+
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <Skeleton className="h-9 w-48 mb-2" />
+          <Skeleton className="h-5 w-64" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-12 w-12 rounded-lg" />
+                <div>
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-7 w-12" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Skeleton className="h-[400px]" />
+    </div>
+  );
+}
 
 export default function PracticalMarks() {
-  const tenantId = useTenantId();
+  const tenantId = useTenantId() || "";
   const { toast } = useToast();
 
   // State
@@ -55,45 +92,53 @@ export default function PracticalMarks() {
   const [searchQuery, setSearchQuery] = useState("");
   const [marks, setMarks] = useState<Record<string, number | null>>({});
 
-  // Fetch practical exams only (type: practical)
+  // API hooks
   const {
     data: examsData,
     isLoading: examsLoading,
-  } = useExams(tenantId || "", { type: "practical" });
+    error: examsError,
+  } = usePracticalExams(tenantId);
 
-  // Get students
   const {
-    data: studentsData,
-    isLoading: studentsLoading,
-  } = useStudents(tenantId || "", {
-    section: selectedSection !== "all" ? selectedSection : undefined,
-    status: "active",
-    limit: 200,
-  });
+    data: examMarksData,
+    isLoading: examMarksLoading,
+  } = useExamMarks(
+    tenantId,
+    selectedExamId,
+    {
+      section: selectedSection !== "all" ? selectedSection : undefined,
+      search: searchQuery || undefined,
+    }
+  );
 
-  // Get existing results for selected exam
-  const {
-    data: existingResults,
-    isLoading: resultsLoading,
-  } = useExamResultsByExam(tenantId || "", selectedExamId);
-
-  // Bulk create mutation
-  const bulkCreateMutation = useBulkCreateExamResults(tenantId || "");
+  const saveMarksMutation = useSaveMarks(tenantId);
 
   // Practical exams list
   const practicalExams = useMemo(() => {
-    return examsData?.data || [];
+    return examsData?.exams || [];
   }, [examsData]);
 
   // Get currently selected exam details
   const selectedExam = useMemo(() => {
-    return practicalExams.find((e) => e.id === selectedExamId);
-  }, [practicalExams, selectedExamId]);
+    return examMarksData?.exam || practicalExams.find((e) => e.id === selectedExamId);
+  }, [examMarksData, practicalExams, selectedExamId]);
 
-  // Students list
+  // Students with marks
   const students = useMemo(() => {
-    return studentsData?.data || [];
-  }, [studentsData]);
+    return examMarksData?.students || [];
+  }, [examMarksData]);
+
+  // Stats
+  const stats = useMemo(() => {
+    return examMarksData?.stats || {
+      totalStudents: 0,
+      marksEntered: 0,
+      pending: 0,
+      averageMarks: 0,
+      highestMarks: 0,
+      lowestMarks: 0,
+    };
+  }, [examMarksData]);
 
   // Get unique sections from students
   const sections = useMemo(() => {
@@ -106,25 +151,14 @@ export default function PracticalMarks() {
 
   // Initialize marks when exam changes or results load
   useEffect(() => {
-    if (existingResults?.results && students.length > 0) {
+    if (students.length > 0) {
       const initialMarks: Record<string, number | null> = {};
       students.forEach((student) => {
-        const existingResult = existingResults.results.find(
-          (r) => r.studentId === student.id
-        );
-        initialMarks[student.id] = existingResult
-          ? Number(existingResult.marks)
-          : null;
-      });
-      setMarks(initialMarks);
-    } else if (students.length > 0) {
-      const initialMarks: Record<string, number | null> = {};
-      students.forEach((student) => {
-        initialMarks[student.id] = null;
+        initialMarks[student.id] = student.marks;
       });
       setMarks(initialMarks);
     }
-  }, [existingResults, students, selectedExamId]);
+  }, [students, selectedExamId]);
 
   // Auto-select first exam
   useEffect(() => {
@@ -133,12 +167,14 @@ export default function PracticalMarks() {
     }
   }, [practicalExams, selectedExamId]);
 
-  // Filter students by search
+  // Filter students by search (client-side for quick filtering)
   const filteredStudents = useMemo(() => {
+    if (!searchQuery) return students;
+    const query = searchQuery.toLowerCase();
     return students.filter(
       (student) =>
-        student.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
+        student.name.toLowerCase().includes(query) ||
+        student.rollNo.toLowerCase().includes(query)
     );
   }, [students, searchQuery]);
 
@@ -166,14 +202,17 @@ export default function PracticalMarks() {
     return <Badge variant="destructive">F</Badge>;
   };
 
-  // Calculate stats
-  const stats = useMemo(() => {
-    const totalStudents = students.length;
+  // Pending exams (upcoming)
+  const pendingExams = useMemo(() => {
+    return practicalExams.filter((e) => e.status === "upcoming").slice(0, 5);
+  }, [practicalExams]);
+
+  // Calculate local stats for marks entered
+  const localStats = useMemo(() => {
+    const totalStudents = filteredStudents.length;
     const marksEntered = Object.values(marks).filter((m) => m !== null).length;
     const pending = totalStudents - marksEntered;
-    const upcomingExams = practicalExams.filter(
-      (e) => new Date(e.date) > new Date()
-    ).length;
+    const upcomingExams = practicalExams.filter((e) => e.status === "upcoming").length;
 
     return {
       totalStudents,
@@ -182,14 +221,7 @@ export default function PracticalMarks() {
       upcomingExams,
       totalExams: practicalExams.length,
     };
-  }, [students, marks, practicalExams]);
-
-  // Pending exams (future dates)
-  const pendingExams = useMemo(() => {
-    return practicalExams
-      .filter((e) => new Date(e.date) > new Date())
-      .slice(0, 5);
-  }, [practicalExams]);
+  }, [filteredStudents, marks, practicalExams]);
 
   // Save marks
   const saveMarks = async () => {
@@ -202,14 +234,14 @@ export default function PracticalMarks() {
       return;
     }
 
-    const results = Object.entries(marks)
+    const marksToSave = Object.entries(marks)
       .filter(([_, value]) => value !== null && value !== undefined)
       .map(([studentId, marksValue]) => ({
         studentId,
         marks: marksValue!,
       }));
 
-    if (results.length === 0) {
+    if (marksToSave.length === 0) {
       toast({
         title: "No Marks to Save",
         description: "Please enter marks for at least one student.",
@@ -219,14 +251,14 @@ export default function PracticalMarks() {
     }
 
     try {
-      const response = await bulkCreateMutation.mutateAsync({
+      const response = await saveMarksMutation.mutateAsync({
         examId: selectedExamId,
-        results,
+        marks: marksToSave,
       });
 
       toast({
         title: "Marks Saved Successfully",
-        description: `Saved: ${response.success}${
+        description: `Saved: ${response.saved}${
           response.failed > 0 ? `, Failed: ${response.failed}` : ""
         }`,
       });
@@ -248,7 +280,21 @@ export default function PracticalMarks() {
     );
   }
 
-  const isLoading = examsLoading || studentsLoading;
+  if (examsLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  if (examsError) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          Failed to load practical exams: {examsError.message}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -282,11 +328,7 @@ export default function PracticalMarks() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Students</p>
-                {isLoading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  <p className="text-2xl font-bold">{stats.totalStudents}</p>
-                )}
+                <p className="text-2xl font-bold">{localStats.totalStudents}</p>
               </div>
             </div>
           </CardContent>
@@ -299,13 +341,9 @@ export default function PracticalMarks() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Marks Entered</p>
-                {isLoading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  <p className="text-2xl font-bold text-green-600">
-                    {stats.marksEntered}
-                  </p>
-                )}
+                <p className="text-2xl font-bold text-green-600">
+                  {localStats.marksEntered}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -318,13 +356,9 @@ export default function PracticalMarks() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pending</p>
-                {isLoading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  <p className="text-2xl font-bold text-orange-600">
-                    {stats.pending}
-                  </p>
-                )}
+                <p className="text-2xl font-bold text-orange-600">
+                  {localStats.pending}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -337,13 +371,9 @@ export default function PracticalMarks() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Practical Exams</p>
-                {isLoading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  <p className="text-2xl font-bold">
-                    {stats.upcomingExams}/{stats.totalExams}
-                  </p>
-                )}
+                <p className="text-2xl font-bold">
+                  {localStats.upcomingExams}/{localStats.totalExams}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -367,7 +397,7 @@ export default function PracticalMarks() {
                   <CardTitle>Enter Practical Marks</CardTitle>
                   <CardDescription>
                     {selectedExam
-                      ? `Max Marks: ${selectedExam.totalMarks}`
+                      ? `Max Marks: ${selectedExam.totalMarks} | Average: ${stats.averageMarks}`
                       : "Select a practical exam to enter marks"}
                   </CardDescription>
                 </div>
@@ -409,7 +439,7 @@ export default function PracticalMarks() {
               </div>
             </CardHeader>
             <CardContent>
-              {isLoading || resultsLoading ? (
+              {examMarksLoading ? (
                 <div className="space-y-4">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <Skeleton key={i} className="h-12 w-full" />
@@ -467,14 +497,14 @@ export default function PracticalMarks() {
                                 <div className="flex items-center gap-2">
                                   <Avatar className="h-8 w-8">
                                     <AvatarFallback className="text-xs">
-                                      {student.user.name
+                                      {student.name
                                         .split(" ")
                                         .map((n: string) => n[0])
                                         .join("")}
                                     </AvatarFallback>
                                   </Avatar>
                                   <span className="font-medium">
-                                    {student.user.name}
+                                    {student.name}
                                   </span>
                                 </div>
                               </TableCell>
@@ -513,35 +543,51 @@ export default function PracticalMarks() {
                     </Table>
                   </div>
 
-                  <div className="flex justify-end gap-2 mt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        const resetMarks: Record<string, number | null> = {};
-                        students.forEach((s) => {
-                          resetMarks[s.id] = null;
-                        });
-                        setMarks(resetMarks);
-                      }}
-                    >
-                      Clear All
-                    </Button>
-                    <Button
-                      onClick={saveMarks}
-                      disabled={bulkCreateMutation.isPending}
-                    >
-                      {bulkCreateMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Save Marks
-                        </>
+                  <div className="flex justify-between items-center gap-2 mt-4">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      {stats.highestMarks > 0 && (
+                        <span className="flex items-center gap-1">
+                          <TrendingUp className="h-4 w-4 text-green-500" />
+                          Highest: {stats.highestMarks}
+                        </span>
                       )}
-                    </Button>
+                      {stats.lowestMarks > 0 && (
+                        <span className="flex items-center gap-1">
+                          <TrendingDown className="h-4 w-4 text-red-500" />
+                          Lowest: {stats.lowestMarks}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const resetMarks: Record<string, number | null> = {};
+                          filteredStudents.forEach((s) => {
+                            resetMarks[s.id] = null;
+                          });
+                          setMarks(resetMarks);
+                        }}
+                      >
+                        Clear All
+                      </Button>
+                      <Button
+                        onClick={saveMarks}
+                        disabled={saveMarksMutation.isPending}
+                      >
+                        {saveMarksMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="mr-2 h-4 w-4" />
+                            Save Marks
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </>
               )}
@@ -572,7 +618,7 @@ export default function PracticalMarks() {
               </div>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
+              {examMarksLoading ? (
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
                     <Skeleton key={i} className="h-24 w-full" />
@@ -594,14 +640,14 @@ export default function PracticalMarks() {
                           <div className="flex items-center gap-3">
                             <Avatar>
                               <AvatarFallback>
-                                {student.user.name
+                                {student.name
                                   .split(" ")
                                   .map((n: string) => n[0])
                                   .join("")}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium">{student.user.name}</p>
+                              <p className="font-medium">{student.name}</p>
                               <p className="text-sm text-muted-foreground">
                                 {student.rollNo} | Section {student.section || "-"}
                               </p>
@@ -650,7 +696,7 @@ export default function PracticalMarks() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
+              {examsLoading ? (
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
                     <Skeleton key={i} className="h-20 w-full" />
@@ -672,19 +718,13 @@ export default function PracticalMarks() {
                         <div>
                           <h4 className="font-medium">{exam.name}</h4>
                           <p className="text-sm text-muted-foreground">
-                            Total Marks: {exam.totalMarks}
+                            {exam.lab} | Total Marks: {exam.totalMarks}
                           </p>
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <p className="text-sm text-muted-foreground">Date</p>
-                            <p className="font-medium">
-                              {new Date(exam.date).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
-                            </p>
+                            <p className="font-medium">{exam.date}</p>
                           </div>
                           <Button
                             size="sm"

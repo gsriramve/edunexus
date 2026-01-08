@@ -42,11 +42,13 @@ import { HodStudentsModule } from './modules/hod-students/hod-students.module';
 import { HodDashboardModule } from './modules/hod-dashboard/hod-dashboard.module';
 import { HodExamsModule } from './modules/hod-exams/hod-exams.module';
 import { HodCurriculumModule } from './modules/hod-curriculum/hod-curriculum.module';
+import { HodReportsModule } from './modules/hod-reports/hod-reports.module';
 import { TeacherDashboardModule } from './modules/teacher-dashboard/teacher-dashboard.module';
 import { TeacherMessagesModule } from './modules/teacher-messages/teacher-messages.module';
 import { TeacherAssignmentsModule } from './modules/teacher-assignments/teacher-assignments.module';
 import { TeacherMaterialsModule } from './modules/teacher-materials/teacher-materials.module';
 import { PrincipalDashboardModule } from './modules/principal-dashboard/principal-dashboard.module';
+import { LabAssistantModule } from './modules/lab-assistant/lab-assistant.module';
 
 @Module({
   imports: [
@@ -107,11 +109,13 @@ import { PrincipalDashboardModule } from './modules/principal-dashboard/principa
     HodDashboardModule,
     HodExamsModule,
     HodCurriculumModule,
+    HodReportsModule,
     TeacherDashboardModule,
     TeacherMessagesModule,
     TeacherAssignmentsModule,
     TeacherMaterialsModule,
     PrincipalDashboardModule,
+    LabAssistantModule,
   ],
   controllers: [AppController],
   providers: [AppService],

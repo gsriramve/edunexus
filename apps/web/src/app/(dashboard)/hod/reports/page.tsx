@@ -2,21 +2,20 @@
 
 import { useState } from "react";
 import {
-  BarChart3,
+  Calendar,
   Download,
   FileText,
-  Calendar,
-  Users,
-  GraduationCap,
-  TrendingUp,
-  TrendingDown,
-  Award,
-  Target,
-  UserCheck,
-  Clock,
   Filter,
-  Printer,
+  GraduationCap,
   Mail,
+  Printer,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  UserCheck,
+  Award,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,97 +37,88 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useDepartmentReports, QueryReportsParams } from "@/hooks/use-hod-reports";
 
-// Mock report data
-const attendanceReportData = {
-  overall: 84,
-  trend: "up",
-  change: 2.5,
-  semesterWise: [
-    { semester: 1, attendance: 88, students: 120, belowThreshold: 8 },
-    { semester: 2, attendance: 85, students: 118, belowThreshold: 12 },
-    { semester: 3, attendance: 82, students: 115, belowThreshold: 15 },
-    { semester: 4, attendance: 80, students: 112, belowThreshold: 18 },
-    { semester: 5, attendance: 84, students: 108, belowThreshold: 14 },
-    { semester: 6, attendance: 86, students: 105, belowThreshold: 10 },
-    { semester: 7, attendance: 88, students: 102, belowThreshold: 6 },
-    { semester: 8, attendance: 90, students: 100, belowThreshold: 4 },
-  ],
-  monthlyTrend: [
-    { month: "Aug 2025", attendance: 82 },
-    { month: "Sep 2025", attendance: 80 },
-    { month: "Oct 2025", attendance: 83 },
-    { month: "Nov 2025", attendance: 85 },
-    { month: "Dec 2025", attendance: 84 },
-    { month: "Jan 2026", attendance: 84 },
-  ],
-};
-
-const academicReportData = {
-  avgCGPA: 7.8,
-  trend: "up",
-  change: 0.2,
-  passPercentage: 94,
-  distinctionPercentage: 28,
-  semesterResults: [
-    { semester: 2, avgCGPA: 7.5, pass: 92, distinction: 22, fail: 8 },
-    { semester: 3, avgCGPA: 7.6, pass: 93, distinction: 24, fail: 7 },
-    { semester: 4, avgCGPA: 7.8, pass: 94, distinction: 26, fail: 6 },
-    { semester: 5, avgCGPA: 7.9, pass: 95, distinction: 28, fail: 5 },
-    { semester: 6, avgCGPA: 8.0, pass: 96, distinction: 30, fail: 4 },
-    { semester: 7, avgCGPA: 8.1, pass: 97, distinction: 32, fail: 3 },
-  ],
-  subjectPerformance: [
-    { subject: "Data Structures", avgMarks: 78, passRate: 96, topScore: 98 },
-    { subject: "Computer Networks", avgMarks: 72, passRate: 92, topScore: 95 },
-    { subject: "Operating Systems", avgMarks: 75, passRate: 94, topScore: 97 },
-    { subject: "Software Engineering", avgMarks: 80, passRate: 98, topScore: 96 },
-    { subject: "Database Systems", avgMarks: 74, passRate: 93, topScore: 94 },
-  ],
-};
-
-const placementReportData = {
-  placementRate: 85,
-  avgPackage: 8.5,
-  highestPackage: 24,
-  totalOffers: 92,
-  companiesVisited: 28,
-  ongoingDrives: 3,
-  yearWise: [
-    { year: "2023", placed: 78, total: 95, rate: 82, avgPackage: 7.2 },
-    { year: "2024", placed: 85, total: 98, rate: 87, avgPackage: 7.8 },
-    { year: "2025", placed: 92, total: 100, rate: 92, avgPackage: 8.5 },
-  ],
-  topRecruiters: [
-    { company: "TechCorp", offers: 12, avgPackage: 12 },
-    { company: "InfoSystems", offers: 10, avgPackage: 8 },
-    { company: "DataWorks", offers: 8, avgPackage: 10 },
-    { company: "CloudNet", offers: 8, avgPackage: 9 },
-    { company: "SoftSolutions", offers: 6, avgPackage: 7 },
-  ],
-};
-
-const availableReports = [
-  { id: "att-sem", name: "Semester-wise Attendance Report", type: "attendance", format: "PDF/Excel" },
-  { id: "att-sub", name: "Subject-wise Attendance Report", type: "attendance", format: "PDF/Excel" },
-  { id: "att-low", name: "Low Attendance Students List", type: "attendance", format: "PDF/Excel" },
-  { id: "acad-result", name: "Semester Results Summary", type: "academic", format: "PDF/Excel" },
-  { id: "acad-cgpa", name: "CGPA Distribution Report", type: "academic", format: "PDF" },
-  { id: "acad-toppers", name: "Top Performers List", type: "academic", format: "PDF/Excel" },
-  { id: "acad-risk", name: "At-Risk Students Report", type: "academic", format: "PDF/Excel" },
-  { id: "place-summary", name: "Placement Summary Report", type: "placement", format: "PDF" },
-  { id: "place-company", name: "Company-wise Placements", type: "placement", format: "Excel" },
-  { id: "fac-workload", name: "Faculty Workload Report", type: "faculty", format: "PDF/Excel" },
-  { id: "fac-attendance", name: "Faculty Attendance Report", type: "faculty", format: "PDF/Excel" },
-];
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-5 w-96 mt-2" />
+        </div>
+        <Skeleton className="h-10 w-[180px]" />
+      </div>
+      <div className="grid gap-4 md:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardContent className="pt-6">
+              <Skeleton className="h-16 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-64 w-full" />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function HODReports() {
-  const [selectedPeriod, setSelectedPeriod] = useState("current");
+  const tenantId = useTenantId();
+  const [selectedPeriod, setSelectedPeriod] = useState<QueryReportsParams["period"]>("current");
   const [reportType, setReportType] = useState("all");
+
+  const { data, isLoading, error } = useDepartmentReports(tenantId || "", {
+    period: selectedPeriod,
+  });
+
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          Failed to load department reports: {error.message}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  const quickStats = data?.quickStats;
+  const attendanceReport = data?.attendance;
+  const academicReport = data?.academic;
+  const placementReport = data?.placement;
+  const availableReports = data?.availableReports || [];
 
   const filteredReports = availableReports.filter(
     (report) => reportType === "all" || report.type === reportType
   );
+
+  const getTrendIcon = (trend: string) => {
+    if (trend === "up") return <TrendingUp className="h-4 w-4" />;
+    if (trend === "down") return <TrendingDown className="h-4 w-4" />;
+    return null;
+  };
+
+  const getTrendColor = (trend: string) => {
+    if (trend === "up") return "text-green-600";
+    if (trend === "down") return "text-red-600";
+    return "text-gray-600";
+  };
 
   return (
     <div className="space-y-6">
@@ -137,11 +127,11 @@ export default function HODReports() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Department Reports</h1>
           <p className="text-muted-foreground">
-            Analytics, reports, and insights for Computer Science & Engineering
+            Analytics, reports, and insights for your department
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+          <Select value={selectedPeriod} onValueChange={(v) => setSelectedPeriod(v as QueryReportsParams["period"])}>
             <SelectTrigger className="w-[180px]">
               <Calendar className="h-4 w-4 mr-2" />
               <SelectValue />
@@ -149,7 +139,7 @@ export default function HODReports() {
             <SelectContent>
               <SelectItem value="current">Current Semester</SelectItem>
               <SelectItem value="previous">Previous Semester</SelectItem>
-              <SelectItem value="year">Academic Year 2025-26</SelectItem>
+              <SelectItem value="year">Academic Year</SelectItem>
               <SelectItem value="all">All Time</SelectItem>
             </SelectContent>
           </Select>
@@ -167,13 +157,18 @@ export default function HODReports() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Avg Attendance</p>
-                  <p className="text-2xl font-bold">{attendanceReportData.overall}%</p>
+                  <p className="text-2xl font-bold">{quickStats?.avgAttendance || 0}%</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-green-600">
-                <TrendingUp className="h-4 w-4" />
-                <span className="text-sm">+{attendanceReportData.change}%</span>
-              </div>
+              {quickStats && (
+                <div className={`flex items-center gap-1 ${getTrendColor(quickStats.attendanceTrend)}`}>
+                  {getTrendIcon(quickStats.attendanceTrend)}
+                  <span className="text-sm">
+                    {quickStats.attendanceChange > 0 ? "+" : ""}
+                    {quickStats.attendanceChange}%
+                  </span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -186,13 +181,18 @@ export default function HODReports() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Avg CGPA</p>
-                  <p className="text-2xl font-bold">{academicReportData.avgCGPA}</p>
+                  <p className="text-2xl font-bold">{quickStats?.avgCGPA?.toFixed(1) || "0.0"}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-green-600">
-                <TrendingUp className="h-4 w-4" />
-                <span className="text-sm">+{academicReportData.change}</span>
-              </div>
+              {quickStats && (
+                <div className={`flex items-center gap-1 ${getTrendColor(quickStats.cgpaTrend)}`}>
+                  {getTrendIcon(quickStats.cgpaTrend)}
+                  <span className="text-sm">
+                    {quickStats.cgpaChange > 0 ? "+" : ""}
+                    {quickStats.cgpaChange?.toFixed(1)}
+                  </span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -204,7 +204,7 @@ export default function HODReports() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Placement Rate</p>
-                <p className="text-2xl font-bold">{placementReportData.placementRate}%</p>
+                <p className="text-2xl font-bold">{quickStats?.placementRate || 0}%</p>
               </div>
             </div>
           </CardContent>
@@ -217,7 +217,7 @@ export default function HODReports() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pass Rate</p>
-                <p className="text-2xl font-bold">{academicReportData.passPercentage}%</p>
+                <p className="text-2xl font-bold">{quickStats?.passRate || 0}%</p>
               </div>
             </div>
           </CardContent>
@@ -242,24 +242,28 @@ export default function HODReports() {
                 <CardDescription>Average attendance by semester</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {attendanceReportData.semesterWise.map((sem) => (
-                    <div key={sem.semester} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Semester {sem.semester}</span>
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm text-muted-foreground">
-                            {sem.belowThreshold} below 75%
-                          </span>
-                          <Badge className={sem.attendance >= 85 ? "bg-green-500" : sem.attendance >= 75 ? "bg-yellow-500" : "bg-red-500"}>
-                            {sem.attendance}%
-                          </Badge>
+                {attendanceReport?.semesterWise && attendanceReport.semesterWise.length > 0 ? (
+                  <div className="space-y-4">
+                    {attendanceReport.semesterWise.map((sem) => (
+                      <div key={sem.semester} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Semester {sem.semester}</span>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm text-muted-foreground">
+                              {sem.belowThreshold} below 75%
+                            </span>
+                            <Badge className={sem.attendance >= 85 ? "bg-green-500" : sem.attendance >= 75 ? "bg-yellow-500" : "bg-red-500"}>
+                              {sem.attendance}%
+                            </Badge>
+                          </div>
                         </div>
+                        <Progress value={sem.attendance} className="h-2" />
                       </div>
-                      <Progress value={sem.attendance} className="h-2" />
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">No semester attendance data available</p>
+                )}
               </CardContent>
             </Card>
 
@@ -269,20 +273,24 @@ export default function HODReports() {
                 <CardDescription>Attendance trend over past months</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-end justify-between h-48 gap-2">
-                  {attendanceReportData.monthlyTrend.map((month, idx) => (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-2">
-                      <div className="text-xs font-medium">{month.attendance}%</div>
-                      <div
-                        className="w-full bg-primary rounded-t"
-                        style={{ height: `${(month.attendance / 100) * 150}px` }}
-                      />
-                      <div className="text-xs text-muted-foreground text-center">
-                        {month.month.split(" ")[0].slice(0, 3)}
+                {attendanceReport?.monthlyTrend && attendanceReport.monthlyTrend.length > 0 ? (
+                  <div className="flex items-end justify-between h-48 gap-2">
+                    {attendanceReport.monthlyTrend.map((month, idx) => (
+                      <div key={idx} className="flex-1 flex flex-col items-center gap-2">
+                        <div className="text-xs font-medium">{month.attendance}%</div>
+                        <div
+                          className="w-full bg-primary rounded-t"
+                          style={{ height: `${(month.attendance / 100) * 150}px` }}
+                        />
+                        <div className="text-xs text-muted-foreground text-center">
+                          {month.month.split(" ")[0]?.slice(0, 3) || month.month.slice(0, 3)}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">No monthly trend data available</p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -297,30 +305,34 @@ export default function HODReports() {
                 <CardDescription>Academic performance by semester</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Semester</TableHead>
-                      <TableHead className="text-center">Avg CGPA</TableHead>
-                      <TableHead className="text-center">Pass %</TableHead>
-                      <TableHead className="text-center">Distinction</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {academicReportData.semesterResults.map((sem) => (
-                      <TableRow key={sem.semester}>
-                        <TableCell>
-                          <Badge variant="outline">Sem {sem.semester}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center font-medium">{sem.avgCGPA}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge className="bg-green-500">{sem.pass}%</Badge>
-                        </TableCell>
-                        <TableCell className="text-center">{sem.distinction}%</TableCell>
+                {academicReport?.semesterResults && academicReport.semesterResults.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Semester</TableHead>
+                        <TableHead className="text-center">Avg CGPA</TableHead>
+                        <TableHead className="text-center">Pass %</TableHead>
+                        <TableHead className="text-center">Distinction</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {academicReport.semesterResults.map((sem) => (
+                        <TableRow key={sem.semester}>
+                          <TableCell>
+                            <Badge variant="outline">Sem {sem.semester}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center font-medium">{sem.avgCGPA?.toFixed(1)}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge className="bg-green-500">{sem.pass}%</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">{sem.distinction}%</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">No semester results data available</p>
+                )}
               </CardContent>
             </Card>
 
@@ -330,27 +342,31 @@ export default function HODReports() {
                 <CardDescription>Current semester subject analysis</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {academicReportData.subjectPerformance.map((subject, idx) => (
-                    <div key={idx} className="p-3 rounded-lg border">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-medium">{subject.subject}</span>
-                        <Badge variant="outline">Top: {subject.topScore}</Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Avg: </span>
-                          <span className="font-medium">{subject.avgMarks}</span>
+                {academicReport?.subjectPerformance && academicReport.subjectPerformance.length > 0 ? (
+                  <div className="space-y-4">
+                    {academicReport.subjectPerformance.map((subject, idx) => (
+                      <div key={subject.subjectId || idx} className="p-3 rounded-lg border">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium">{subject.subject}</span>
+                          <Badge variant="outline">Top: {subject.topScore}</Badge>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground">Pass Rate: </span>
-                          <span className="font-medium text-green-600">{subject.passRate}%</span>
+                        <div className="flex items-center gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Avg: </span>
+                            <span className="font-medium">{subject.avgMarks?.toFixed(0)}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Pass Rate: </span>
+                            <span className="font-medium text-green-600">{subject.passRate}%</span>
+                          </div>
                         </div>
+                        <Progress value={subject.avgMarks} className="h-2 mt-2" />
                       </div>
-                      <Progress value={subject.avgMarks} className="h-2 mt-2" />
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">No subject performance data available</p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -365,45 +381,51 @@ export default function HODReports() {
                 <CardDescription>Placement trends over years</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Year</TableHead>
-                      <TableHead className="text-center">Placed</TableHead>
-                      <TableHead className="text-center">Total</TableHead>
-                      <TableHead className="text-center">Rate</TableHead>
-                      <TableHead className="text-center">Avg Package (LPA)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {placementReportData.yearWise.map((year) => (
-                      <TableRow key={year.year}>
-                        <TableCell className="font-medium">{year.year}</TableCell>
-                        <TableCell className="text-center">{year.placed}</TableCell>
-                        <TableCell className="text-center">{year.total}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge className="bg-green-500">{year.rate}%</Badge>
-                        </TableCell>
-                        <TableCell className="text-center font-bold">₹{year.avgPackage} LPA</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                {placementReport?.yearWise && placementReport.yearWise.length > 0 ? (
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Year</TableHead>
+                          <TableHead className="text-center">Placed</TableHead>
+                          <TableHead className="text-center">Total</TableHead>
+                          <TableHead className="text-center">Rate</TableHead>
+                          <TableHead className="text-center">Avg Package (LPA)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {placementReport.yearWise.map((year) => (
+                          <TableRow key={year.year}>
+                            <TableCell className="font-medium">{year.year}</TableCell>
+                            <TableCell className="text-center">{year.placed}</TableCell>
+                            <TableCell className="text-center">{year.total}</TableCell>
+                            <TableCell className="text-center">
+                              <Badge className="bg-green-500">{year.rate}%</Badge>
+                            </TableCell>
+                            <TableCell className="text-center font-bold">₹{year.avgPackage?.toFixed(1)} LPA</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
 
-                <div className="grid grid-cols-3 gap-4 mt-6 p-4 rounded-lg bg-muted">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">₹{placementReportData.highestPackage} LPA</p>
-                    <p className="text-sm text-muted-foreground">Highest Package</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold">{placementReportData.companiesVisited}</p>
-                    <p className="text-sm text-muted-foreground">Companies Visited</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">{placementReportData.ongoingDrives}</p>
-                    <p className="text-sm text-muted-foreground">Ongoing Drives</p>
-                  </div>
-                </div>
+                    <div className="grid grid-cols-3 gap-4 mt-6 p-4 rounded-lg bg-muted">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">₹{placementReport.highestPackage?.toFixed(1) || 0} LPA</p>
+                        <p className="text-sm text-muted-foreground">Highest Package</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold">{placementReport.companiesVisited || 0}</p>
+                        <p className="text-sm text-muted-foreground">Companies Visited</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-blue-600">{placementReport.ongoingDrives || 0}</p>
+                        <p className="text-sm text-muted-foreground">Ongoing Drives</p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">No placement statistics available</p>
+                )}
               </CardContent>
             </Card>
 
@@ -413,17 +435,21 @@ export default function HODReports() {
                 <CardDescription>Companies with most offers</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {placementReportData.topRecruiters.map((company, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div>
-                        <p className="font-medium">{company.company}</p>
-                        <p className="text-sm text-muted-foreground">{company.offers} offers</p>
+                {placementReport?.topRecruiters && placementReport.topRecruiters.length > 0 ? (
+                  <div className="space-y-4">
+                    {placementReport.topRecruiters.map((company, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 rounded-lg border">
+                        <div>
+                          <p className="font-medium">{company.company}</p>
+                          <p className="text-sm text-muted-foreground">{company.offers} offers</p>
+                        </div>
+                        <Badge variant="outline">₹{company.avgPackage?.toFixed(1)} LPA</Badge>
                       </div>
-                      <Badge variant="outline">₹{company.avgPackage} LPA</Badge>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">No recruiter data available</p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -454,39 +480,46 @@ export default function HODReports() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                {filteredReports.map((report) => (
-                  <Card key={report.id}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-muted">
-                            <FileText className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{report.name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="secondary" className="text-xs">{report.type}</Badge>
-                              <span className="text-xs text-muted-foreground">{report.format}</span>
+              {filteredReports.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {filteredReports.map((report) => (
+                    <Card key={report.id}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-muted">
+                              <FileText className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{report.name}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="secondary" className="text-xs">{report.type}</Badge>
+                                <span className="text-xs text-muted-foreground">{report.format}</span>
+                              </div>
+                              {report.description && (
+                                <p className="text-xs text-muted-foreground mt-1">{report.description}</p>
+                              )}
                             </div>
                           </div>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="sm">
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm">
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Mail className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">No reports available for the selected filter</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
