@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
   FileText,
   Folder,
@@ -29,7 +30,9 @@ import {
   AlertTriangle,
   Grid,
   List,
+  Loader2,
 } from "lucide-react";
+import { useTenantId } from "@/hooks/use-tenant";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,11 +75,6 @@ import {
 } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
 
-// Demo values - in production these would come from auth context
-const TENANT_ID = "demo-tenant";
-const USER_ID = "demo-admin";
-const USER_NAME = "Admin User";
-
 const categoryIcons: Record<string, React.ReactNode> = {
   academic: <FileText className="h-4 w-4 text-blue-500" />,
   administrative: <File className="h-4 w-4 text-gray-500" />,
@@ -111,6 +109,10 @@ const formatFileSize = (bytes: number) => {
 
 export default function AdminDocumentsPage() {
   const { toast } = useToast();
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const tenantId = useTenantId() || '';
+  const userId = user?.id || '';
+  const userName = user?.fullName || user?.firstName || 'Admin User';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State
@@ -141,8 +143,9 @@ export default function AdminDocumentsPage() {
 
   // Load data
   const loadStats = async () => {
+    if (!tenantId) return;
     try {
-      const data = await documentsApi.getStats(TENANT_ID);
+      const data = await documentsApi.getStats(tenantId);
       setStats(data);
     } catch (error) {
       console.error("Error loading stats:", error);
@@ -150,6 +153,7 @@ export default function AdminDocumentsPage() {
   };
 
   const loadDocuments = async () => {
+    if (!tenantId) return;
     setLoading(true);
     try {
       const params: any = {};
@@ -157,7 +161,7 @@ export default function AdminDocumentsPage() {
       if (searchQuery) params.search = searchQuery;
       if (categoryFilter !== "all") params.category = categoryFilter;
 
-      const result = await documentsApi.listDocuments(TENANT_ID, params);
+      const result = await documentsApi.listDocuments(tenantId, params);
       setDocuments(result.data);
     } catch (error) {
       console.error("Error loading documents:", error);
@@ -168,8 +172,9 @@ export default function AdminDocumentsPage() {
   };
 
   const loadFolders = async (parentId?: string | null) => {
+    if (!tenantId) return;
     try {
-      const data = await documentsApi.listFolders(TENANT_ID, parentId || undefined);
+      const data = await documentsApi.listFolders(tenantId, parentId || undefined);
       setFolders(data);
     } catch (error) {
       console.error("Error loading folders:", error);
@@ -178,7 +183,7 @@ export default function AdminDocumentsPage() {
 
   const loadBreadcrumb = async (folderId: string) => {
     try {
-      const data = await documentsApi.getFolderBreadcrumb(TENANT_ID, folderId);
+      const data = await documentsApi.getFolderBreadcrumb(tenantId, folderId);
       setBreadcrumb(data);
     } catch (error) {
       console.error("Error loading breadcrumb:", error);
@@ -186,8 +191,10 @@ export default function AdminDocumentsPage() {
   };
 
   useEffect(() => {
-    loadStats();
-    loadDocuments();
+    if (tenantId) {
+      loadStats();
+      loadDocuments();
+    }
     loadFolders(currentFolderId);
     if (currentFolderId) {
       loadBreadcrumb(currentFolderId);
@@ -211,15 +218,15 @@ export default function AdminDocumentsPage() {
 
     setUploading(true);
     try {
-      await documentsApi.uploadDocument(TENANT_ID, selectedFile, {
+      await documentsApi.uploadDocument(tenantId, selectedFile, {
         name: uploadForm.name,
         description: uploadForm.description,
         category: uploadForm.category,
         visibility: uploadForm.visibility,
         tags: uploadForm.tags.split(",").map((t) => t.trim()).filter(Boolean),
-        uploadedById: USER_ID,
+        uploadedById: userId,
         uploadedByType: "admin",
-        uploadedByName: USER_NAME,
+        uploadedByName: userName,
         folderId: currentFolderId || undefined,
       });
 
@@ -240,11 +247,11 @@ export default function AdminDocumentsPage() {
     if (!folderForm.name) return;
 
     try {
-      await documentsApi.createFolder(TENANT_ID, {
+      await documentsApi.createFolder(tenantId, {
         name: folderForm.name,
         description: folderForm.description,
         parentId: currentFolderId || undefined,
-        ownerId: USER_ID,
+        ownerId: userId,
         ownerType: "admin",
       });
 
@@ -259,7 +266,7 @@ export default function AdminDocumentsPage() {
 
   const handleDownload = async (doc: DocType) => {
     try {
-      const { url } = await documentsApi.getDownloadUrl(TENANT_ID, doc.id, USER_ID, USER_NAME);
+      const { url } = await documentsApi.getDownloadUrl(tenantId, doc.id, userId, userName);
       window.open(url, "_blank");
     } catch (error) {
       toast({ title: "Error", description: "Failed to get download URL", variant: "destructive" });
@@ -270,7 +277,7 @@ export default function AdminDocumentsPage() {
     if (!confirm("Are you sure you want to delete this document?")) return;
 
     try {
-      await documentsApi.deleteDocument(TENANT_ID, doc.id);
+      await documentsApi.deleteDocument(tenantId, doc.id);
       toast({ title: "Success", description: "Document deleted" });
       loadDocuments();
       loadStats();
@@ -314,7 +321,7 @@ export default function AdminDocumentsPage() {
     if (!confirm(`Delete ${selectedDocs.size} documents?`)) return;
 
     try {
-      await documentsApi.bulkDelete(TENANT_ID, Array.from(selectedDocs));
+      await documentsApi.bulkDelete(tenantId, Array.from(selectedDocs));
       toast({ title: "Success", description: `Deleted ${selectedDocs.size} documents` });
       setSelectedDocs(new Set());
       loadDocuments();
@@ -323,6 +330,15 @@ export default function AdminDocumentsPage() {
       toast({ title: "Error", description: "Failed to delete documents", variant: "destructive" });
     }
   };
+
+  // Auth loading state
+  if (!isUserLoaded || !tenantId) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
   Send,
   MessageSquare,
@@ -27,7 +28,9 @@ import {
   AlertTriangle,
   Archive,
   MessageCircle,
+  Loader2,
 } from "lucide-react";
+import { useTenantId } from "@/hooks/use-tenant";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,11 +84,11 @@ import {
   CommunicationStatus,
 } from "@/lib/api";
 
-// Demo tenant ID
-const TENANT_ID = "demo-tenant";
-
 export default function CommunicationPage() {
   const { toast } = useToast();
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const tenantId = useTenantId() || '';
+
   const [selectedTab, setSelectedTab] = useState("announcements");
   const [loading, setLoading] = useState(true);
 
@@ -137,17 +140,20 @@ export default function CommunicationPage() {
 
   // Load data
   useEffect(() => {
-    loadData();
-  }, []);
+    if (tenantId) {
+      loadData();
+    }
+  }, [tenantId]);
 
   const loadData = async () => {
+    if (!tenantId) return;
     setLoading(true);
     try {
       const [statsRes, announcementsRes, templatesRes, bulkRes] = await Promise.all([
-        communicationApi.getStats(TENANT_ID),
-        communicationApi.listAnnouncements(TENANT_ID, { limit: 20 }),
-        communicationApi.listTemplates(TENANT_ID, { limit: 50 }),
-        communicationApi.listBulkCommunications(TENANT_ID, { limit: 20 }),
+        communicationApi.getStats(tenantId),
+        communicationApi.listAnnouncements(tenantId, { limit: 20 }),
+        communicationApi.listTemplates(tenantId, { limit: 50 }),
+        communicationApi.listBulkCommunications(tenantId, { limit: 20 }),
       ]);
 
       setStats(statsRes);
@@ -179,10 +185,10 @@ export default function CommunicationPage() {
       };
 
       if (editingAnnouncement) {
-        await communicationApi.updateAnnouncement(TENANT_ID, editingAnnouncement.id, data);
+        await communicationApi.updateAnnouncement(tenantId, editingAnnouncement.id, data);
         toast({ title: "Success", description: "Announcement updated successfully" });
       } else {
-        await communicationApi.createAnnouncement(TENANT_ID, data);
+        await communicationApi.createAnnouncement(tenantId, data);
         toast({ title: "Success", description: "Announcement created successfully" });
       }
 
@@ -201,7 +207,7 @@ export default function CommunicationPage() {
 
   const handlePublishAnnouncement = async (id: string) => {
     try {
-      await communicationApi.publishAnnouncement(TENANT_ID, id);
+      await communicationApi.publishAnnouncement(tenantId, id);
       toast({ title: "Success", description: "Announcement published" });
       loadData();
     } catch (error) {
@@ -211,7 +217,7 @@ export default function CommunicationPage() {
 
   const handleArchiveAnnouncement = async (id: string) => {
     try {
-      await communicationApi.archiveAnnouncement(TENANT_ID, id);
+      await communicationApi.archiveAnnouncement(tenantId, id);
       toast({ title: "Success", description: "Announcement archived" });
       loadData();
     } catch (error) {
@@ -222,7 +228,7 @@ export default function CommunicationPage() {
   const handleDeleteAnnouncement = async (id: string) => {
     if (!confirm("Are you sure you want to delete this announcement?")) return;
     try {
-      await communicationApi.deleteAnnouncement(TENANT_ID, id);
+      await communicationApi.deleteAnnouncement(tenantId, id);
       toast({ title: "Success", description: "Announcement deleted" });
       loadData();
     } catch (error) {
@@ -268,14 +274,14 @@ export default function CommunicationPage() {
       };
 
       if (editingTemplate) {
-        await communicationApi.updateTemplate(TENANT_ID, editingTemplate.id, {
+        await communicationApi.updateTemplate(tenantId, editingTemplate.id, {
           name: data.name,
           subject: data.subject,
           content: data.content,
         });
         toast({ title: "Success", description: "Template updated successfully" });
       } else {
-        await communicationApi.createTemplate(TENANT_ID, data);
+        await communicationApi.createTemplate(tenantId, data);
         toast({ title: "Success", description: "Template created successfully" });
       }
 
@@ -295,7 +301,7 @@ export default function CommunicationPage() {
   const handleDeleteTemplate = async (id: string) => {
     if (!confirm("Are you sure you want to delete this template?")) return;
     try {
-      await communicationApi.deleteTemplate(TENANT_ID, id);
+      await communicationApi.deleteTemplate(tenantId, id);
       toast({ title: "Success", description: "Template deleted" });
       loadData();
     } catch (error) {
@@ -331,7 +337,7 @@ export default function CommunicationPage() {
   // Bulk communication handlers
   const handleCreateBulkCommunication = async () => {
     try {
-      await communicationApi.createBulkCommunication(TENANT_ID, {
+      await communicationApi.createBulkCommunication(tenantId, {
         ...bulkForm,
         subject: bulkForm.subject || undefined,
         scheduledAt: bulkForm.scheduledAt || undefined,
@@ -356,7 +362,7 @@ export default function CommunicationPage() {
 
   const handleStartBulkCommunication = async (id: string) => {
     try {
-      await communicationApi.startBulkCommunication(TENANT_ID, id);
+      await communicationApi.startBulkCommunication(tenantId, id);
       toast({ title: "Success", description: "Bulk communication started" });
       loadData();
     } catch (error) {
@@ -366,7 +372,7 @@ export default function CommunicationPage() {
 
   const handleCancelBulkCommunication = async (id: string) => {
     try {
-      await communicationApi.cancelBulkCommunication(TENANT_ID, id);
+      await communicationApi.cancelBulkCommunication(tenantId, id);
       toast({ title: "Success", description: "Bulk communication cancelled" });
       loadData();
     } catch (error) {
@@ -423,12 +429,21 @@ export default function CommunicationPage() {
     return <Badge className={colors[type] || "bg-gray-500"}>{type}</Badge>;
   };
 
+  // Auth loading state
+  if (!isUserLoaded || !tenantId) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading communication data...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading communication data...</p>
         </div>
       </div>
     );

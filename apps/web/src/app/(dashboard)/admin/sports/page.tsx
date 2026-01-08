@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,7 +50,9 @@ import {
   Activity,
   UserPlus,
   Medal,
+  Loader2,
 } from 'lucide-react';
+import { useTenantId } from '@/hooks/use-tenant';
 import {
   sportsClubsApi,
   SportsTeam,
@@ -65,13 +68,14 @@ import {
   CreateAchievementInput,
 } from '@/lib/api';
 
-// Mock tenant ID - replace with actual tenant context
-const TENANT_ID = 'cmk2l82k00001viari7idl59u';
-
 const SPORTS = ['Cricket', 'Football', 'Basketball', 'Volleyball', 'Badminton', 'Table Tennis', 'Chess', 'Athletics', 'Swimming', 'Tennis', 'Hockey', 'Kabaddi'];
 const CLUB_CATEGORIES = ['Technical', 'Cultural', 'Literary', 'Social Service', 'Sports', 'Music', 'Dance', 'Drama', 'Photography', 'Environment', 'Entrepreneurship', 'Other'];
 
 export default function AdminSportsPage() {
+  // Auth context
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const tenantId = useTenantId() || '';
+
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState<SportsClubsStats | null>(null);
   const [teams, setTeams] = useState<SportsTeam[]>([]);
@@ -97,19 +101,21 @@ export default function AdminSportsPage() {
   const [achievementForm, setAchievementForm] = useState<Partial<CreateAchievementInput>>({});
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (tenantId) {
+      loadData();
+    }
+  }, [tenantId]);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const [statsData, teamsData, clubsData, sportsEventsData, clubEventsData, achievementsData] = await Promise.all([
-        sportsClubsApi.getStats(TENANT_ID),
-        sportsClubsApi.listTeams(TENANT_ID, { limit: 100 }),
-        sportsClubsApi.listClubs(TENANT_ID, { limit: 100 }),
-        sportsClubsApi.listSportsEvents(TENANT_ID, { limit: 100 }),
-        sportsClubsApi.listClubEvents(TENANT_ID, { limit: 100 }),
-        sportsClubsApi.listAchievements(TENANT_ID, { limit: 100 }),
+        sportsClubsApi.getStats(tenantId),
+        sportsClubsApi.listTeams(tenantId, { limit: 100 }),
+        sportsClubsApi.listClubs(tenantId, { limit: 100 }),
+        sportsClubsApi.listSportsEvents(tenantId, { limit: 100 }),
+        sportsClubsApi.listClubEvents(tenantId, { limit: 100 }),
+        sportsClubsApi.listAchievements(tenantId, { limit: 100 }),
       ]);
       setStats(statsData);
       setTeams(teamsData.data);
@@ -126,7 +132,7 @@ export default function AdminSportsPage() {
 
   const handleCreateTeam = async () => {
     try {
-      await sportsClubsApi.createTeam(TENANT_ID, teamForm as CreateTeamInput);
+      await sportsClubsApi.createTeam(tenantId, teamForm as CreateTeamInput);
       setShowTeamDialog(false);
       setTeamForm({});
       loadData();
@@ -137,7 +143,7 @@ export default function AdminSportsPage() {
 
   const handleCreateClub = async () => {
     try {
-      await sportsClubsApi.createClub(TENANT_ID, clubForm as CreateClubInput);
+      await sportsClubsApi.createClub(tenantId, clubForm as CreateClubInput);
       setShowClubDialog(false);
       setClubForm({});
       loadData();
@@ -148,7 +154,7 @@ export default function AdminSportsPage() {
 
   const handleCreateSportsEvent = async () => {
     try {
-      await sportsClubsApi.createSportsEvent(TENANT_ID, sportsEventForm as CreateSportsEventInput);
+      await sportsClubsApi.createSportsEvent(tenantId, sportsEventForm as CreateSportsEventInput);
       setShowSportsEventDialog(false);
       setSportsEventForm({});
       loadData();
@@ -159,7 +165,7 @@ export default function AdminSportsPage() {
 
   const handleCreateClubEvent = async () => {
     try {
-      await sportsClubsApi.createClubEvent(TENANT_ID, clubEventForm as CreateClubEventInput);
+      await sportsClubsApi.createClubEvent(tenantId, clubEventForm as CreateClubEventInput);
       setShowClubEventDialog(false);
       setClubEventForm({});
       loadData();
@@ -170,7 +176,7 @@ export default function AdminSportsPage() {
 
   const handleCreateAchievement = async () => {
     try {
-      await sportsClubsApi.createAchievement(TENANT_ID, achievementForm as CreateAchievementInput);
+      await sportsClubsApi.createAchievement(tenantId, achievementForm as CreateAchievementInput);
       setShowAchievementDialog(false);
       setAchievementForm({});
       loadData();
@@ -181,7 +187,7 @@ export default function AdminSportsPage() {
 
   const handleVerifyAchievement = async (id: string) => {
     try {
-      await sportsClubsApi.verifyAchievement(TENANT_ID, id, 'Admin');
+      await sportsClubsApi.verifyAchievement(tenantId, id, 'Admin');
       loadData();
     } catch (error) {
       console.error('Failed to verify achievement:', error);
@@ -191,7 +197,7 @@ export default function AdminSportsPage() {
   const handleDeleteTeam = async (id: string) => {
     if (!confirm('Are you sure you want to delete this team?')) return;
     try {
-      await sportsClubsApi.deleteTeam(TENANT_ID, id);
+      await sportsClubsApi.deleteTeam(tenantId, id);
       loadData();
     } catch (error) {
       console.error('Failed to delete team:', error);
@@ -201,7 +207,7 @@ export default function AdminSportsPage() {
   const handleDeleteClub = async (id: string) => {
     if (!confirm('Are you sure you want to delete this club?')) return;
     try {
-      await sportsClubsApi.deleteClub(TENANT_ID, id);
+      await sportsClubsApi.deleteClub(tenantId, id);
       loadData();
     } catch (error) {
       console.error('Failed to delete club:', error);
@@ -232,6 +238,15 @@ export default function AdminSportsPage() {
     };
     return <Badge className={colors[level] || 'bg-gray-100 text-gray-800'}>{level}</Badge>;
   };
+
+  // Show loading state while auth is initializing
+  if (!isUserLoaded || !tenantId) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
