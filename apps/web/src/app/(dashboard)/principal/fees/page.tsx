@@ -23,105 +23,23 @@ import {
   Wallet,
   TrendingUp,
   TrendingDown,
-  Users,
   AlertCircle,
   CheckCircle2,
   Clock,
-  IndianRupee,
   PieChart,
   ArrowUpRight,
   ArrowDownRight,
+  Loader2,
 } from "lucide-react";
 import { useState } from "react";
-
-// Mock data - Replace with real API calls
-const feeStats = {
-  totalExpected: 15000000, // 1.5 Cr
-  totalCollected: 12750000, // 1.275 Cr
-  collectionRate: 85,
-  pendingAmount: 2250000, // 22.5 L
-  studentsPaid: 1062,
-  studentsPending: 188,
-  thisMonthCollection: 850000,
-  lastMonthCollection: 780000,
-};
-
-const departmentFees = [
-  {
-    department: "Computer Science",
-    students: 245,
-    expected: 3675000,
-    collected: 3380000,
-    pending: 295000,
-    collectionRate: 92,
-    defaulters: 12,
-  },
-  {
-    department: "Electronics",
-    students: 198,
-    expected: 2970000,
-    collected: 2525000,
-    pending: 445000,
-    collectionRate: 85,
-    defaulters: 28,
-  },
-  {
-    department: "Mechanical",
-    students: 220,
-    expected: 3300000,
-    collected: 2640000,
-    pending: 660000,
-    collectionRate: 80,
-    defaulters: 45,
-  },
-  {
-    department: "Civil",
-    students: 180,
-    expected: 2700000,
-    collected: 2295000,
-    pending: 405000,
-    collectionRate: 85,
-    defaulters: 32,
-  },
-  {
-    department: "Electrical",
-    students: 165,
-    expected: 2475000,
-    collected: 2103000,
-    pending: 372000,
-    collectionRate: 85,
-    defaulters: 28,
-  },
-];
-
-const feeCategories = [
-  { category: "Tuition Fee", collected: 8500000, expected: 9500000, percentage: 89 },
-  { category: "Lab Fee", collected: 1200000, expected: 1500000, percentage: 80 },
-  { category: "Library Fee", collected: 450000, expected: 500000, percentage: 90 },
-  { category: "Exam Fee", collected: 600000, expected: 750000, percentage: 80 },
-  { category: "Hostel Fee", collected: 1800000, expected: 2500000, percentage: 72 },
-  { category: "Transport Fee", collected: 200000, expected: 250000, percentage: 80 },
-];
-
-const recentTransactions = [
-  { student: "Rahul Sharma", department: "Computer Science", amount: 75000, date: "2026-01-07", type: "Tuition" },
-  { student: "Priya Patel", department: "Electronics", amount: 75000, date: "2026-01-07", type: "Tuition" },
-  { student: "Amit Kumar", department: "Mechanical", amount: 25000, date: "2026-01-06", type: "Hostel" },
-  { student: "Sneha Reddy", department: "Civil", amount: 15000, date: "2026-01-06", type: "Exam" },
-  { student: "Vikram Singh", department: "Electrical", amount: 75000, date: "2026-01-05", type: "Tuition" },
-];
-
-const monthlyTrend = [
-  { month: "Aug", collected: 4500000 },
-  { month: "Sep", collected: 2100000 },
-  { month: "Oct", collected: 1500000 },
-  { month: "Nov", collected: 1200000 },
-  { month: "Dec", collected: 780000 },
-  { month: "Jan", collected: 850000 },
-];
+import { usePrincipalFeeOverview } from "@/hooks/use-principal-dashboard";
+import { useTenantId } from "@/hooks/use-tenant";
 
 export default function PrincipalFeesPage() {
+  const tenantId = useTenantId();
   const [selectedYear, setSelectedYear] = useState("2025-26");
+
+  const { data: feeData, isLoading, error } = usePrincipalFeeOverview(tenantId || '');
 
   const formatCurrency = (amount: number) => {
     if (amount >= 10000000) {
@@ -131,10 +49,61 @@ export default function PrincipalFeesPage() {
     } else if (amount >= 1000) {
       return `₹${(amount / 1000).toFixed(1)}K`;
     }
-    return `₹${amount}`;
+    return `₹${amount.toLocaleString()}`;
   };
 
-  const percentChange = ((feeStats.thisMonthCollection - feeStats.lastMonthCollection) / feeStats.lastMonthCollection * 100).toFixed(1);
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 p-6">
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="p-6">
+            <p className="text-red-800">Failed to load fee data. Please try again later.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const stats = feeData?.stats || {
+    totalExpected: 0,
+    totalCollected: 0,
+    collectionRate: 0,
+    pendingAmount: 0,
+    studentsPaid: 0,
+    studentsPending: 0,
+    studentsPartial: 0,
+    thisMonthCollection: 0,
+    lastMonthCollection: 0,
+    overdueCount: 0,
+  };
+
+  const departmentFees = feeData?.departmentFees || [];
+  const feeCategories = feeData?.feeCategories || [];
+  const recentTransactions = feeData?.recentTransactions || [];
+  const monthlyTrend = feeData?.monthlyTrend || [];
+  const paymentMethods = feeData?.paymentMethods || [];
+
+  const percentChange = stats.lastMonthCollection > 0
+    ? ((stats.thisMonthCollection - stats.lastMonthCollection) / stats.lastMonthCollection * 100).toFixed(1)
+    : '0';
+
+  const totalStudents = stats.studentsPaid + stats.studentsPending + stats.studentsPartial;
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -165,11 +134,11 @@ export default function PrincipalFeesPage() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(feeStats.totalCollected)}</div>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalCollected)}</div>
             <p className="text-xs text-muted-foreground">
-              of {formatCurrency(feeStats.totalExpected)} expected
+              of {formatCurrency(stats.totalExpected)} expected
             </p>
-            <Progress value={feeStats.collectionRate} className="mt-2 h-2" />
+            <Progress value={stats.collectionRate} className="mt-2 h-2" />
           </CardContent>
         </Card>
         <Card>
@@ -178,9 +147,9 @@ export default function PrincipalFeesPage() {
             <AlertCircle className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{formatCurrency(feeStats.pendingAmount)}</div>
+            <div className="text-2xl font-bold text-yellow-600">{formatCurrency(stats.pendingAmount)}</div>
             <p className="text-xs text-muted-foreground">
-              {feeStats.studentsPending} students with dues
+              {stats.studentsPending + stats.studentsPartial} students with dues
             </p>
           </CardContent>
         </Card>
@@ -194,7 +163,7 @@ export default function PrincipalFeesPage() {
             )}
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(feeStats.thisMonthCollection)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(stats.thisMonthCollection)}</div>
             <p className={`text-xs flex items-center gap-1 ${Number(percentChange) >= 0 ? "text-green-600" : "text-red-600"}`}>
               {Number(percentChange) >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
               {percentChange}% vs last month
@@ -207,9 +176,9 @@ export default function PrincipalFeesPage() {
             <PieChart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{feeStats.collectionRate}%</div>
+            <div className="text-2xl font-bold">{stats.collectionRate}%</div>
             <p className="text-xs text-muted-foreground">
-              {feeStats.studentsPaid} of {feeStats.studentsPaid + feeStats.studentsPending} students paid
+              {stats.studentsPaid} of {totalStudents} students paid
             </p>
           </CardContent>
         </Card>
@@ -229,43 +198,49 @@ export default function PrincipalFeesPage() {
               <CardDescription>Fee collection status across all departments</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Department</TableHead>
-                    <TableHead className="text-center">Students</TableHead>
-                    <TableHead className="text-right">Expected</TableHead>
-                    <TableHead className="text-right">Collected</TableHead>
-                    <TableHead className="text-right">Pending</TableHead>
-                    <TableHead className="text-center">Rate</TableHead>
-                    <TableHead className="text-center">Defaulters</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {departmentFees.map((dept) => (
-                    <TableRow key={dept.department}>
-                      <TableCell className="font-medium">{dept.department}</TableCell>
-                      <TableCell className="text-center">{dept.students}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(dept.expected)}</TableCell>
-                      <TableCell className="text-right text-green-600">{formatCurrency(dept.collected)}</TableCell>
-                      <TableCell className="text-right text-yellow-600">{formatCurrency(dept.pending)}</TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Progress value={dept.collectionRate} className="w-16 h-2" />
-                          <span className={dept.collectionRate >= 90 ? "text-green-600 font-medium" : "text-yellow-600"}>
-                            {dept.collectionRate}%
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={dept.defaulters > 30 ? "destructive" : "secondary"}>
-                          {dept.defaulters}
-                        </Badge>
-                      </TableCell>
+              {departmentFees.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  No fee data available yet.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Department</TableHead>
+                      <TableHead className="text-center">Students</TableHead>
+                      <TableHead className="text-right">Expected</TableHead>
+                      <TableHead className="text-right">Collected</TableHead>
+                      <TableHead className="text-right">Pending</TableHead>
+                      <TableHead className="text-center">Rate</TableHead>
+                      <TableHead className="text-center">Defaulters</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {departmentFees.map((dept) => (
+                      <TableRow key={dept.departmentId}>
+                        <TableCell className="font-medium">{dept.department}</TableCell>
+                        <TableCell className="text-center">{dept.students}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(dept.expected)}</TableCell>
+                        <TableCell className="text-right text-green-600">{formatCurrency(dept.collected)}</TableCell>
+                        <TableCell className="text-right text-yellow-600">{formatCurrency(dept.pending)}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Progress value={dept.collectionRate} className="w-16 h-2" />
+                            <span className={dept.collectionRate >= 90 ? "text-green-600 font-medium" : "text-yellow-600"}>
+                              {dept.collectionRate}%
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={dept.defaulters > 30 ? "destructive" : "secondary"}>
+                            {dept.defaulters}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
 
@@ -279,7 +254,7 @@ export default function PrincipalFeesPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-700">{feeStats.studentsPaid}</div>
+                <div className="text-3xl font-bold text-green-700">{stats.studentsPaid}</div>
                 <p className="text-xs text-green-600 mt-1">Students with no pending dues</p>
               </CardContent>
             </Card>
@@ -291,7 +266,7 @@ export default function PrincipalFeesPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-yellow-700">142</div>
+                <div className="text-3xl font-bold text-yellow-700">{stats.studentsPartial}</div>
                 <p className="text-xs text-yellow-600 mt-1">Students with partial dues</p>
               </CardContent>
             </Card>
@@ -303,7 +278,7 @@ export default function PrincipalFeesPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-red-700">46</div>
+                <div className="text-3xl font-bold text-red-700">{stats.studentsPending}</div>
                 <p className="text-xs text-red-600 mt-1">Students with zero payment</p>
               </CardContent>
             </Card>
@@ -317,24 +292,30 @@ export default function PrincipalFeesPage() {
               <CardDescription>Collection status by fee type</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {feeCategories.map((category) => (
-                  <div key={category.category} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{category.category}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatCurrency(category.collected)} of {formatCurrency(category.expected)}
-                        </p>
+              {feeCategories.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  No fee categories available yet.
+                </p>
+              ) : (
+                <div className="space-y-6">
+                  {feeCategories.map((category) => (
+                    <div key={category.category} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{category.category}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatCurrency(category.collected)} of {formatCurrency(category.expected)}
+                          </p>
+                        </div>
+                        <span className={`text-lg font-bold ${category.percentage >= 85 ? "text-green-600" : category.percentage >= 70 ? "text-yellow-600" : "text-red-600"}`}>
+                          {category.percentage}%
+                        </span>
                       </div>
-                      <span className={`text-lg font-bold ${category.percentage >= 85 ? "text-green-600" : category.percentage >= 70 ? "text-yellow-600" : "text-red-600"}`}>
-                        {category.percentage}%
-                      </span>
+                      <Progress value={category.percentage} className="h-3" />
                     </div>
-                    <Progress value={category.percentage} className="h-3" />
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -345,22 +326,28 @@ export default function PrincipalFeesPage() {
               <CardDescription>Fee collection over the past 6 months</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-end justify-between h-48 gap-2">
-                {monthlyTrend.map((month) => {
-                  const maxValue = Math.max(...monthlyTrend.map(m => m.collected));
-                  const height = (month.collected / maxValue) * 100;
-                  return (
-                    <div key={month.month} className="flex flex-col items-center flex-1">
-                      <div
-                        className="w-full bg-primary rounded-t-md transition-all duration-300"
-                        style={{ height: `${height}%` }}
-                      />
-                      <span className="text-xs mt-2 text-muted-foreground">{month.month}</span>
-                      <span className="text-xs font-medium">{formatCurrency(month.collected)}</span>
-                    </div>
-                  );
-                })}
-              </div>
+              {monthlyTrend.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  No collection data available yet.
+                </p>
+              ) : (
+                <div className="flex items-end justify-between h-48 gap-2">
+                  {monthlyTrend.map((month) => {
+                    const maxValue = Math.max(...monthlyTrend.map(m => m.collected), 1);
+                    const height = (month.collected / maxValue) * 100;
+                    return (
+                      <div key={`${month.month}-${month.year}`} className="flex flex-col items-center flex-1">
+                        <div
+                          className="w-full bg-primary rounded-t-md transition-all duration-300"
+                          style={{ height: `${Math.max(height, 2)}%` }}
+                        />
+                        <span className="text-xs mt-2 text-muted-foreground">{month.month}</span>
+                        <span className="text-xs font-medium">{formatCurrency(month.collected)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -372,32 +359,38 @@ export default function PrincipalFeesPage() {
               <CardDescription>Latest fee payments received</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Fee Type</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentTransactions.map((txn, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{txn.student}</TableCell>
-                      <TableCell>{txn.department}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{txn.type}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right text-green-600 font-medium">
-                        ₹{txn.amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{txn.date}</TableCell>
+              {recentTransactions.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  No recent transactions available.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Fee Type</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Date</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {recentTransactions.map((txn) => (
+                      <TableRow key={txn.id}>
+                        <TableCell className="font-medium">{txn.studentName}</TableCell>
+                        <TableCell>{txn.department}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{txn.feeType}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right text-green-600 font-medium">
+                          ₹{txn.amount.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{formatDate(txn.date)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
 
@@ -409,50 +402,44 @@ export default function PrincipalFeesPage() {
                 <CardDescription>How students are paying fees</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Online (UPI/Card)</span>
-                    <div className="flex items-center gap-2">
-                      <Progress value={65} className="w-24 h-2" />
-                      <span className="text-sm font-medium">65%</span>
-                    </div>
+                {paymentMethods.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">
+                    No payment method data available.
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {paymentMethods.slice(0, 5).map((method) => (
+                      <div key={method.method} className="flex items-center justify-between">
+                        <span className="text-sm">{method.method}</span>
+                        <div className="flex items-center gap-2">
+                          <Progress value={method.percentage} className="w-24 h-2" />
+                          <span className="text-sm font-medium">{method.percentage}%</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Bank Transfer</span>
-                    <div className="flex items-center gap-2">
-                      <Progress value={25} className="w-24 h-2" />
-                      <span className="text-sm font-medium">25%</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Cash/DD</span>
-                    <div className="flex items-center gap-2">
-                      <Progress value={10} className="w-24 h-2" />
-                      <span className="text-sm font-medium">10%</span>
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle>Quick Stats</CardTitle>
-                <CardDescription>Today&apos;s collection summary</CardDescription>
+                <CardDescription>Collection summary</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <span className="text-sm text-muted-foreground">Today&apos;s Collection</span>
-                    <span className="text-lg font-bold text-green-600">₹1,50,000</span>
+                    <span className="text-sm text-muted-foreground">This Month Collection</span>
+                    <span className="text-lg font-bold text-green-600">{formatCurrency(stats.thisMonthCollection)}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <span className="text-sm text-muted-foreground">Transactions Today</span>
-                    <span className="text-lg font-bold">12</span>
+                    <span className="text-sm text-muted-foreground">Overdue Fees</span>
+                    <span className="text-lg font-bold text-red-600">{stats.overdueCount}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <span className="text-sm text-muted-foreground">Average Transaction</span>
-                    <span className="text-lg font-bold">₹12,500</span>
+                    <span className="text-sm text-muted-foreground">Last Month Collection</span>
+                    <span className="text-lg font-bold">{formatCurrency(stats.lastMonthCollection)}</span>
                   </div>
                 </div>
               </CardContent>

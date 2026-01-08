@@ -14,6 +14,13 @@ import {
   PrincipalUpcomingExamDto,
   DepartmentExamResultDto,
   RecentExamResultDto,
+  PrincipalFeeOverviewDto,
+  PrincipalFeeStatsDto,
+  DepartmentFeeDto,
+  FeeCategoryDto,
+  RecentTransactionDto,
+  MonthlyCollectionDto,
+  PaymentMethodStatsDto,
 } from './dto/principal-dashboard.dto';
 
 // Thresholds
@@ -584,5 +591,325 @@ export class PrincipalDashboardService {
       departmentResults,
       recentResults,
     };
+  }
+
+  /**
+   * Get comprehensive fee overview for principal
+   */
+  async getFeeOverview(tenantId: string): Promise<PrincipalFeeOverviewDto> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+
+    // Get last 6 months for trend
+    const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+
+    // Fetch all required data in parallel
+    const [
+      allFees,
+      departments,
+      recentPaidFees,
+    ] = await Promise.all([
+      // All student fees with student and department info
+      this.prisma.studentFee.findMany({
+        where: { tenantId },
+        include: {
+          student: {
+            include: {
+              user: { select: { name: true } },
+              department: { select: { id: true, name: true } },
+            },
+          },
+        },
+      }),
+      // All departments
+      this.prisma.department.findMany({
+        where: { tenantId },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+      // Recent paid fees for transactions
+      this.prisma.studentFee.findMany({
+        where: {
+          tenantId,
+          status: 'paid',
+          paidDate: { not: null },
+        },
+        include: {
+          student: {
+            include: {
+              user: { select: { name: true } },
+              department: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: { paidDate: 'desc' },
+        take: 20,
+      }),
+    ]);
+
+    // Calculate fee stats
+    const totalExpected = allFees.reduce((sum, f) => sum + Number(f.amount), 0);
+    const totalCollected = allFees
+      .filter((f) => f.status === 'paid')
+      .reduce((sum, f) => sum + Number(f.paidAmount || f.amount), 0);
+    const partialCollected = allFees
+      .filter((f) => f.status === 'partial')
+      .reduce((sum, f) => sum + Number(f.paidAmount || 0), 0);
+    const pendingAmount = totalExpected - totalCollected - partialCollected;
+
+    // Count students by payment status
+    const studentFeeMap = new Map<string, { paid: boolean; partial: boolean; pending: boolean }>();
+    allFees.forEach((fee) => {
+      const existing = studentFeeMap.get(fee.studentId) || { paid: false, partial: false, pending: false };
+      if (fee.status === 'paid') existing.paid = true;
+      else if (fee.status === 'partial') existing.partial = true;
+      else existing.pending = true;
+      studentFeeMap.set(fee.studentId, existing);
+    });
+
+    let studentsPaid = 0;
+    let studentsPending = 0;
+    let studentsPartial = 0;
+    studentFeeMap.forEach((status) => {
+      if (status.pending && !status.paid && !status.partial) studentsPending++;
+      else if (status.partial || (status.pending && (status.paid || status.partial))) studentsPartial++;
+      else if (status.paid && !status.pending && !status.partial) studentsPaid++;
+      else studentsPartial++; // mixed status
+    });
+
+    // This month collection
+    const thisMonthFees = allFees.filter(
+      (f) => f.paidDate && new Date(f.paidDate) >= startOfMonth
+    );
+    const thisMonthCollection = thisMonthFees.reduce(
+      (sum, f) => sum + Number(f.paidAmount || f.amount),
+      0
+    );
+
+    // Last month collection
+    const lastMonthFees = allFees.filter(
+      (f) =>
+        f.paidDate &&
+        new Date(f.paidDate) >= startOfLastMonth &&
+        new Date(f.paidDate) <= endOfLastMonth
+    );
+    const lastMonthCollection = lastMonthFees.reduce(
+      (sum, f) => sum + Number(f.paidAmount || f.amount),
+      0
+    );
+
+    // Overdue count
+    const overdueCount = allFees.filter(
+      (f) => (f.status === 'pending' || f.status === 'partial') && new Date(f.dueDate) < today
+    ).length;
+
+    const collectionRate = totalExpected > 0
+      ? Math.round(((totalCollected + partialCollected) / totalExpected) * 100)
+      : 0;
+
+    const stats: PrincipalFeeStatsDto = {
+      totalExpected,
+      totalCollected: totalCollected + partialCollected,
+      collectionRate,
+      pendingAmount,
+      studentsPaid,
+      studentsPending,
+      studentsPartial,
+      thisMonthCollection,
+      lastMonthCollection,
+      overdueCount,
+    };
+
+    // Build department-wise fees
+    const deptFeeMap = new Map<string, {
+      students: Set<string>;
+      expected: number;
+      collected: number;
+      defaulters: Set<string>;
+    }>();
+
+    departments.forEach((dept) => {
+      deptFeeMap.set(dept.id, {
+        students: new Set(),
+        expected: 0,
+        collected: 0,
+        defaulters: new Set(),
+      });
+    });
+
+    allFees.forEach((fee) => {
+      const deptId = fee.student.department?.id;
+      if (!deptId) return;
+
+      let deptData = deptFeeMap.get(deptId);
+      if (!deptData) {
+        deptData = { students: new Set(), expected: 0, collected: 0, defaulters: new Set() };
+        deptFeeMap.set(deptId, deptData);
+      }
+
+      deptData.students.add(fee.studentId);
+      deptData.expected += Number(fee.amount);
+
+      if (fee.status === 'paid') {
+        deptData.collected += Number(fee.paidAmount || fee.amount);
+      } else if (fee.status === 'partial') {
+        deptData.collected += Number(fee.paidAmount || 0);
+        if (new Date(fee.dueDate) < today) {
+          deptData.defaulters.add(fee.studentId);
+        }
+      } else if (new Date(fee.dueDate) < today) {
+        deptData.defaulters.add(fee.studentId);
+      }
+    });
+
+    const departmentFees: DepartmentFeeDto[] = departments.map((dept) => {
+      const data = deptFeeMap.get(dept.id) || {
+        students: new Set(),
+        expected: 0,
+        collected: 0,
+        defaulters: new Set(),
+      };
+      const pending = data.expected - data.collected;
+      return {
+        departmentId: dept.id,
+        department: dept.name,
+        students: data.students.size,
+        expected: data.expected,
+        collected: data.collected,
+        pending,
+        collectionRate: data.expected > 0 ? Math.round((data.collected / data.expected) * 100) : 0,
+        defaulters: data.defaulters.size,
+      };
+    }).filter((d) => d.students > 0);
+
+    // Build fee categories
+    const categoryMap = new Map<string, { collected: number; expected: number }>();
+    allFees.forEach((fee) => {
+      const category = fee.feeType || 'Other';
+      const existing = categoryMap.get(category) || { collected: 0, expected: 0 };
+      existing.expected += Number(fee.amount);
+      if (fee.status === 'paid') {
+        existing.collected += Number(fee.paidAmount || fee.amount);
+      } else if (fee.status === 'partial') {
+        existing.collected += Number(fee.paidAmount || 0);
+      }
+      categoryMap.set(category, existing);
+    });
+
+    const feeCategories: FeeCategoryDto[] = Array.from(categoryMap.entries())
+      .map(([category, data]) => ({
+        category: this.formatFeeType(category),
+        collected: data.collected,
+        expected: data.expected,
+        percentage: data.expected > 0 ? Math.round((data.collected / data.expected) * 100) : 0,
+      }))
+      .sort((a, b) => b.expected - a.expected);
+
+    // Build recent transactions
+    const recentTransactions: RecentTransactionDto[] = recentPaidFees
+      .filter((f) => f.paidDate)
+      .slice(0, 10)
+      .map((fee) => ({
+        id: fee.id,
+        studentId: fee.studentId,
+        studentName: fee.student.user?.name || 'Unknown',
+        department: fee.student.department?.name || 'Unknown',
+        departmentId: fee.student.department?.id || '',
+        amount: Number(fee.paidAmount || fee.amount),
+        feeType: this.formatFeeType(fee.feeType),
+        date: fee.paidDate!.toISOString().split('T')[0],
+        paymentMethod: fee.paymentMethod,
+      }));
+
+    // Build monthly trend (last 6 months)
+    const monthlyMap = new Map<string, number>();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    // Initialize last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      monthlyMap.set(key, 0);
+    }
+
+    allFees
+      .filter((f) => f.paidDate && new Date(f.paidDate) >= sixMonthsAgo)
+      .forEach((fee) => {
+        const paidDate = new Date(fee.paidDate!);
+        const key = `${paidDate.getFullYear()}-${paidDate.getMonth()}`;
+        const current = monthlyMap.get(key) || 0;
+        monthlyMap.set(key, current + Number(fee.paidAmount || fee.amount));
+      });
+
+    const monthlyTrend: MonthlyCollectionDto[] = Array.from(monthlyMap.entries())
+      .map(([key, collected]) => {
+        const [year, month] = key.split('-').map(Number);
+        return {
+          month: monthNames[month],
+          year,
+          collected,
+        };
+      });
+
+    // Build payment method stats
+    const methodMap = new Map<string, { count: number; amount: number }>();
+    allFees
+      .filter((f) => f.status === 'paid' && f.paymentMethod)
+      .forEach((fee) => {
+        const method = fee.paymentMethod || 'Unknown';
+        const existing = methodMap.get(method) || { count: 0, amount: 0 };
+        existing.count++;
+        existing.amount += Number(fee.paidAmount || fee.amount);
+        methodMap.set(method, existing);
+      });
+
+    const totalPaidCount = Array.from(methodMap.values()).reduce((sum, m) => sum + m.count, 0);
+    const paymentMethods: PaymentMethodStatsDto[] = Array.from(methodMap.entries())
+      .map(([method, data]) => ({
+        method: this.formatPaymentMethod(method),
+        count: data.count,
+        amount: data.amount,
+        percentage: totalPaidCount > 0 ? Math.round((data.count / totalPaidCount) * 100) : 0,
+      }))
+      .sort((a, b) => b.percentage - a.percentage);
+
+    return {
+      stats,
+      departmentFees,
+      feeCategories,
+      recentTransactions,
+      monthlyTrend,
+      paymentMethods,
+    };
+  }
+
+  /**
+   * Format fee type for display
+   */
+  private formatFeeType(feeType: string): string {
+    return feeType
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
+
+  /**
+   * Format payment method for display
+   */
+  private formatPaymentMethod(method: string): string {
+    const methodMap: Record<string, string> = {
+      upi: 'UPI',
+      card: 'Card',
+      netbanking: 'Net Banking',
+      wallet: 'Wallet',
+      cash: 'Cash',
+      dd: 'Demand Draft',
+      cheque: 'Cheque',
+    };
+    return methodMap[method.toLowerCase()] || method;
   }
 }

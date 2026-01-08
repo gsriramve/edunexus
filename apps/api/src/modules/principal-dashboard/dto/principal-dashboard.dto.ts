@@ -141,3 +141,77 @@ export class PrincipalExamOverviewDto {
   departmentResults: DepartmentExamResultDto[];
   recentResults: RecentExamResultDto[];
 }
+
+// ============ Fee Overview DTOs ============
+
+// Comprehensive fee stats
+export class PrincipalFeeStatsDto {
+  totalExpected: number;
+  totalCollected: number;
+  collectionRate: number;
+  pendingAmount: number;
+  studentsPaid: number;
+  studentsPending: number;
+  studentsPartial: number;
+  thisMonthCollection: number;
+  lastMonthCollection: number;
+  overdueCount: number;
+}
+
+// Department-wise fee collection
+export class DepartmentFeeDto {
+  departmentId: string;
+  department: string;
+  students: number;
+  expected: number;
+  collected: number;
+  pending: number;
+  collectionRate: number;
+  defaulters: number;
+}
+
+// Fee category breakdown
+export class FeeCategoryDto {
+  category: string;
+  collected: number;
+  expected: number;
+  percentage: number;
+}
+
+// Recent transaction
+export class RecentTransactionDto {
+  id: string;
+  studentId: string;
+  studentName: string;
+  department: string;
+  departmentId: string;
+  amount: number;
+  feeType: string;
+  date: string;
+  paymentMethod: string | null;
+}
+
+// Monthly collection trend
+export class MonthlyCollectionDto {
+  month: string;
+  year: number;
+  collected: number;
+}
+
+// Payment method distribution
+export class PaymentMethodStatsDto {
+  method: string;
+  count: number;
+  amount: number;
+  percentage: number;
+}
+
+// Full fee overview response
+export class PrincipalFeeOverviewDto {
+  stats: PrincipalFeeStatsDto;
+  departmentFees: DepartmentFeeDto[];
+  feeCategories: FeeCategoryDto[];
+  recentTransactions: RecentTransactionDto[];
+  monthlyTrend: MonthlyCollectionDto[];
+  paymentMethods: PaymentMethodStatsDto[];
+}

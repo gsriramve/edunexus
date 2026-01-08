@@ -52,4 +52,12 @@ export class PrincipalDashboardController {
   async getExamOverview(@Headers('x-tenant-id') tenantId: string) {
     return this.principalDashboardService.getExamOverview(tenantId);
   }
+
+  /**
+   * Get comprehensive fee overview
+   */
+  @Get('fees/overview')
+  async getFeeOverview(@Headers('x-tenant-id') tenantId: string) {
+    return this.principalDashboardService.getFeeOverview(tenantId);
+  }
 }

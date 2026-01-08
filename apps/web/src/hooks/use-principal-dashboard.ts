@@ -140,6 +140,73 @@ export interface PrincipalExamOverviewResponse {
   recentResults: RecentExamResultDto[];
 }
 
+// ============ Fee Overview Types ============
+
+export interface PrincipalFeeStatsDto {
+  totalExpected: number;
+  totalCollected: number;
+  collectionRate: number;
+  pendingAmount: number;
+  studentsPaid: number;
+  studentsPending: number;
+  studentsPartial: number;
+  thisMonthCollection: number;
+  lastMonthCollection: number;
+  overdueCount: number;
+}
+
+export interface DepartmentFeeDto {
+  departmentId: string;
+  department: string;
+  students: number;
+  expected: number;
+  collected: number;
+  pending: number;
+  collectionRate: number;
+  defaulters: number;
+}
+
+export interface FeeCategoryDto {
+  category: string;
+  collected: number;
+  expected: number;
+  percentage: number;
+}
+
+export interface RecentTransactionDto {
+  id: string;
+  studentId: string;
+  studentName: string;
+  department: string;
+  departmentId: string;
+  amount: number;
+  feeType: string;
+  date: string;
+  paymentMethod: string | null;
+}
+
+export interface MonthlyCollectionDto {
+  month: string;
+  year: number;
+  collected: number;
+}
+
+export interface PaymentMethodStatsDto {
+  method: string;
+  count: number;
+  amount: number;
+  percentage: number;
+}
+
+export interface PrincipalFeeOverviewResponse {
+  stats: PrincipalFeeStatsDto;
+  departmentFees: DepartmentFeeDto[];
+  feeCategories: FeeCategoryDto[];
+  recentTransactions: RecentTransactionDto[];
+  monthlyTrend: MonthlyCollectionDto[];
+  paymentMethods: PaymentMethodStatsDto[];
+}
+
 // ============ API Client ============
 
 async function principalDashboardApi<T>(
@@ -186,6 +253,8 @@ export const principalDashboardKeys = {
     [...principalDashboardKeys.all, 'alerts', tenantId] as const,
   fees: (tenantId: string) =>
     [...principalDashboardKeys.all, 'fees', tenantId] as const,
+  feeOverview: (tenantId: string) =>
+    [...principalDashboardKeys.all, 'fee-overview', tenantId] as const,
   exams: (tenantId: string) =>
     [...principalDashboardKeys.all, 'exams', tenantId] as const,
 };
@@ -254,6 +323,17 @@ export function usePrincipalExamOverview(tenantId: string) {
   return useQuery({
     queryKey: principalDashboardKeys.exams(tenantId),
     queryFn: () => principalDashboardApi<PrincipalExamOverviewResponse>('/exams', tenantId),
+    enabled: !!tenantId,
+  });
+}
+
+/**
+ * Get comprehensive fee overview for principal
+ */
+export function usePrincipalFeeOverview(tenantId: string) {
+  return useQuery({
+    queryKey: principalDashboardKeys.feeOverview(tenantId),
+    queryFn: () => principalDashboardApi<PrincipalFeeOverviewResponse>('/fees/overview', tenantId),
     enabled: !!tenantId,
   });
 }
