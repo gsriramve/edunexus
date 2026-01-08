@@ -52,6 +52,7 @@ import { LabAssistantModule } from './modules/lab-assistant/lab-assistant.module
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
 import { ParentDashboardModule } from './modules/parent-dashboard/parent-dashboard.module';
 import { StudentCareerModule } from './modules/student-career/student-career.module';
+import { StudentInsightsModule } from './modules/student-insights/student-insights.module';
 
 @Module({
   imports: [
@@ -122,6 +123,7 @@ import { StudentCareerModule } from './modules/student-career/student-career.mod
     AdminDashboardModule,
     ParentDashboardModule,
     StudentCareerModule,
+    StudentInsightsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
