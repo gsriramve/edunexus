@@ -40,9 +40,9 @@ This session completed the **Frontend UI implementation** for:
 |------|------|----------|-----------------|
 | Give Feedback | `/teacher/feedback/` | 360° feedback submission, 6-dimension rating (academic, participation, teamwork, communication, leadership, punctuality), strengths/improvements | `usePendingFeedback`, `useSubmitFeedback`, `useFeedbackStats`, `useFeedbackCycles` |
 | Student Alerts | `/teacher/alerts/` | Disengagement monitoring, severity/type filters, acknowledge/resolve actions, alert detail dialog | `useAlerts`, `useAlertStats`, `useAcknowledgeAlert`, `useResolveAlert` |
-| My Classes | `/teacher/classes/` | Today's schedule, all classes grid, by-subject grouping, attendance stats | Mock data |
-| Results | `/teacher/results/` | Subject/exam filters, editable marks table, grade distribution, bulk upload | Mock data |
-| Messages | `/teacher/messages/` | Inbox/sent tabs, compose dialog, student/parent/staff communication | Mock data |
+| My Classes | `/teacher/classes/` | Today's schedule, all classes grid, by-subject grouping, attendance stats | `useTeacherClasses` |
+| Results | `/teacher/results/` | Subject/exam filters, editable marks table, grade distribution, bulk upload | `useTeacherExams`, `useExamResults`, `useSaveResults` |
+| Messages | `/teacher/messages/` | Inbox/sent tabs, compose dialog, student/parent/staff communication, star/delete | `useInbox`, `useSentMessages`, `useMessageStats`, `useSendMessage`, `useMarkAsRead`, `useToggleStar`, `useDeleteMessages` |
 
 ### HoD Portal Pages (6 pages)
 
@@ -197,12 +197,43 @@ All frontend UI pages for the Student-Centric Platform Features have been implem
 
 ### Medium Priority
 1. **Backend APIs** for mock data pages:
-   - Teacher: classes, results, messages
    - HoD: subjects, attendance, exams
 
 ### Low Priority
 2. **Integration Testing**: E2E tests for teacher/HoD/principal flows
 3. **Real-time Updates**: WebSocket for alerts
+
+---
+
+## Additional Updates (Post-Session)
+
+### Teacher Messaging System (January 8, 2026)
+
+**Commit:** `13453bf` - feat: Add teacher messaging system with API, hooks, and UI integration
+
+**Backend Changes:**
+- Added `DirectMessage` and `MessageReceipt` models to Prisma schema
+- Created `teacher-messages` module with full CRUD operations
+- Endpoints: inbox, sent, send, reply, mark read, star, archive, delete
+- Recipient search for students, parents, and staff
+
+**Frontend Changes:**
+- Created `use-teacher-messages.ts` hooks file
+- Updated messages page to use real API instead of mock data
+- Added compose dialog with class/individual recipient selection
+- Added star, delete, refresh, and reply functionality
+
+**Files Changed:** 8 files, +2,132 lines
+
+**Teacher Portal Now 100% API Integrated:**
+| Page | API Status |
+|------|------------|
+| Dashboard | ✅ Real API |
+| Feedback | ✅ Real API |
+| Alerts | ✅ Real API |
+| Classes | ✅ Real API |
+| Results | ✅ Real API |
+| Messages | ✅ Real API |
 
 ---
 
