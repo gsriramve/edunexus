@@ -5,8 +5,6 @@ import {
   Users,
   GraduationCap,
   BookOpen,
-  TrendingUp,
-  TrendingDown,
   Calendar,
   Clock,
   AlertTriangle,
@@ -31,94 +29,21 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
-import { useUser } from "@clerk/nextjs";
-import { useStaff, useStudents, useStaffStats, useStudentStats } from "@/hooks/use-api";
-
-// TODO: Replace mock data with API calls when backend endpoints are implemented
-// Required endpoints:
-// - GET /hod/dashboard/stats - Department-specific overview stats
-// - GET /hod/dashboard/faculty-overview - Faculty with today's schedule
-// - GET /hod/dashboard/pending-approvals - Pending approvals for HOD
-// - GET /hod/dashboard/alerts - Department alerts and notifications
-// - GET /hod/dashboard/events - Upcoming department events
-// - GET /hod/dashboard/semester-overview - Semester-wise student distribution
-// - GET /staff/me - Get current HOD's staff profile including department
-
-// Mock HOD data
-const hodInfo = {
-  name: "Dr. Ramesh Kumar",
-  department: "Computer Science & Engineering",
-  departmentCode: "CSE",
-  designation: "Professor & Head",
-};
-
-const departmentStats = {
-  totalFaculty: 24,
-  totalStudents: 480,
-  activeSubjects: 32,
-  avgAttendance: 84,
-  avgCGPA: 7.8,
-  placementRate: 85,
-};
-
-const facultyOverview = [
-  { id: 1, name: "Dr. Priya Sharma", designation: "Associate Professor", subjects: 3, attendance: 92, classesToday: 2 },
-  { id: 2, name: "Dr. Arun Menon", designation: "Associate Professor", subjects: 2, attendance: 88, classesToday: 3 },
-  { id: 3, name: "Prof. Kavitha Nair", designation: "Assistant Professor", subjects: 3, attendance: 95, classesToday: 1 },
-  { id: 4, name: "Dr. Suresh Pillai", designation: "Associate Professor", subjects: 2, attendance: 78, classesToday: 2 },
-  { id: 5, name: "Prof. Vijay Kumar", designation: "Assistant Professor", subjects: 3, attendance: 90, classesToday: 0 },
-];
-
-const semesterWiseStudents = [
-  { semester: 1, students: 120, avgAttendance: 88, avgCGPA: null },
-  { semester: 2, students: 118, avgAttendance: 85, avgCGPA: 7.5 },
-  { semester: 3, students: 115, avgAttendance: 82, avgCGPA: 7.6 },
-  { semester: 4, students: 112, avgAttendance: 80, avgCGPA: 7.8 },
-  { semester: 5, students: 108, avgAttendance: 84, avgCGPA: 7.9 },
-  { semester: 6, students: 105, avgAttendance: 86, avgCGPA: 8.0 },
-  { semester: 7, students: 102, avgAttendance: 88, avgCGPA: 8.1 },
-  { semester: 8, students: 100, avgAttendance: 90, avgCGPA: 8.2 },
-];
-
-const recentAlerts = [
-  { id: 1, type: "attendance", message: "15 students in Sem 5 have attendance below 75%", severity: "high", time: "2 hours ago" },
-  { id: 2, type: "faculty", message: "Dr. Suresh Pillai has 3 pending leave requests", severity: "medium", time: "4 hours ago" },
-  { id: 3, type: "academic", message: "Internal marks entry deadline: Jan 15, 2026", severity: "medium", time: "1 day ago" },
-  { id: 4, type: "placement", message: "TechCorp placement drive scheduled for Feb 10", severity: "low", time: "2 days ago" },
-];
-
-const upcomingEvents = [
-  { id: 1, title: "Faculty Meeting", date: "Jan 8, 2026", time: "10:00 AM", type: "meeting" },
-  { id: 2, title: "Internal Exam - Sem 5", date: "Jan 12, 2026", time: "9:00 AM", type: "exam" },
-  { id: 3, title: "Guest Lecture - AI/ML", date: "Jan 15, 2026", time: "2:00 PM", type: "event" },
-  { id: 4, title: "Marks Submission Deadline", date: "Jan 20, 2026", time: "5:00 PM", type: "deadline" },
-];
-
-const pendingApprovals = [
-  { id: 1, type: "Leave Request", from: "Dr. Suresh Pillai", submitted: "Jan 5, 2026", days: 2 },
-  { id: 2, type: "Lab Equipment", from: "Prof. Kavitha Nair", submitted: "Jan 4, 2026", amount: "₹45,000" },
-  { id: 3, type: "Guest Lecture", from: "Dr. Arun Menon", submitted: "Jan 3, 2026", speaker: "Industry Expert" },
-];
+import { useHodDashboard } from "@/hooks/use-hod-dashboard";
 
 export default function HODDashboard() {
   const tenantId = useTenantId() || '';
-  const { user } = useUser();
   const [selectedSemester, setSelectedSemester] = useState("all");
 
-  // Fetch available data from existing APIs
-  // TODO: Get HOD's department ID from user context/metadata
-  const { data: staffData, isLoading: staffLoading } = useStaff(tenantId, {
-    // departmentId: hodDepartmentId, // TODO: Add department filter when available
-  });
-  const { data: studentsData, isLoading: studentsLoading } = useStudents(tenantId, {
-    // departmentId: hodDepartmentId, // TODO: Add department filter when available
-  });
-  const { data: staffStats, isLoading: staffStatsLoading } = useStaffStats(tenantId);
-  const { data: studentStats, isLoading: studentStatsLoading } = useStudentStats(tenantId);
+  // Fetch dashboard data
+  const {
+    data: dashboardData,
+    isLoading,
+    error,
+  } = useHodDashboard(tenantId);
 
   // Show loading skeleton while data loads
-  const isLoading = staffLoading || studentsLoading || staffStatsLoading || studentStatsLoading;
-  if (isLoading && !staffData && !studentsData) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -154,32 +79,61 @@ export default function HODDashboard() {
     );
   }
 
-  // Extract data from API responses
-  const apiStaff = staffData?.data || [];
-  const apiStudents = studentsData?.data || [];
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Department Dashboard</h1>
+            <p className="text-muted-foreground">
+              Monitor and manage your department
+            </p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <p className="text-lg font-medium text-red-600">
+                {error instanceof Error ? error.message : 'Failed to load dashboard'}
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Please make sure you are assigned as HoD with a valid department.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  // Use API stats when available, fallback to mock data
-  const stats = {
-    totalFaculty: staffStats?.total || departmentStats.totalFaculty,
-    totalStudents: studentStats?.total || departmentStats.totalStudents,
-    activeSubjects: departmentStats.activeSubjects, // TODO: No API for subjects
-    avgAttendance: departmentStats.avgAttendance, // TODO: Get from attendance API
-    avgCGPA: departmentStats.avgCGPA, // TODO: Get from academics API
-    placementRate: departmentStats.placementRate, // TODO: No API for placement
+  // Extract data from API response
+  const department = dashboardData?.department;
+  const hodInfo = dashboardData?.hodInfo;
+  const stats = dashboardData?.stats || {
+    totalFaculty: 0,
+    totalStudents: 0,
+    activeSubjects: 0,
+    avgAttendance: 0,
+    avgCGPA: 0,
+    atRiskStudents: 0,
+    presentToday: 0,
+    onLeaveToday: 0,
   };
+  const facultyOverview = dashboardData?.facultyOverview || [];
+  const semesterOverview = dashboardData?.semesterOverview || [];
+  const recentAlerts = dashboardData?.recentAlerts || [];
+  const upcomingEvents = dashboardData?.upcomingEvents || [];
+  const pendingApprovals = dashboardData?.pendingApprovals || [];
 
-  // Map API staff to faculty overview format
-  const displayFaculty = apiStaff.length > 0 ? apiStaff.slice(0, 5).map(staff => ({
-    id: staff.id,
-    name: staff.user?.name || 'Unknown',
-    designation: staff.designation || 'Faculty',
-    subjects: 0, // TODO: Get from teaching assignments
-    attendance: 0, // TODO: Get from attendance API
-    classesToday: 0, // TODO: Get from schedule API
-  })) : facultyOverview;
-
-  // Get display name from Clerk or fallback
-  const displayHodName = user?.fullName || user?.firstName || hodInfo.name;
+  // Filter semesters based on selection
+  const filteredSemesters = semesterOverview.filter((sem) => {
+    if (selectedSemester === "all") return true;
+    if (selectedSemester === "odd") return sem.semester % 2 === 1;
+    if (selectedSemester === "even") return sem.semester % 2 === 0;
+    return true;
+  });
 
   const getAlertBadge = (severity: string) => {
     switch (severity) {
@@ -209,7 +163,7 @@ export default function HODDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Department Dashboard</h1>
           <p className="text-muted-foreground">
-            {hodInfo.department} • {displayHodName}
+            {department ? `${department.name} (${department.code})` : 'Loading...'} {hodInfo ? `• ${hodInfo.name}` : ''}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -286,7 +240,7 @@ export default function HODDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg CGPA</p>
-                <p className="text-2xl font-bold">{stats.avgCGPA}</p>
+                <p className="text-2xl font-bold">{stats.avgCGPA || '-'}</p>
               </div>
             </div>
           </CardContent>
@@ -294,12 +248,12 @@ export default function HODDashboard() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-teal-50">
-                <Target className="h-6 w-6 text-teal-600" />
+              <div className="p-3 rounded-lg bg-red-50">
+                <Target className="h-6 w-6 text-red-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Placement</p>
-                <p className="text-2xl font-bold">{stats.placementRate}%</p>
+                <p className="text-sm text-muted-foreground">At Risk</p>
+                <p className="text-2xl font-bold text-red-600">{stats.atRiskStudents}</p>
               </div>
             </div>
           </CardContent>
@@ -320,40 +274,46 @@ export default function HODDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {displayFaculty.map((faculty) => (
-                <div key={faculty.id} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback>
-                        {faculty.name.split(" ").map((n) => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{faculty.name}</p>
-                      <p className="text-sm text-muted-foreground">{faculty.designation}</p>
+            {facultyOverview.length > 0 ? (
+              <div className="space-y-4">
+                {facultyOverview.map((faculty) => (
+                  <div key={faculty.id} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarFallback>
+                          {faculty.name.split(" ").map((n) => n[0]).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{faculty.name}</p>
+                        <p className="text-sm text-muted-foreground">{faculty.designation}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6 text-sm">
+                      <div className="text-center">
+                        <p className="font-medium">{faculty.subjectCount}</p>
+                        <p className="text-muted-foreground">Subjects</p>
+                      </div>
+                      <div className="text-center">
+                        <p className={`font-medium ${faculty.attendancePercentage < 80 ? "text-red-600" : ""}`}>
+                          {faculty.attendancePercentage}%
+                        </p>
+                        <p className="text-muted-foreground">Attendance</p>
+                      </div>
+                      <div className="text-center">
+                        <Badge variant={faculty.classesToday > 0 ? "default" : "secondary"}>
+                          {faculty.classesToday} classes
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6 text-sm">
-                    <div className="text-center">
-                      <p className="font-medium">{faculty.subjects}</p>
-                      <p className="text-muted-foreground">Subjects</p>
-                    </div>
-                    <div className="text-center">
-                      <p className={`font-medium ${faculty.attendance < 80 ? "text-red-600" : ""}`}>
-                        {faculty.attendance}%
-                      </p>
-                      <p className="text-muted-foreground">Attendance</p>
-                    </div>
-                    <div className="text-center">
-                      <Badge variant={faculty.classesToday > 0 ? "default" : "secondary"}>
-                        {faculty.classesToday} classes
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No faculty data available
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -364,26 +324,28 @@ export default function HODDashboard() {
             <CardDescription>{pendingApprovals.length} items need your attention</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {pendingApprovals.map((item) => (
-                <div key={item.id} className="p-3 rounded-lg border">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline">{item.type}</Badge>
-                    <span className="text-xs text-muted-foreground">{item.submitted}</span>
+            {pendingApprovals.length > 0 ? (
+              <div className="space-y-4">
+                {pendingApprovals.map((item) => (
+                  <div key={item.id} className="p-3 rounded-lg border">
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant="outline">{item.type}</Badge>
+                      <span className="text-xs text-muted-foreground">{item.submitted}</span>
+                    </div>
+                    <p className="text-sm font-medium">{item.from}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{item.details}</p>
+                    <div className="flex gap-2 mt-3">
+                      <Button size="sm" className="flex-1">Approve</Button>
+                      <Button size="sm" variant="outline" className="flex-1">Reject</Button>
+                    </div>
                   </div>
-                  <p className="text-sm font-medium">{item.from}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {item.days && `${item.days} days`}
-                    {item.amount && item.amount}
-                    {item.speaker && item.speaker}
-                  </p>
-                  <div className="flex gap-2 mt-3">
-                    <Button size="sm" className="flex-1">Approve</Button>
-                    <Button size="sm" variant="outline" className="flex-1">Reject</Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No pending approvals
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -411,30 +373,36 @@ export default function HODDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {semesterWiseStudents.map((sem) => (
-                <div key={sem.semester} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted">
-                  <div className="w-16 text-center">
-                    <Badge variant="outline">Sem {sem.semester}</Badge>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <span>{sem.students} students</span>
-                      <span className={sem.avgAttendance < 80 ? "text-red-600" : ""}>
-                        {sem.avgAttendance}% att.
-                      </span>
+            {filteredSemesters.length > 0 ? (
+              <div className="space-y-3">
+                {filteredSemesters.map((sem) => (
+                  <div key={sem.semester} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted">
+                    <div className="w-16 text-center">
+                      <Badge variant="outline">Sem {sem.semester}</Badge>
                     </div>
-                    <Progress value={sem.avgAttendance} className="h-2" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span>{sem.students} students</span>
+                        <span className={sem.avgAttendance < 80 ? "text-red-600" : ""}>
+                          {sem.avgAttendance}% att.
+                        </span>
+                      </div>
+                      <Progress value={sem.avgAttendance} className="h-2" />
+                    </div>
+                    <div className="w-16 text-right">
+                      <span className="font-medium">
+                        {sem.avgCGPA ? sem.avgCGPA.toFixed(1) : "-"}
+                      </span>
+                      <p className="text-xs text-muted-foreground">CGPA</p>
+                    </div>
                   </div>
-                  <div className="w-16 text-right">
-                    <span className="font-medium">
-                      {sem.avgCGPA ? sem.avgCGPA.toFixed(1) : "-"}
-                    </span>
-                    <p className="text-xs text-muted-foreground">CGPA</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No semester data available
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -448,28 +416,34 @@ export default function HODDashboard() {
             <CardDescription>Issues requiring attention</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentAlerts.map((alert) => (
-                <div key={alert.id} className="flex items-start gap-3 p-3 rounded-lg border">
-                  <div className="mt-0.5">
-                    {alert.severity === "high" ? (
-                      <AlertTriangle className="h-4 w-4 text-red-500" />
-                    ) : alert.severity === "medium" ? (
-                      <Clock className="h-4 w-4 text-orange-500" />
-                    ) : (
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      {getAlertBadge(alert.severity)}
-                      <span className="text-xs text-muted-foreground">{alert.time}</span>
+            {recentAlerts.length > 0 ? (
+              <div className="space-y-4">
+                {recentAlerts.map((alert) => (
+                  <div key={alert.id} className="flex items-start gap-3 p-3 rounded-lg border">
+                    <div className="mt-0.5">
+                      {alert.severity === "high" ? (
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                      ) : alert.severity === "medium" ? (
+                        <Clock className="h-4 w-4 text-orange-500" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      )}
                     </div>
-                    <p className="text-sm">{alert.message}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        {getAlertBadge(alert.severity)}
+                        <span className="text-xs text-muted-foreground">{alert.time}</span>
+                      </div>
+                      <p className="text-sm">{alert.message}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No alerts at this time
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -483,19 +457,25 @@ export default function HODDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            {upcomingEvents.map((event) => (
-              <div key={event.id} className="p-4 rounded-lg border">
-                <div className="flex items-center justify-between mb-2">
-                  {getEventBadge(event.type)}
+          {upcomingEvents.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-4">
+              {upcomingEvents.map((event) => (
+                <div key={event.id} className="p-4 rounded-lg border">
+                  <div className="flex items-center justify-between mb-2">
+                    {getEventBadge(event.type)}
+                  </div>
+                  <h4 className="font-medium">{event.title}</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {event.date} • {event.time}
+                  </p>
                 </div>
-                <h4 className="font-medium">{event.title}</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {event.date} • {event.time}
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No upcoming events
+            </div>
+          )}
         </CardContent>
       </Card>
 

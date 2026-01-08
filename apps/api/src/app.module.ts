@@ -39,6 +39,7 @@ import { HodSubjectsModule } from './modules/hod-subjects/hod-subjects.module';
 import { HodAttendanceModule } from './modules/hod-attendance/hod-attendance.module';
 import { HodFacultyModule } from './modules/hod-faculty/hod-faculty.module';
 import { HodStudentsModule } from './modules/hod-students/hod-students.module';
+import { HodDashboardModule } from './modules/hod-dashboard/hod-dashboard.module';
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { HodStudentsModule } from './modules/hod-students/hod-students.module';
     HodAttendanceModule,
     HodFacultyModule,
     HodStudentsModule,
+    HodDashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
