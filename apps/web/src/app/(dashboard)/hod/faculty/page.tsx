@@ -65,8 +65,9 @@ import {
   type FacultyDto,
 } from "@/hooks/use-hod-faculty";
 
-// Mock leave requests - Leave model not yet implemented
-const leaveRequests = [
+// Sample leave requests - Leave model not implemented in database schema
+// Real API would require adding Leave model to prisma schema
+const sampleLeaveRequests = [
   { id: 1, faculty: "Dr. Suresh Pillai", type: "Medical", from: "Jan 6, 2026", to: "Jan 8, 2026", days: 3, status: "pending" },
   { id: 2, faculty: "Prof. Kavitha Nair", type: "Personal", from: "Jan 15, 2026", to: "Jan 15, 2026", days: 1, status: "pending" },
 ];
@@ -553,9 +554,9 @@ export default function HODFacultyManagement() {
               <CardDescription>Approve or reject faculty leave applications</CardDescription>
             </CardHeader>
             <CardContent>
-              {leaveRequests.length > 0 ? (
+              {sampleLeaveRequests.length > 0 ? (
                 <div className="space-y-4">
-                  {leaveRequests.map((leave) => (
+                  {sampleLeaveRequests.map((leave) => (
                     <div key={leave.id} className="p-4 rounded-lg border">
                       <div className="flex items-start justify-between">
                         <div>

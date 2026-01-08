@@ -54,6 +54,7 @@ import { ParentDashboardModule } from './modules/parent-dashboard/parent-dashboa
 import { StudentCareerModule } from './modules/student-career/student-career.module';
 import { StudentInsightsModule } from './modules/student-insights/student-insights.module';
 import { StudentNotificationsModule } from './modules/student-notifications/student-notifications.module';
+import { HodSkillGapsModule } from './modules/hod-skill-gaps/hod-skill-gaps.module';
 
 @Module({
   imports: [
@@ -126,6 +127,7 @@ import { StudentNotificationsModule } from './modules/student-notifications/stud
     StudentCareerModule,
     StudentInsightsModule,
     StudentNotificationsModule,
+    HodSkillGapsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

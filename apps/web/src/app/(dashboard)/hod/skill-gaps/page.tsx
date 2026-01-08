@@ -48,43 +48,7 @@ import {
   BarChart3,
   Briefcase,
 } from "lucide-react";
-import { useTenantId } from "@/hooks/use-tenant";
-import {
-  useCriStats,
-  useCriAlerts,
-} from "@/hooks/use-student-indices";
-
-// Mock skill data - will be replaced with API
-const mockSkillData = {
-  topGaps: [
-    { skill: "Data Structures", category: "Technical", gap: 35, students: 120 },
-    { skill: "System Design", category: "Technical", gap: 42, students: 95 },
-    { skill: "Communication", category: "Soft Skills", gap: 28, students: 150 },
-    { skill: "Cloud Computing", category: "Technical", gap: 45, students: 80 },
-    { skill: "Machine Learning", category: "Technical", gap: 38, students: 110 },
-  ],
-  byCategory: [
-    { category: "Programming", avgScore: 68, studentCount: 200 },
-    { category: "Database", avgScore: 62, studentCount: 200 },
-    { category: "Cloud", avgScore: 45, studentCount: 180 },
-    { category: "AI/ML", avgScore: 52, studentCount: 150 },
-    { category: "Soft Skills", avgScore: 72, studentCount: 200 },
-  ],
-  industryDemand: [
-    { skill: "Python", demand: 95, supply: 78 },
-    { skill: "AWS/Cloud", demand: 88, supply: 45 },
-    { skill: "React/Frontend", demand: 82, supply: 65 },
-    { skill: "SQL/Database", demand: 90, supply: 72 },
-    { skill: "AI/ML", demand: 85, supply: 52 },
-    { skill: "Communication", demand: 92, supply: 72 },
-  ],
-  placementReadiness: {
-    ready: 45,
-    almostReady: 85,
-    needsWork: 50,
-    atRisk: 20,
-  },
-};
+import { useHodSkillGaps } from "@/hooks/use-hod-skill-gaps";
 
 const categoryIcons: Record<string, React.ReactNode> = {
   Programming: <Code className="h-5 w-5" />,
@@ -98,13 +62,22 @@ export default function SkillGapsPage() {
   const [selectedBatch, setSelectedBatch] = useState("all");
   const [activeTab, setActiveTab] = useState("overview");
 
-  const tenantId = useTenantId();
+  const { data: skillGapsData, isLoading } = useHodSkillGaps({
+    batch: selectedBatch !== 'all' ? selectedBatch : undefined,
+  });
 
-  const { data: criStats, isLoading: criLoading } = useCriStats(tenantId || "");
-  const { data: criAlerts, isLoading: alertsLoading } = useCriAlerts(tenantId || "", undefined, 50);
-
-  const isLoading = criLoading || alertsLoading;
-  const data = mockSkillData;
+  // Default data structure when API returns no data
+  const data = skillGapsData || {
+    topGaps: [],
+    byCategory: [],
+    industryDemand: [],
+    placementReadiness: {
+      ready: 0,
+      almostReady: 0,
+      needsWork: 0,
+      atRisk: 0,
+    },
+  };
 
   if (isLoading) {
     return (
