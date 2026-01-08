@@ -195,13 +195,12 @@ All frontend UI pages for the Student-Centric Platform Features have been implem
 
 ## Remaining Work (Future Sessions)
 
-### Medium Priority
-1. **Backend APIs** for mock data pages:
-   - HoD: subjects, attendance, exams
-
 ### Low Priority
-2. **Integration Testing**: E2E tests for teacher/HoD/principal flows
-3. **Real-time Updates**: WebSocket for alerts
+1. **Integration Testing**: E2E tests for teacher/HoD/principal flows
+2. **Real-time Updates**: WebSocket for alerts
+
+### Completed
+- ~~**Backend APIs** for mock data pages (HoD: subjects, attendance, exams)~~ - All HoD APIs complete!
 
 ---
 
@@ -234,6 +233,39 @@ All frontend UI pages for the Student-Centric Platform Features have been implem
 | Classes | ✅ Real API |
 | Results | ✅ Real API |
 | Messages | ✅ Real API |
+
+---
+
+### HoD Exams API Module (January 8, 2026)
+
+**Commit:** `784c662` - feat: Add HoD exams API module and update page with real API integration
+
+**Backend Changes:**
+- Created `hod-exams` module with full CRUD operations
+- DTOs: QueryExamsDto, ScheduleExamDto, UpdateExamDto, UpdateExamStatusDto
+- Service methods: getExamsOverview, scheduleExam, updateExam, updateExamStatus, deleteExam, getExamById, getExamStats
+- Returns department info, stats, upcoming/completed exams, and available subjects
+
+**Frontend Changes:**
+- Created `use-hod-exams.ts` hooks file
+- Hooks: useHodExams, useHodExamById, useHodExamStats, useScheduleExam, useUpdateExam, useUpdateExamStatus, useDeleteExam
+- Updated exams page to use real API with loading/error states
+- Added full CRUD functionality (schedule, edit, status change, delete)
+
+**Files Changed:** 7 files, +1,726 lines
+
+**HoD Portal API Status:**
+| Page | API Status |
+|------|------------|
+| Dashboard | ✅ Real API |
+| Department Health | ✅ Real API |
+| Skill Gaps | ✅ Real API |
+| Feedback Cycles | ✅ Real API |
+| Subjects | ✅ Real API (pre-existing hod-subjects module) |
+| Attendance | ✅ Real API (pre-existing hod-attendance module) |
+| Exams | ✅ Real API (NEW) |
+
+**HoD Portal Now 100% API Integrated!**
 
 ---
 
