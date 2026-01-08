@@ -393,6 +393,9 @@ model Student {
   alumniProfile         AlumniProfile?
   alumniMentorships     AlumniMentorship[]
 
+  // Assignments
+  assignmentSubmissions AssignmentSubmission[]
+
   @@unique([tenantId, rollNo])
   @@index([tenantId])
   @@map("students")
@@ -473,13 +476,72 @@ model TeacherSubject {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  staff      Staff       @relation(fields: [staffId], references: [id])
-  subject    Subject     @relation(fields: [subjectId], references: [id])
-  timetables Timetable[]
+  staff       Staff        @relation(fields: [staffId], references: [id])
+  subject     Subject      @relation(fields: [subjectId], references: [id])
+  timetables  Timetable[]
+  assignments Assignment[]
 
   @@unique([tenantId, staffId, subjectId, section, academicYear])
   @@index([tenantId])
   @@map("teacher_subjects")
+}
+
+// =============================================================================
+// ASSIGNMENTS
+// =============================================================================
+
+/// Assignments created by teachers
+model Assignment {
+  id               String   @id @default(cuid())
+  tenantId         String
+  teacherSubjectId String
+  title            String
+  description      String?
+  instructions     String?  @db.Text
+  totalMarks       Int      @default(100)
+  dueDate          DateTime
+  status           String   @default("draft") // draft, active, completed, archived
+  attachments      Json     @default("[]") // Array of {name, url, type, size}
+  allowLateSubmission Boolean @default(false)
+  latePenaltyPercent  Int?   // Percentage deducted for late submissions
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  teacherSubject   TeacherSubject       @relation(fields: [teacherSubjectId], references: [id], onDelete: Cascade)
+  submissions      AssignmentSubmission[]
+
+  @@index([tenantId])
+  @@index([teacherSubjectId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("assignments")
+}
+
+/// Student submissions for assignments
+model AssignmentSubmission {
+  id           String    @id @default(cuid())
+  tenantId     String
+  assignmentId String
+  studentId    String
+  submittedAt  DateTime  @default(now())
+  status       String    @default("submitted") // submitted, late, graded, returned
+  files        Json      @default("[]") // Array of {name, url, type, size}
+  marks        Decimal?  @db.Decimal(5, 2)
+  feedback     String?   @db.Text
+  gradedAt     DateTime?
+  gradedBy     String?   // Staff ID who graded
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@index([tenantId])
+  @@index([assignmentId])
+  @@index([studentId])
+  @@index([status])
+  @@map("assignment_submissions")
 }
 
 // =============================================================================

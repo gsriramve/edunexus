@@ -43,6 +43,7 @@ import { HodDashboardModule } from './modules/hod-dashboard/hod-dashboard.module
 import { HodExamsModule } from './modules/hod-exams/hod-exams.module';
 import { TeacherDashboardModule } from './modules/teacher-dashboard/teacher-dashboard.module';
 import { TeacherMessagesModule } from './modules/teacher-messages/teacher-messages.module';
+import { TeacherAssignmentsModule } from './modules/teacher-assignments/teacher-assignments.module';
 import { PrincipalDashboardModule } from './modules/principal-dashboard/principal-dashboard.module';
 
 @Module({
@@ -105,6 +106,7 @@ import { PrincipalDashboardModule } from './modules/principal-dashboard/principa
     HodExamsModule,
     TeacherDashboardModule,
     TeacherMessagesModule,
+    TeacherAssignmentsModule,
     PrincipalDashboardModule,
   ],
   controllers: [AppController],
