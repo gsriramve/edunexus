@@ -6,9 +6,9 @@
 
 ## Executive Summary
 
-EduNexus **Core ERP is 96% complete** (66/69 tasks). **Phase 6: Student-Centric Platform is 64% complete** (4/7 modules + 2 Frontend Pages).
+EduNexus **Core ERP is 96% complete** (66/69 tasks). **Phase 6: Student-Centric Platform is 71% complete** (4/7 modules + 3 Frontend Pages).
 
-**Today's Focus:** Implemented Career Readiness Page with CRI visualization components (radar chart, skill gaps, action plan).
+**Today's Focus:** Implemented Student Guidance Page with AI recommendations components (GuidanceCard, AlertBanner, MonthlyPlanCard, GoalCard, DeadlineList, GuidanceStats).
 
 ---
 
@@ -21,7 +21,7 @@ EduNexus **Core ERP is 96% complete** (66/69 tasks). **Phase 6: Student-Centric 
 | Phase 3 | Advanced Modules | 🟢 Complete | 100% |
 | Phase 4 | AI Features | 🟢 Complete | 100% |
 | Phase 5 | Polish & Launch | 🟡 In Progress | 70% |
-| **Phase 6** | **Student-Centric Platform** | 🟡 **In Progress** | **64% (4/7 modules + 2 Frontend)** |
+| **Phase 6** | **Student-Centric Platform** | 🟡 **In Progress** | **71% (4/7 modules + 3 Frontend)** |
 
 ### Phase 6 - Student-Centric Features Progress
 
@@ -32,7 +32,8 @@ EduNexus **Core ERP is 96% complete** (66/69 tasks). **Phase 6: Student-Centric 
 | 360° Feedback System | ✅ Complete | API module, normalizer, hooks |
 | AI-Driven Guidance | ✅ Complete | API module, recommendation engine, alert detection, hooks |
 | Student Growth Page (Frontend) | ✅ Complete | SGI components, charts, growth page |
-| **Career Readiness Page (Frontend)** | ✅ **Complete** | CRI components, radar, skill gaps, action plan |
+| Career Readiness Page (Frontend) | ✅ Complete | CRI components, radar, skill gaps, action plan |
+| **Student Guidance Page (Frontend)** | ✅ **Complete** | Guidance components, alerts, goals, deadlines |
 | Student Journey Timeline | ⬜ Pending | - |
 | Face Recognition Attendance | ⬜ Pending | - |
 | Alumni Management | ⬜ Pending | - |
@@ -42,46 +43,55 @@ EduNexus **Core ERP is 96% complete** (66/69 tasks). **Phase 6: Student-Centric 
 
 ## Today's Accomplishments
 
-### Career Readiness Page Frontend Complete
+### Student Guidance Page Frontend Complete (Session 26)
 
-Created CRI visualization components and enhanced the career-readiness page:
+Created guidance visualization components and enhanced the guidance page:
 
-#### 1. CRI Frontend Hooks (`use-career-readiness.ts`)
-- Utility functions: `getCriLevel`, `getScoreColor`, `getSalaryBandLabel`, `getProbabilityColor`
-- Skill gap utilities: `calculateGapPercentage`, `getSkillGapRecommendation`, `sortSkillGapsByPriority`
-- Action plan utilities: `sortActionsByImpact`, `getReadinessStatus`
-- TypeScript types: `CriData`, `SkillGap`, `TargetRole`, `MatchingCompany`, `ActionPlanItem`
+#### 1. Guidance Components (`apps/web/src/components/guidance/`)
+- **GuidanceCard.tsx** - Recommendation card with priority, confidence, action items, resources, feedback
+- **AlertBanner.tsx** - Alert display with severity levels, metric visualization, suggested actions
+- **MonthlyPlanCard.tsx** - Monthly goals summary with category breakdown and progress
+- **GoalCard.tsx** - Goal tracking with milestones, progress bar, status badges
+- **DeadlineList.tsx** - Upcoming deadlines with urgency indicators
+- **GuidanceStats.tsx** - Dashboard stats (active guidance, completed, helpful rate, alerts)
 
-#### 2. CRI Components (`apps/web/src/components/career/`)
-- **CRICard.tsx** - Main score card with placement probability, salary band, confidence
-- **CRIRadarChart.tsx** - Radar chart for 4-component visualization (Resume, Interview, Skill-Role Fit, Industry Exposure)
-- **CRISkillGapChart.tsx** - Bar chart showing skill gaps with priority indicators and recommendations
-- **CRIActionPlan.tsx** - Interactive action plan with checkboxes and progress tracking
+#### 2. Enhanced Guidance Page (`/student/guidance/`)
+- Integrated with real API hooks (useMyGuidanceDashboard, useMyGuidance, useMyGoals)
+- Dashboard stats row showing key metrics
+- AlertBanner for critical/warning alerts
+- Monthly plan with goals grid
+- Deadline list for upcoming due dates
+- Tabbed interface: Recommendations, Goals, Alerts
+- Category filter for recommendations
+- Generate recommendations button with refresh
 
-#### 3. Enhanced Career-Readiness Page (`/student/career-readiness/`)
-- Integrated CRIRadarChart for component analysis
-- Skills tab with CRISkillGapChart for gap visualization
-- Roles & Companies tab with target roles and matching companies
-- Action Plan tab with CRIActionPlan component
-- CRI history timeline showing assessment progress
-
-### Files Created Today (Session 25)
+### Files Created Today (Session 26)
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| `apps/web/src/hooks/use-career-readiness.ts` | CRI hooks and utilities | ~280 |
-| `apps/web/src/components/career/CRICard.tsx` | CRI score card component | ~200 |
-| `apps/web/src/components/career/CRIRadarChart.tsx` | Radar chart for components | ~200 |
-| `apps/web/src/components/career/CRISkillGapChart.tsx` | Skill gap visualization | ~220 |
-| `apps/web/src/components/career/CRIActionPlan.tsx` | Action plan with checklist | ~200 |
-| `apps/web/src/components/career/index.ts` | Component exports | ~5 |
+| `apps/web/src/components/guidance/GuidanceCard.tsx` | Recommendation display card | ~280 |
+| `apps/web/src/components/guidance/AlertBanner.tsx` | Alert notification banner | ~220 |
+| `apps/web/src/components/guidance/MonthlyPlanCard.tsx` | Monthly goals summary | ~200 |
+| `apps/web/src/components/guidance/GoalCard.tsx` | Individual goal card | ~280 |
+| `apps/web/src/components/guidance/DeadlineList.tsx` | Upcoming deadlines list | ~150 |
+| `apps/web/src/components/guidance/GuidanceStats.tsx` | Statistics cards | ~180 |
+| `apps/web/src/components/guidance/index.ts` | Component exports | ~7 |
 
-### Files Modified Today (Session 25)
+### Files Modified Today (Session 26)
 
 | File | Change |
 |------|--------|
-| `apps/web/src/app/(dashboard)/student/career-readiness/page.tsx` | Complete rewrite with new components |
-| `apps/web/src/app/(dashboard)/student/growth/page.tsx` | Fixed TypeScript error |
+| `apps/web/src/app/(dashboard)/student/guidance/page.tsx` | Complete rewrite with real API hooks and new components |
+
+---
+
+### Previous Session (25): Career Readiness Page Frontend Complete
+
+Created CRI visualization components and enhanced the career-readiness page:
+
+- CRI Frontend Hooks (`use-career-readiness.ts`)
+- CRI Components (CRICard, CRIRadarChart, CRISkillGapChart, CRIActionPlan)
+- Enhanced Career-Readiness Page with tabs, radar chart, skill gaps
 
 ---
 
@@ -100,60 +110,11 @@ Created SGI visualization components and enhanced the student growth page:
 
 Created comprehensive AI-driven guidance system with:
 
-#### 1. Recommendation Engine (`recommendation-engine.service.ts`)
-- Rule-based recommendation generation
-- Academic recommendations (CGPA trends, exam prep)
-- Career recommendations (skill gaps, certifications)
-- Engagement recommendations (club participation, events)
-- Skills recommendations (technical courses, projects)
-- Monthly plan generation with personalized action items
-
-#### 2. Alert Detection System (`alert-detection.service.ts`)
-- Attendance drop detection (warning: <75%, critical: <60%)
-- Grade decline detection (warning: 0.3 drop, critical: 0.5 drop)
-- Activity drop detection (50% decrease threshold)
-- Feedback concern detection (score < 2.5)
-- Configurable thresholds per tenant
-
-#### 3. Main Service (`ai-guidance.service.ts`)
-- Full CRUD for guidance, goals, and alerts
-- Student dashboard with aggregated data
-- Generation methods for recommendations and alerts
-- Role-based access control
-
-#### 4. Controller (`ai-guidance.controller.ts`)
-REST endpoints:
-- `POST /guidance` - Create guidance
-- `GET /guidance/my` - Get student's own guidance
-- `POST /goals` - Create goals
-- `GET /goals/my` - Get student's own goals
-- `GET /alerts` - Get alerts (teachers/admin)
-- `POST /generate-recommendations/:studentId` - Generate AI recommendations
-- `POST /run-detection` - Run alert detection
-- `GET /dashboard/student/:studentId` - Student guidance dashboard
-
-#### 5. Frontend Hooks (`use-ai-guidance.ts`)
-~600 lines of React Query hooks for all operations
-
-### Files Created Today
-
-| File | Purpose | Lines |
-|------|---------|-------|
-| `apps/api/src/modules/ai-guidance/dto/ai-guidance.dto.ts` | DTOs and enums | ~350 |
-| `apps/api/src/modules/ai-guidance/recommendation-engine.service.ts` | Recommendation generation | ~550 |
-| `apps/api/src/modules/ai-guidance/alert-detection.service.ts` | Disengagement detection | ~250 |
-| `apps/api/src/modules/ai-guidance/ai-guidance.service.ts` | Main service | ~400 |
-| `apps/api/src/modules/ai-guidance/ai-guidance.controller.ts` | REST endpoints | ~200 |
-| `apps/api/src/modules/ai-guidance/ai-guidance.module.ts` | Module definition | ~20 |
-| `apps/api/src/modules/ai-guidance/index.ts` | Exports | ~10 |
-| `apps/web/src/hooks/use-ai-guidance.ts` | Frontend hooks | ~600 |
-
-### Files Modified
-
-| File | Change |
-|------|--------|
-| `apps/api/src/app.module.ts` | Added AiGuidanceModule import |
-| `docs/PLAN.md` | Added Phase 6 tracker |
+- Recommendation Engine (`recommendation-engine.service.ts`)
+- Alert Detection System (`alert-detection.service.ts`)
+- Main Service (`ai-guidance.service.ts`)
+- Controller (`ai-guidance.controller.ts`)
+- Frontend Hooks (`use-ai-guidance.ts`)
 
 ---
 
@@ -197,7 +158,7 @@ apps/api/src/modules/
 │   ├── feedback.service.ts
 │   ├── normalizer.service.ts
 │   └── feedback.controller.ts
-├── ai-guidance/         ✅ Complete (TODAY)
+├── ai-guidance/         ✅ Complete
 │   ├── recommendation-engine.service.ts
 │   ├── alert-detection.service.ts
 │   ├── ai-guidance.service.ts
@@ -208,16 +169,29 @@ apps/api/src/modules/
 └── accreditation/       ⬜ Pending
 ```
 
-### Frontend Hooks
+### Frontend Components
 
 ```
-apps/web/src/hooks/
-├── use-student-indices.ts  ✅ Complete
-├── use-feedback.ts         ✅ Complete
-├── use-ai-guidance.ts      ✅ Complete (TODAY)
-├── use-student-journey.ts  ⬜ Pending
-├── use-alumni.ts           ⬜ Pending
-└── use-accreditation.ts    ⬜ Pending
+apps/web/src/components/
+├── indices/             ✅ Complete
+│   ├── SGICard.tsx
+│   ├── SGITrendChart.tsx
+│   └── SGIBreakdownRadar.tsx
+├── career/              ✅ Complete
+│   ├── CRICard.tsx
+│   ├── CRIRadarChart.tsx
+│   ├── CRISkillGapChart.tsx
+│   └── CRIActionPlan.tsx
+├── guidance/            ✅ Complete (TODAY)
+│   ├── GuidanceCard.tsx
+│   ├── AlertBanner.tsx
+│   ├── MonthlyPlanCard.tsx
+│   ├── GoalCard.tsx
+│   ├── DeadlineList.tsx
+│   └── GuidanceStats.tsx
+├── journey/             ⬜ Pending
+├── alumni/              ⬜ Pending
+└── accreditation/       ⬜ Pending
 ```
 
 ---
@@ -240,13 +214,13 @@ npm run dev
 
 ### 2. Continue Phase 6 Development
 
-Next module to implement: **Student Journey Timeline**
-- `student-journey/` module
-- Milestone tracking
-- Semester snapshots
-- Timeline visualization component
+Next pages to implement:
+- `/student/goals/` - Dedicated goals management page
+- `/student/journey/` - 4-year timeline visualization
+- `/teacher/feedback/` - Teacher feedback submission
+- `/teacher/alerts/` - View disengagement alerts
 
-### 3. Verify AI Guidance Module
+### 3. Verify Changes
 ```bash
 # Run typecheck to verify all changes
 npm run typecheck
@@ -259,63 +233,56 @@ npm run typecheck
 ## Next Steps (Priority Order)
 
 ### Immediate (Phase 6 Continuation)
-1. **Student Guidance Page** - AI recommendations and goals dashboard
+1. **Student Goals Page** - Dedicated goals management
 2. **Student Journey Module** - Milestones, snapshots, timeline visualization
-3. **Face Recognition Module** - AWS Rekognition integration
-4. **Alumni Module** - Registration, mentorship, directory
-5. **Accreditation Module** - NBA/NAAC/NIRF dashboards
+3. **Teacher Feedback Page** - Submit student feedback
+4. **Teacher Alerts Page** - View and manage disengagement alerts
+5. **Alumni Module** - Registration, mentorship, directory
+6. **Accreditation Module** - NBA/NAAC/NIRF dashboards
 
 ### Frontend Pages Status (Phase 6)
 ```
-/student/growth/          - ✅ COMPLETE - SGI dashboard with charts
+/student/growth/           - ✅ COMPLETE - SGI dashboard with charts
 /student/career-readiness/ - ✅ COMPLETE - CRI dashboard with skill gaps, radar, action plan
-/student/guidance/        - ⬜ Pending - AI recommendations
-/student/goals/           - ⬜ Pending - Personal goals
-/student/journey/         - ⬜ Pending - 4-year timeline
-/student/mentorship/      - ⬜ Pending - Find alumni mentors
-/teacher/feedback/        - ⬜ Pending - Submit feedback
-/teacher/alerts/          - ⬜ Pending - View disengagement alerts
-/hod/department-health/   - ⬜ Pending - SGI heatmap
-/principal/accreditation/ - ⬜ Pending - NBA/NAAC/NIRF
-/alumni/                  - ⬜ Pending - Alumni portal (new role)
+/student/guidance/         - ✅ COMPLETE - AI recommendations, goals summary, alerts
+/student/goals/            - ⬜ Pending - Dedicated goals management
+/student/journey/          - ⬜ Pending - 4-year timeline
+/student/mentorship/       - ⬜ Pending - Find alumni mentors
+/teacher/feedback/         - ⬜ Pending - Submit feedback
+/teacher/alerts/           - ⬜ Pending - View disengagement alerts
+/hod/department-health/    - ⬜ Pending - SGI heatmap
+/principal/accreditation/  - ⬜ Pending - NBA/NAAC/NIRF
+/alumni/                   - ⬜ Pending - Alumni portal (new role)
 ```
 
 ---
 
 ## Technical Notes
 
-### Fixes Applied Today
-1. `rollNumber` → `rollNo` (Student model field)
-2. `currentSemester` → `semester` (Student model field)
-3. Date handling: `addDays()` returns `Date`, `addDaysIso()` for string deadlines
+### Key Features Implemented Today
+1. **GuidanceCard** - Expandable action items, resource links, feedback buttons
+2. **AlertBanner** - Severity-based styling, metric progress visualization
+3. **MonthlyPlanCard** - Category grouping, progress bars per goal
+4. **GoalCard** - Milestone tracking, AI/Mentor badges
+5. **DeadlineList** - Urgency indicators (overdue, today, tomorrow, soon)
+6. **GuidanceStats** - Active/completed guidance, helpful rate, alert count
 
 ### Key Interfaces
 
 ```typescript
-// Recommendation Engine Output
-interface GeneratedRecommendation {
-  guidanceType: GuidanceType;
-  category: GuidanceCategory;
-  priority: GuidancePriority;
-  title: string;
-  description: string;
-  actionItems: ActionItem[];
-  resources: Resource[];
-  triggerReason: string;
-  confidenceScore: number;
-  expiresAt?: Date;
-}
-
-// Alert Detection Thresholds
-interface AlertThresholds {
-  attendanceWarning: 75;
-  attendanceCritical: 60;
-  cgpaDropWarning: 0.3;
-  cgpaDropCritical: 0.5;
-  sgiDropWarning: 10;
-  sgiDropCritical: 20;
-  activityDropPercent: 50;
-  feedbackScoreLow: 2.5;
+// Guidance Dashboard Response
+interface StudentGuidanceDashboard {
+  studentId: string;
+  activeGuidance: Guidance[];
+  activeGoals: Goal[];
+  alerts: Alert[];
+  completedGoalsCount: number;
+  guidanceCompletionRate: number;
+  upcomingDeadlines: {
+    type: 'goal' | 'action';
+    title: string;
+    deadline: string;
+  }[];
 }
 ```
 
@@ -349,4 +316,4 @@ git log --oneline -10    # Recent commits
 ---
 
 *Document updated: January 8, 2026*
-*Next session: Continue with Student Guidance page or other Phase 6 frontend pages*
+*Next session: Continue with Student Goals page or other Phase 6 frontend pages*
