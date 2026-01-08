@@ -711,6 +711,17 @@ export interface StudentStats {
   bySemester: Array<{ semester: number; _count: number }>;
 }
 
+export interface StudentScheduleItem {
+  id: string;
+  time: string;
+  endTime: string;
+  subject: string;
+  subjectCode: string;
+  room: string | null;
+  type: 'Lecture' | 'Lab';
+  teacher: string;
+}
+
 export interface StudentDashboard {
   studentId: string;
   name: string;
@@ -725,6 +736,7 @@ export interface StudentDashboard {
   upcomingExams: number;
   notifications: number;
   email: string;
+  todaySchedule: StudentScheduleItem[];
 }
 
 export interface StudentAcademics {

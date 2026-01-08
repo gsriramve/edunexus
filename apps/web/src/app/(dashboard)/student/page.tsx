@@ -25,14 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useStudentByUserId, useStudentDashboard, useStudentAcademics } from "@/hooks/use-api";
 import { useStudentCGPA } from "@/hooks/use-exams";
-
-// TODO: Replace with real API data when timetable/schedule endpoints are available
-const todaySchedule = [
-  { id: 1, time: "09:00 AM", subject: "Data Structures", room: "Room 301", type: "Lecture" },
-  { id: 2, time: "11:00 AM", subject: "Computer Networks", room: "Lab 2", type: "Lab" },
-  { id: 3, time: "02:00 PM", subject: "Operating Systems", room: "Room 205", type: "Lecture" },
-  { id: 4, time: "04:00 PM", subject: "Software Engineering", room: "Room 301", type: "Tutorial" },
-];
+import { type StudentScheduleItem } from "@/lib/api";
 
 // TODO: Replace with real notifications API when available
 const recentNotifications = [
@@ -142,6 +135,9 @@ export default function StudentDashboard() {
   // Get subjects for academic progress
   const subjects = academicsData?.subjects || [];
 
+  // Get today's schedule from dashboard data
+  const todaySchedule: StudentScheduleItem[] = dashboardData?.todaySchedule || [];
+
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
@@ -211,28 +207,37 @@ export default function StudentDashboard() {
             </Link>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {todaySchedule.map((item, index) => (
-                <div
-                  key={item.id}
-                  className={`flex items-center gap-4 p-3 rounded-lg border ${
-                    index === 0 ? "bg-primary/5 border-primary/20" : ""
-                  }`}
-                >
-                  <div className="flex flex-col items-center w-20">
-                    <Clock className="h-4 w-4 text-muted-foreground mb-1" />
-                    <span className="text-sm font-medium">{item.time}</span>
+            {todaySchedule.length === 0 ? (
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No classes scheduled for today</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {todaySchedule.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className={`flex items-center gap-4 p-3 rounded-lg border ${
+                      index === 0 ? "bg-primary/5 border-primary/20" : ""
+                    }`}
+                  >
+                    <div className="flex flex-col items-center w-20">
+                      <Clock className="h-4 w-4 text-muted-foreground mb-1" />
+                      <span className="text-sm font-medium">{item.time}</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">{item.subject}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.room || 'Room TBD'} • {item.teacher}
+                      </p>
+                    </div>
+                    <Badge variant={item.type === "Lab" ? "default" : "outline"}>
+                      {item.type}
+                    </Badge>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{item.subject}</p>
-                    <p className="text-sm text-muted-foreground">{item.room}</p>
-                  </div>
-                  <Badge variant={item.type === "Lab" ? "default" : "outline"}>
-                    {item.type}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -310,43 +310,147 @@ export class StudentsService {
     return result;
   }
 
+  /**
+   * Format time from HH:mm to 12-hour format
+   */
+  private formatTime(time: string): string {
+    const [hours, minutes] = time.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
+  }
+
+  /**
+   * Calculate CGPA from exam results
+   */
+  private calculateCGPA(examResults: { marks: any; exam: { totalMarks: number } }[]): number {
+    if (examResults.length === 0) return 0;
+
+    let totalWeightedScore = 0;
+    let totalWeight = 0;
+
+    examResults.forEach((result) => {
+      if (result.marks !== null && result.exam.totalMarks > 0) {
+        const marks = Number(result.marks);
+        const percentage = (marks / result.exam.totalMarks) * 100;
+        const gradePoint = Math.min(percentage / 10, 10);
+        totalWeightedScore += gradePoint;
+        totalWeight += 1;
+      }
+    });
+
+    return totalWeight > 0 ? Math.round((totalWeightedScore / totalWeight) * 10) / 10 : 0;
+  }
+
   async getDashboard(tenantId: string, studentId: string) {
     const student = await this.findOne(tenantId, studentId);
 
-    // Get attendance percentage
-    const attendanceRecords = await this.prisma.studentAttendance.findMany({
-      where: { studentId, tenantId },
-    });
+    // Get today's date and day of week
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay();
 
+    // Parallel data fetching for better performance
+    const [
+      attendanceRecords,
+      pendingFeesResult,
+      upcomingExamsCount,
+      notificationCount,
+      examResults,
+      todayTimetable,
+    ] = await Promise.all([
+      // Get attendance records
+      this.prisma.studentAttendance.findMany({
+        where: { studentId, tenantId },
+      }),
+      // Get pending fees
+      this.prisma.studentFee.aggregate({
+        where: {
+          studentId,
+          tenantId,
+          status: { in: ['pending', 'partial'] },
+        },
+        _sum: { amount: true },
+      }),
+      // Get upcoming exams count for this student's semester subjects
+      this.prisma.exam.count({
+        where: {
+          tenantId,
+          date: { gte: today },
+          subject: {
+            semester: student.semester,
+            course: { departmentId: student.departmentId },
+          },
+        },
+      }),
+      // Get unread notifications
+      this.prisma.notification.count({
+        where: {
+          userId: student.userId,
+          readAt: null,
+        },
+      }),
+      // Get exam results for CGPA calculation
+      this.prisma.examResult.findMany({
+        where: { studentId, tenantId },
+        include: {
+          exam: {
+            select: { totalMarks: true },
+          },
+        },
+      }),
+      // Get today's timetable for the student's semester/department
+      this.prisma.timetable.findMany({
+        where: {
+          tenantId,
+          dayOfWeek,
+          isActive: true,
+          teacherSubject: {
+            subject: {
+              semester: student.semester,
+              course: { departmentId: student.departmentId },
+            },
+          },
+        },
+        include: {
+          teacherSubject: {
+            include: {
+              subject: true,
+              staff: {
+                include: {
+                  user: { select: { name: true } },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { startTime: 'asc' },
+      }),
+    ]);
+
+    // Calculate attendance percentage
     const totalClasses = attendanceRecords.length || 1;
-    const presentClasses = attendanceRecords.filter((a: { status: string }) => a.status === 'present').length;
-    const attendancePercentage = Math.round((presentClasses / totalClasses) * 100);
+    const presentClasses = attendanceRecords.filter(
+      (a: { status: string }) => a.status === 'present' || a.status === 'late'
+    ).length;
+    const attendancePercentage = attendanceRecords.length > 0
+      ? Math.round((presentClasses / totalClasses) * 100)
+      : 0;
 
-    // Get pending fees
-    const pendingFees = await this.prisma.studentFee.aggregate({
-      where: {
-        studentId,
-        tenantId,
-        status: { in: ['pending', 'partial'] },
-      },
-      _sum: { amount: true },
-    });
+    // Calculate CGPA from exam results
+    const cgpa = this.calculateCGPA(examResults);
 
-    // Get upcoming exams count
-    const upcomingExams = await this.prisma.exam.count({
-      where: {
-        tenantId,
-        date: { gte: new Date() },
-      },
-    });
-
-    // Get unread notifications
-    const notifications = await this.prisma.notification.count({
-      where: {
-        userId: student.userId,
-        readAt: null,
-      },
-    });
+    // Format today's schedule
+    const todaySchedule = todayTimetable.map((slot) => ({
+      id: slot.id,
+      time: this.formatTime(slot.startTime),
+      endTime: this.formatTime(slot.endTime),
+      subject: slot.teacherSubject.subject.name,
+      subjectCode: slot.teacherSubject.subject.code,
+      room: slot.room,
+      type: slot.teacherSubject.subject.isLab ? 'Lab' : 'Lecture',
+      teacher: slot.teacherSubject.staff?.user?.name || 'TBA',
+    }));
 
     return {
       studentId: student.id,
@@ -356,12 +460,13 @@ export class StudentsService {
       departmentCode: student.department.code,
       semester: student.semester,
       batch: student.batch,
-      cgpa: 8.5, // TODO: Calculate from results
+      cgpa,
       attendancePercentage,
-      pendingFees: Number(pendingFees._sum.amount || 0),
-      upcomingExams,
-      notifications,
+      pendingFees: Number(pendingFeesResult._sum.amount || 0),
+      upcomingExams: upcomingExamsCount,
+      notifications: notificationCount,
       email: student.user.email,
+      todaySchedule,
     };
   }
 
