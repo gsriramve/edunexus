@@ -2,7 +2,7 @@
 
 ## Quick Reference
 
-**Password for ALL test accounts:** `Test@123!`
+**Password for ALL test accounts:** `Nexus@1104`
 
 ---
 
@@ -10,7 +10,7 @@
 
 | Email | Password | Access |
 |-------|----------|--------|
-| `sriram.venkat@quantumlayerplatform.com` | `Test@123!` | Full platform access |
+| `sriram.venkat@quantumlayerplatform.com` | `Nexus@1104` | Full platform access |
 
 ---
 
@@ -18,13 +18,13 @@
 
 | Role | Email | Password |
 |------|-------|----------|
-| Principal | `principal@nexus-ec.edu` | `Test@123!` |
-| HOD (CSE) | `hod.cse@nexus-ec.edu` | `Test@123!` |
-| Admin Staff | `admin@nexus-ec.edu` | `Test@123!` |
-| Teacher | `teacher@nexus-ec.edu` | `Test@123!` |
-| Lab Assistant | `lab@nexus-ec.edu` | `Test@123!` |
-| Student | `student@nexus-ec.edu` | `Test@123!` |
-| Parent | `parent@nexus-ec.edu` | `Test@123!` |
+| Principal | `principal@nexus-ec.edu` | `Nexus@1104` |
+| HOD (CSE) | `hod.cse@nexus-ec.edu` | `Nexus@1104` |
+| Admin Staff | `admin@nexus-ec.edu` | `Nexus@1104` |
+| Teacher | `teacher@nexus-ec.edu` | `Nexus@1104` |
+| Lab Assistant | `lab@nexus-ec.edu` | `Nexus@1104` |
+| Student | `student@nexus-ec.edu` | `Nexus@1104` |
+| Parent | `parent@nexus-ec.edu` | `Nexus@1104` |
 
 ---
 
@@ -32,13 +32,13 @@
 
 | Role | Email | Password |
 |------|-------|----------|
-| Principal | `principal@quantum-it.edu` | `Test@123!` |
-| HOD (CSE) | `hod.cse@quantum-it.edu` | `Test@123!` |
-| Admin Staff | `admin@quantum-it.edu` | `Test@123!` |
-| Teacher | `teacher@quantum-it.edu` | `Test@123!` |
-| Lab Assistant | `lab@quantum-it.edu` | `Test@123!` |
-| Student | `student@quantum-it.edu` | `Test@123!` |
-| Parent | `parent@quantum-it.edu` | `Test@123!` |
+| Principal | `principal@quantum-it.edu` | `Nexus@1104` |
+| HOD (CSE) | `hod.cse@quantum-it.edu` | `Nexus@1104` |
+| Admin Staff | `admin@quantum-it.edu` | `Nexus@1104` |
+| Teacher | `teacher@quantum-it.edu` | `Nexus@1104` |
+| Lab Assistant | `lab@quantum-it.edu` | `Nexus@1104` |
+| Student | `student@quantum-it.edu` | `Nexus@1104` |
+| Parent | `parent@quantum-it.edu` | `Nexus@1104` |
 
 ---
 
@@ -46,13 +46,13 @@
 
 | Role | Email | Password |
 |------|-------|----------|
-| Principal | `principal@careerfied.edu` | `Test@123!` |
-| HOD (CSE) | `hod.cse@careerfied.edu` | `Test@123!` |
-| Admin Staff | `admin@careerfied.edu` | `Test@123!` |
-| Teacher | `teacher@careerfied.edu` | `Test@123!` |
-| Lab Assistant | `lab@careerfied.edu` | `Test@123!` |
-| Student | `student@careerfied.edu` | `Test@123!` |
-| Parent | `parent@careerfied.edu` | `Test@123!` |
+| Principal | `principal@careerfied.edu` | `Nexus@1104` |
+| HOD (CSE) | `hod.cse@careerfied.edu` | `Nexus@1104` |
+| Admin Staff | `admin@careerfied.edu` | `Nexus@1104` |
+| Teacher | `teacher@careerfied.edu` | `Nexus@1104` |
+| Lab Assistant | `lab@careerfied.edu` | `Nexus@1104` |
+| Student | `student@careerfied.edu` | `Nexus@1104` |
+| Parent | `parent@careerfied.edu` | `Nexus@1104` |
 
 ---
 

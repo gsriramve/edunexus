@@ -21,7 +21,7 @@ const prisma = new PrismaClient();
 // =============================================================================
 
 const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
-const TEST_PASSWORD = 'Test@123!';
+const TEST_PASSWORD = 'Nexus@1104';
 
 interface ClerkUser {
   id: string;
