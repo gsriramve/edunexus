@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +43,7 @@ import {
   UserCheck,
   FileText,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import {
   sportsClubsApi,
@@ -54,14 +57,19 @@ import {
   StudentActivitiesResponse,
   CreateAchievementInput,
 } from '@/lib/api';
-
-// Mock student and tenant IDs - replace with actual context
-const TENANT_ID = 'cmk2l82k00001viari7idl59u';
-const STUDENT_ID = 'student-001';
-const STUDENT_NAME = 'John Doe';
-const ROLL_NO = 'CS2024001';
+import { useTenantId } from '@/hooks/use-tenant';
+import { useStudentByUserId } from '@/hooks/use-api';
 
 export default function StudentSportsPage() {
+  // Auth context
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const tenantId = useTenantId() || '';
+  const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
+
+  const studentId = studentData?.id || '';
+  const studentName = studentData?.user?.name || '';
+  const rollNo = studentData?.rollNo || '';
+
   const [activeTab, setActiveTab] = useState('overview');
   const [studentActivities, setStudentActivities] = useState<StudentActivitiesResponse | null>(null);
   const [allSportsEvents, setAllSportsEvents] = useState<SportsEvent[]>([]);
@@ -81,24 +89,38 @@ export default function StudentSportsPage() {
 
   // Form states
   const [achievementForm, setAchievementForm] = useState<Partial<CreateAchievementInput>>({
-    studentId: STUDENT_ID,
-    studentName: STUDENT_NAME,
-    rollNo: ROLL_NO,
+    studentId: '',
+    studentName: '',
+    rollNo: '',
   });
 
+  // Update achievement form when student data loads
   useEffect(() => {
-    loadData();
-  }, []);
+    if (studentId && studentName && rollNo) {
+      setAchievementForm({
+        studentId,
+        studentName,
+        rollNo,
+      });
+    }
+  }, [studentId, studentName, rollNo]);
+
+  useEffect(() => {
+    if (tenantId && studentId) {
+      loadData();
+    }
+  }, [tenantId, studentId]);
 
   const loadData = async () => {
+    if (!tenantId || !studentId) return;
     setLoading(true);
     try {
       const [activities, sportsEvents, clubEvents, teams, clubs] = await Promise.all([
-        sportsClubsApi.getStudentActivities(TENANT_ID, STUDENT_ID),
-        sportsClubsApi.listSportsEvents(TENANT_ID, { status: 'upcoming', limit: 20 }),
-        sportsClubsApi.listClubEvents(TENANT_ID, { status: 'upcoming', limit: 20 }),
-        sportsClubsApi.listTeams(TENANT_ID, { status: 'recruiting', limit: 50 }),
-        sportsClubsApi.listClubs(TENANT_ID, { status: 'recruiting', limit: 50 }),
+        sportsClubsApi.getStudentActivities(tenantId, studentId),
+        sportsClubsApi.listSportsEvents(tenantId, { status: 'upcoming', limit: 20 }),
+        sportsClubsApi.listClubEvents(tenantId, { status: 'upcoming', limit: 20 }),
+        sportsClubsApi.listTeams(tenantId, { status: 'recruiting', limit: 50 }),
+        sportsClubsApi.listClubs(tenantId, { status: 'recruiting', limit: 50 }),
       ]);
       setStudentActivities(activities);
       setAllSportsEvents(sportsEvents.data);
@@ -113,13 +135,14 @@ export default function StudentSportsPage() {
   };
 
   const handleSubmitAchievement = async () => {
+    if (!tenantId) return;
     try {
-      await sportsClubsApi.createAchievement(TENANT_ID, achievementForm as CreateAchievementInput);
+      await sportsClubsApi.createAchievement(tenantId, achievementForm as CreateAchievementInput);
       setShowAchievementDialog(false);
       setAchievementForm({
-        studentId: STUDENT_ID,
-        studentName: STUDENT_NAME,
-        rollNo: ROLL_NO,
+        studentId,
+        studentName,
+        rollNo,
       });
       loadData();
     } catch (error) {
@@ -128,14 +151,14 @@ export default function StudentSportsPage() {
   };
 
   const handleRegisterForEvent = async () => {
-    if (!selectedEvent) return;
+    if (!selectedEvent || !tenantId) return;
     try {
-      await sportsClubsApi.registerForEvent(TENANT_ID, {
+      await sportsClubsApi.registerForEvent(tenantId, {
         eventId: selectedEvent.id,
         eventType: selectedEventType,
-        studentId: STUDENT_ID,
-        studentName: STUDENT_NAME,
-        rollNo: ROLL_NO,
+        studentId,
+        studentName,
+        rollNo,
       });
       setShowRegisterDialog(false);
       setSelectedEvent(null);
@@ -190,10 +213,23 @@ export default function StudentSportsPage() {
     });
   };
 
-  if (loading) {
+  // Initial loading state
+  if (!isUserLoaded || studentLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Loading sports data
+  if (loading && studentId) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading sports data...</p>
+        </div>
       </div>
     );
   }

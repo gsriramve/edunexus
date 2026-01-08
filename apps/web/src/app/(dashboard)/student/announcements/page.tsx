@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
   Megaphone,
   Pin,
@@ -20,6 +21,7 @@ import {
   DollarSign,
   Trophy,
   PartyPopper,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,14 +42,21 @@ import {
   AnnouncementComment,
 } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
-
-// Demo values - in production these would come from auth context
-const TENANT_ID = "demo-tenant";
-const USER_ID = "demo-student";
-const USER_TYPE = "student";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useStudentByUserId } from "@/hooks/use-api";
 
 export default function StudentAnnouncementsPage() {
   const { toast } = useToast();
+
+  // Auth context
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const tenantId = useTenantId() || '';
+  const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
+
+  const userId = user?.id || '';
+  const userName = studentData?.user?.name || '';
+  const userType = "student";
+
   const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<AnnouncementWithReadStatus[]>([]);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<AnnouncementWithReadStatus | null>(null);
@@ -57,16 +66,19 @@ export default function StudentAnnouncementsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadAnnouncements();
-  }, []);
+    if (tenantId && userId) {
+      loadAnnouncements();
+    }
+  }, [tenantId, userId]);
 
   const loadAnnouncements = async () => {
+    if (!tenantId || !userId) return;
     setLoading(true);
     try {
       const data = await communicationApi.getAnnouncementsForUser(
-        TENANT_ID,
-        USER_ID,
-        USER_TYPE
+        tenantId,
+        userId,
+        userType
       );
       setAnnouncements(data);
     } catch (error) {
@@ -82,11 +94,12 @@ export default function StudentAnnouncementsPage() {
   };
 
   const handleMarkAsRead = async (announcementId: string) => {
+    if (!tenantId) return;
     try {
-      await communicationApi.markAnnouncementRead(TENANT_ID, {
+      await communicationApi.markAnnouncementRead(tenantId, {
         announcementId,
-        userId: USER_ID,
-        userType: USER_TYPE,
+        userId,
+        userType,
       });
       // Update local state
       setAnnouncements(prev =>
@@ -98,10 +111,11 @@ export default function StudentAnnouncementsPage() {
   };
 
   const handleAcknowledge = async (announcementId: string) => {
+    if (!tenantId) return;
     try {
-      await communicationApi.acknowledgeAnnouncement(TENANT_ID, {
+      await communicationApi.acknowledgeAnnouncement(tenantId, {
         announcementId,
-        userId: USER_ID,
+        userId,
       });
       setAnnouncements(prev =>
         prev.map(a => a.id === announcementId ? { ...a, isAcknowledged: true } : a)
@@ -113,8 +127,9 @@ export default function StudentAnnouncementsPage() {
   };
 
   const loadComments = async (announcementId: string) => {
+    if (!tenantId) return;
     try {
-      const data = await communicationApi.getComments(TENANT_ID, announcementId);
+      const data = await communicationApi.getComments(tenantId, announcementId);
       setComments(data);
     } catch (error) {
       console.error("Error loading comments:", error);
@@ -122,14 +137,14 @@ export default function StudentAnnouncementsPage() {
   };
 
   const handleAddComment = async () => {
-    if (!selectedAnnouncement || !newComment.trim()) return;
+    if (!selectedAnnouncement || !newComment.trim() || !tenantId) return;
 
     try {
-      await communicationApi.createComment(TENANT_ID, {
+      await communicationApi.createComment(tenantId, {
         announcementId: selectedAnnouncement.id,
-        userId: USER_ID,
-        userType: USER_TYPE,
-        userName: "Demo Student", // In production, get from auth context
+        userId,
+        userType,
+        userName,
         content: newComment,
       });
       setNewComment("");
@@ -206,12 +221,22 @@ export default function StudentAnnouncementsPage() {
 
   const unreadCount = announcements.filter(a => !a.isRead).length;
 
+  // Initial auth loading state
+  if (!isUserLoaded || studentLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Loading announcements
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading announcements...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading announcements...</p>
         </div>
       </div>
     );

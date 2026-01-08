@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
   FileText,
   Upload,
@@ -19,6 +20,7 @@ import {
   Clock,
   MoreVertical,
   Plus,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,12 +60,8 @@ import {
   DocumentVisibility,
 } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
-
-// Demo values - in production these would come from auth context
-const TENANT_ID = "demo-tenant";
-const USER_ID = "demo-student";
-const USER_NAME = "John Doe";
-const STUDENT_ID = "demo-student-id";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useStudentByUserId } from "@/hooks/use-api";
 
 const categoryLabels: Record<string, string> = {
   academic: "Academic",
@@ -111,6 +109,15 @@ export default function StudentDocumentsPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Auth context
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const tenantId = useTenantId() || '';
+  const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
+
+  const userId = user?.id || '';
+  const userName = studentData?.user?.name || '';
+  const studentId = studentData?.id || '';
+
   // State
   const [loading, setLoading] = useState(true);
   const [documents, setDocuments] = useState<DocType[]>([]);
@@ -130,9 +137,10 @@ export default function StudentDocumentsPage() {
 
   // Load documents
   const loadDocuments = async () => {
+    if (!tenantId || !userId) return;
     setLoading(true);
     try {
-      const data = await documentsApi.getUserDocuments(TENANT_ID, USER_ID, "student");
+      const data = await documentsApi.getUserDocuments(tenantId, userId, "student");
       setDocuments(data);
     } catch (error) {
       console.error("Error loading documents:", error);
@@ -143,8 +151,10 @@ export default function StudentDocumentsPage() {
   };
 
   useEffect(() => {
-    loadDocuments();
-  }, []);
+    if (tenantId && userId) {
+      loadDocuments();
+    }
+  }, [tenantId, userId]);
 
   // Filter documents
   const filteredDocuments = documents.filter((doc) => {
@@ -179,20 +189,20 @@ export default function StudentDocumentsPage() {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !tenantId || !userId) return;
 
     setUploading(true);
     try {
-      await documentsApi.uploadDocument(TENANT_ID, selectedFile, {
+      await documentsApi.uploadDocument(tenantId, selectedFile, {
         name: uploadForm.name,
         description: uploadForm.description,
         category: uploadForm.category,
         visibility: "private" as DocumentVisibility,
         tags: uploadForm.tags.split(",").map((t) => t.trim()).filter(Boolean),
-        uploadedById: USER_ID,
+        uploadedById: userId,
         uploadedByType: "student",
-        uploadedByName: USER_NAME,
-        studentId: STUDENT_ID,
+        uploadedByName: userName,
+        studentId: studentId,
       });
 
       toast({ title: "Success", description: "Document uploaded successfully" });
@@ -208,8 +218,9 @@ export default function StudentDocumentsPage() {
   };
 
   const handleDownload = async (doc: DocType) => {
+    if (!tenantId) return;
     try {
-      const { url } = await documentsApi.getDownloadUrl(TENANT_ID, doc.id, USER_ID, USER_NAME);
+      const { url } = await documentsApi.getDownloadUrl(tenantId, doc.id, userId, userName);
       window.open(url, "_blank");
     } catch (error) {
       toast({ title: "Error", description: "Failed to download document", variant: "destructive" });
@@ -217,8 +228,9 @@ export default function StudentDocumentsPage() {
   };
 
   const handleView = async (doc: DocType) => {
+    if (!tenantId) return;
     try {
-      const { url } = await documentsApi.getViewUrl(TENANT_ID, doc.id, USER_ID, USER_NAME);
+      const { url } = await documentsApi.getViewUrl(tenantId, doc.id, userId, userName);
       window.open(url, "_blank");
     } catch (error) {
       toast({ title: "Error", description: "Failed to view document", variant: "destructive" });
@@ -226,16 +238,26 @@ export default function StudentDocumentsPage() {
   };
 
   const handleDelete = async (doc: DocType) => {
+    if (!tenantId) return;
     if (!confirm("Are you sure you want to delete this document?")) return;
 
     try {
-      await documentsApi.deleteDocument(TENANT_ID, doc.id);
+      await documentsApi.deleteDocument(tenantId, doc.id);
       toast({ title: "Success", description: "Document deleted" });
       loadDocuments();
     } catch (error) {
       toast({ title: "Error", description: "Failed to delete document", variant: "destructive" });
     }
   };
+
+  // Initial loading state
+  if (!isUserLoaded || studentLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   // Count documents by category
   const categoryCounts = documents.reduce(
