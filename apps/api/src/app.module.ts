@@ -38,6 +38,7 @@ import { TeacherResultsModule } from './modules/teacher-results/teacher-results.
 import { HodSubjectsModule } from './modules/hod-subjects/hod-subjects.module';
 import { HodAttendanceModule } from './modules/hod-attendance/hod-attendance.module';
 import { HodFacultyModule } from './modules/hod-faculty/hod-faculty.module';
+import { HodStudentsModule } from './modules/hod-students/hod-students.module';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { HodFacultyModule } from './modules/hod-faculty/hod-faculty.module';
     HodSubjectsModule,
     HodAttendanceModule,
     HodFacultyModule,
+    HodStudentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

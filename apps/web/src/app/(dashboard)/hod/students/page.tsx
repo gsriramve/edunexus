@@ -4,11 +4,9 @@ import { useState } from "react";
 import {
   GraduationCap,
   Search,
-  Filter,
   Download,
   AlertTriangle,
   TrendingUp,
-  TrendingDown,
   UserCheck,
   Users,
   Award,
@@ -47,64 +45,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
-import { useStudents, useStudentStats } from "@/hooks/use-api";
-
-// TODO: Replace mock data with API calls when backend endpoints are implemented
-// Required endpoints:
-// - GET /students?departmentId=X - Filter students by department (already exists)
-// - GET /hod/students/stats - Department-specific student statistics
-// - GET /hod/students/at-risk - At-risk students in department
-// - GET /hod/students/top-performers - Top performers in department
-// - GET /hod/students/semester-overview - Semester-wise distribution
-
-// Mock department stats
-const departmentStudentStats = {
-  total: 480,
-  activeStudents: 465,
-  onLeave: 8,
-  detained: 7,
-  avgAttendance: 84,
-  avgCGPA: 7.8,
-  atRisk: 32,
-};
-
-// Mock semester-wise data
-const semesterData = [
-  { semester: 1, students: 120, avgAttendance: 88, avgCGPA: null, atRisk: 5 },
-  { semester: 2, students: 118, avgAttendance: 85, avgCGPA: 7.5, atRisk: 6 },
-  { semester: 3, students: 115, avgAttendance: 82, avgCGPA: 7.6, atRisk: 8 },
-  { semester: 4, students: 112, avgAttendance: 80, avgCGPA: 7.8, atRisk: 5 },
-  { semester: 5, students: 108, avgAttendance: 84, avgCGPA: 7.9, atRisk: 4 },
-  { semester: 6, students: 105, avgAttendance: 86, avgCGPA: 8.0, atRisk: 2 },
-  { semester: 7, students: 102, avgAttendance: 88, avgCGPA: 8.1, atRisk: 1 },
-  { semester: 8, students: 100, avgAttendance: 90, avgCGPA: 8.2, atRisk: 1 },
-];
-
-// Mock student list
-const studentList = [
-  { id: "s1", rollNo: "21CSE001", name: "Rahul Sharma", semester: 5, section: "A", cgpa: 8.5, attendance: 90, status: "active", atRisk: false },
-  { id: "s2", rollNo: "21CSE002", name: "Priya Menon", semester: 5, section: "A", cgpa: 9.1, attendance: 95, status: "active", atRisk: false },
-  { id: "s3", rollNo: "21CSE003", name: "Arun Kumar", semester: 5, section: "A", cgpa: 6.8, attendance: 72, status: "active", atRisk: true },
-  { id: "s4", rollNo: "21CSE004", name: "Kavitha Nair", semester: 5, section: "A", cgpa: 7.9, attendance: 88, status: "active", atRisk: false },
-  { id: "s5", rollNo: "21CSE005", name: "Vijay Pillai", semester: 5, section: "B", cgpa: 5.5, attendance: 65, status: "active", atRisk: true },
-  { id: "s6", rollNo: "21CSE006", name: "Meera Das", semester: 5, section: "B", cgpa: 8.2, attendance: 92, status: "active", atRisk: false },
-  { id: "s7", rollNo: "21CSE007", name: "Suresh Reddy", semester: 5, section: "B", cgpa: 7.1, attendance: 78, status: "active", atRisk: false },
-  { id: "s8", rollNo: "21CSE008", name: "Anitha Krishnan", semester: 5, section: "B", cgpa: 6.2, attendance: 70, status: "active", atRisk: true },
-  { id: "s9", rollNo: "22CSE001", name: "Deepak Verma", semester: 3, section: "A", cgpa: 7.8, attendance: 85, status: "active", atRisk: false },
-  { id: "s10", rollNo: "22CSE002", name: "Sneha Gupta", semester: 3, section: "A", cgpa: 8.9, attendance: 94, status: "active", atRisk: false },
-];
-
-// Mock at-risk students
-const atRiskStudents = studentList.filter(s => s.atRisk);
-
-// Mock top performers
-const topPerformers = [
-  { id: "t1", rollNo: "21CSE002", name: "Priya Menon", semester: 5, cgpa: 9.1, rank: 1 },
-  { id: "t2", rollNo: "22CSE002", name: "Sneha Gupta", semester: 3, cgpa: 8.9, rank: 2 },
-  { id: "t3", rollNo: "21CSE001", name: "Rahul Sharma", semester: 5, cgpa: 8.5, rank: 3 },
-  { id: "t4", rollNo: "21CSE006", name: "Meera Das", semester: 5, cgpa: 8.2, rank: 4 },
-  { id: "t5", rollNo: "21CSE004", name: "Kavitha Nair", semester: 5, cgpa: 7.9, rank: 5 },
-];
+import {
+  useHodStudents,
+  useAtRiskStudents,
+  useTopPerformers,
+} from "@/hooks/use-hod-students";
 
 export default function HODStudentManagement() {
   const tenantId = useTenantId() || '';
@@ -112,33 +57,30 @@ export default function HODStudentManagement() {
   const [filterSemester, setFilterSemester] = useState("all");
   const [filterSection, setFilterSection] = useState("all");
 
-  // Fetch students - filter by department when HOD's department is available
-  // TODO: Get HOD's department ID from user context/metadata
-  const { data: studentsData, isLoading: studentsLoading } = useStudents(tenantId, {
+  // Fetch data using HoD-specific hooks
+  const {
+    data: studentsData,
+    isLoading: studentsLoading,
+    error: studentsError,
+  } = useHodStudents(tenantId, {
     search: searchQuery || undefined,
-    // departmentId: hodDepartmentId, // TODO: Add department filter
+    semester: filterSemester !== 'all' ? filterSemester : undefined,
+    section: filterSection !== 'all' ? filterSection : undefined,
   });
-  const { data: studentStats, isLoading: statsLoading } = useStudentStats(tenantId);
 
-  // Extract students from paginated response
-  const apiStudents = studentsData?.data || [];
+  const {
+    data: atRiskData,
+    isLoading: atRiskLoading,
+  } = useAtRiskStudents(tenantId);
 
-  // Map API students to display format, or use mock data as fallback
-  const displayStudents = apiStudents.length > 0 ? apiStudents.map(student => ({
-    id: student.id,
-    rollNo: student.rollNo || '',
-    name: student.user?.name || 'Unknown',
-    semester: student.semester || 1,
-    section: student.section || 'A',
-    cgpa: 0, // TODO: Get from academics API
-    attendance: 0, // TODO: Get from attendance API
-    status: student.status || 'active',
-    atRisk: false, // TODO: Calculate based on attendance/grades
-  })) : studentList;
+  const {
+    data: topPerformersData,
+    isLoading: topPerformersLoading,
+  } = useTopPerformers(tenantId, 10);
 
   // Show loading skeleton while data loads
-  const isLoading = studentsLoading || statsLoading;
-  if (isLoading && !studentsData) {
+  const isLoading = studentsLoading && !studentsData;
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -171,42 +113,73 @@ export default function HODStudentManagement() {
     );
   }
 
-  // Use API stats when available, fallback to mock
-  const stats = {
-    total: studentStats?.total || departmentStudentStats.total,
-    activeStudents: studentStats?.active || departmentStudentStats.activeStudents,
-    onLeave: departmentStudentStats.onLeave, // TODO: API doesn't have this
-    detained: departmentStudentStats.detained, // TODO: API doesn't have this
-    avgAttendance: departmentStudentStats.avgAttendance, // TODO: Get from attendance API
-    avgCGPA: departmentStudentStats.avgCGPA, // TODO: Get from academics API
-    atRisk: departmentStudentStats.atRisk, // TODO: Calculate from data
+  // Show error state
+  if (studentsError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Student Management</h1>
+            <p className="text-muted-foreground">
+              Monitor and manage department students
+            </p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <p className="text-lg font-medium text-red-600">
+                {studentsError instanceof Error ? studentsError.message : 'Failed to load students'}
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Please make sure you are assigned as HoD with a valid department.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Extract data from API response
+  const stats = studentsData?.stats || {
+    total: 0,
+    activeStudents: 0,
+    onLeave: 0,
+    detained: 0,
+    avgAttendance: 0,
+    avgCGPA: 0,
+    atRisk: 0,
   };
+  const semesterData = studentsData?.semesterData || [];
+  const students = studentsData?.students || [];
+  const department = studentsData?.department;
 
-  // Calculate at-risk students from display data
-  const atRiskStudentsList = displayStudents.filter(s => s.atRisk);
-
-  const filteredStudents = displayStudents.filter((student) => {
-    const matchesSearch =
-      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.rollNo.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSemester =
-      filterSemester === "all" || student.semester.toString() === filterSemester;
-    const matchesSection =
-      filterSection === "all" || student.section === filterSection;
-    return matchesSearch && matchesSemester && matchesSection;
-  });
+  const atRiskStudentsList = atRiskData?.students || [];
+  const topPerformers = topPerformersData?.students || [];
 
   const getCGPABadge = (cgpa: number) => {
     if (cgpa >= 8.5) return <Badge className="bg-green-500">{cgpa.toFixed(1)}</Badge>;
     if (cgpa >= 7.0) return <Badge className="bg-blue-500">{cgpa.toFixed(1)}</Badge>;
     if (cgpa >= 5.5) return <Badge className="bg-yellow-500">{cgpa.toFixed(1)}</Badge>;
+    if (cgpa === 0) return <Badge variant="outline">-</Badge>;
     return <Badge variant="destructive">{cgpa.toFixed(1)}</Badge>;
   };
 
   const getAttendanceBadge = (attendance: number) => {
     if (attendance >= 85) return <Badge className="bg-green-500">{attendance}%</Badge>;
     if (attendance >= 75) return <Badge className="bg-yellow-500">{attendance}%</Badge>;
+    if (attendance === 0) return <Badge variant="outline">-</Badge>;
     return <Badge variant="destructive">{attendance}%</Badge>;
+  };
+
+  const getRiskLevelColor = (level: string) => {
+    switch (level) {
+      case 'high': return 'bg-red-100 border-red-300';
+      case 'medium': return 'bg-orange-100 border-orange-300';
+      default: return 'bg-yellow-100 border-yellow-300';
+    }
   };
 
   return (
@@ -216,7 +189,7 @@ export default function HODStudentManagement() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Student Management</h1>
           <p className="text-muted-foreground">
-            Monitor and manage department students
+            {department ? `${department.name} (${department.code})` : 'Monitor and manage department students'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -280,7 +253,7 @@ export default function HODStudentManagement() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg CGPA</p>
-                <p className="text-2xl font-bold">{stats.avgCGPA}</p>
+                <p className="text-2xl font-bold">{stats.avgCGPA || '-'}</p>
               </div>
             </div>
           </CardContent>
@@ -330,43 +303,49 @@ export default function HODStudentManagement() {
               <CardDescription>Student count and performance by semester</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-4">
-                {semesterData.map((sem) => (
-                  <Card key={sem.semester}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <Badge variant="outline" className="text-lg px-3 py-1">
-                          Sem {sem.semester}
-                        </Badge>
-                        {sem.atRisk > 0 && (
-                          <Badge variant="destructive" className="text-xs">
-                            {sem.atRisk} at risk
+              {semesterData.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-4">
+                  {semesterData.map((sem) => (
+                    <Card key={sem.semester}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <Badge variant="outline" className="text-lg px-3 py-1">
+                            Sem {sem.semester}
                           </Badge>
-                        )}
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Students</span>
-                          <span className="font-bold">{sem.students}</span>
+                          {sem.atRisk > 0 && (
+                            <Badge variant="destructive" className="text-xs">
+                              {sem.atRisk} at risk
+                            </Badge>
+                          )}
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Attendance</span>
-                          <span className={`font-bold ${sem.avgAttendance < 80 ? "text-red-600" : ""}`}>
-                            {sem.avgAttendance}%
-                          </span>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Students</span>
+                            <span className="font-bold">{sem.students}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Attendance</span>
+                            <span className={`font-bold ${sem.avgAttendance < 80 ? "text-red-600" : ""}`}>
+                              {sem.avgAttendance}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Avg CGPA</span>
+                            <span className="font-bold">
+                              {sem.avgCGPA ? sem.avgCGPA.toFixed(1) : "-"}
+                            </span>
+                          </div>
+                          <Progress value={sem.avgAttendance} className="h-2" />
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Avg CGPA</span>
-                          <span className="font-bold">
-                            {sem.avgCGPA ? sem.avgCGPA.toFixed(1) : "-"}
-                          </span>
-                        </div>
-                        <Progress value={sem.avgAttendance} className="h-2" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No semester data available
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -418,74 +397,86 @@ export default function HODStudentManagement() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead className="text-center">Semester</TableHead>
-                    <TableHead className="text-center">Section</TableHead>
-                    <TableHead className="text-center">CGPA</TableHead>
-                    <TableHead className="text-center">Attendance</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStudents.map((student) => (
-                    <TableRow key={student.id} className={student.atRisk ? "bg-red-50" : ""}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback>
-                              {student.name.split(" ").map((n) => n[0]).join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{student.name}</p>
-                            <p className="text-sm text-muted-foreground">{student.rollNo}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline">Sem {student.semester}</Badge>
-                      </TableCell>
-                      <TableCell className="text-center">{student.section}</TableCell>
-                      <TableCell className="text-center">{getCGPABadge(student.cgpa)}</TableCell>
-                      <TableCell className="text-center">{getAttendanceBadge(student.attendance)}</TableCell>
-                      <TableCell>
-                        {student.atRisk ? (
-                          <Badge variant="destructive">At Risk</Badge>
-                        ) : (
-                          <Badge className="bg-green-500">Good Standing</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <BarChart3 className="h-4 w-4 mr-2" />
-                              Academic History
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Mail className="h-4 w-4 mr-2" />
-                              Contact Parent
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+              {studentsLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              ) : students.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead className="text-center">Semester</TableHead>
+                      <TableHead className="text-center">Section</TableHead>
+                      <TableHead className="text-center">CGPA</TableHead>
+                      <TableHead className="text-center">Attendance</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {students.map((student) => (
+                      <TableRow key={student.id} className={student.atRisk ? "bg-red-50" : ""}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback>
+                                {student.name.split(" ").map((n) => n[0]).join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{student.name}</p>
+                              <p className="text-sm text-muted-foreground">{student.rollNo}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline">Sem {student.semester}</Badge>
+                        </TableCell>
+                        <TableCell className="text-center">{student.section || '-'}</TableCell>
+                        <TableCell className="text-center">{getCGPABadge(student.cgpa)}</TableCell>
+                        <TableCell className="text-center">{getAttendanceBadge(student.attendance)}</TableCell>
+                        <TableCell>
+                          {student.atRisk ? (
+                            <Badge variant="destructive">At Risk</Badge>
+                          ) : (
+                            <Badge className="bg-green-500">Good Standing</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Profile
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <BarChart3 className="h-4 w-4 mr-2" />
+                                Academic History
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Mail className="h-4 w-4 mr-2" />
+                                Contact Parent
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No students found matching your criteria
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -511,63 +502,71 @@ export default function HODStudentManagement() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {atRiskStudentsList.length > 0 ? atRiskStudentsList.map((student) => (
-                  <div
-                    key={student.id}
-                    className="p-4 rounded-lg border border-red-200 bg-red-50"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarFallback>
-                            {student.name.split(" ").map((n) => n[0]).join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{student.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {student.rollNo} • Semester {student.semester} • Section {student.section}
-                          </p>
+              {atRiskLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-24 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {atRiskStudentsList.length > 0 ? atRiskStudentsList.map((student) => (
+                    <div
+                      key={student.id}
+                      className={`p-4 rounded-lg border ${getRiskLevelColor(student.riskLevel)}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarFallback>
+                              {student.name.split(" ").map((n) => n[0]).join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{student.name}</p>
+                              <Badge variant={student.riskLevel === 'high' ? 'destructive' : 'outline'} className="text-xs">
+                                {student.riskLevel} risk
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {student.rollNo} | Semester {student.semester} | Section {student.section || '-'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-center">
+                            <p className={`font-bold ${student.cgpa > 0 && student.cgpa < 6 ? "text-red-600" : ""}`}>
+                              {student.cgpa > 0 ? student.cgpa.toFixed(1) : '-'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">CGPA</p>
+                          </div>
+                          <div className="text-center">
+                            <p className={`font-bold ${student.attendance < 75 ? "text-red-600" : ""}`}>
+                              {student.attendance}%
+                            </p>
+                            <p className="text-xs text-muted-foreground">Attendance</p>
+                          </div>
+                          <Button size="sm" variant="outline">
+                            Take Action
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-center">
-                          <p className={`font-bold ${student.cgpa < 6 ? "text-red-600" : ""}`}>
-                            {student.cgpa.toFixed(1)}
-                          </p>
-                          <p className="text-xs text-muted-foreground">CGPA</p>
-                        </div>
-                        <div className="text-center">
-                          <p className={`font-bold ${student.attendance < 75 ? "text-red-600" : ""}`}>
-                            {student.attendance}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">Attendance</p>
-                        </div>
-                        <Button size="sm" variant="outline">
-                          Take Action
-                        </Button>
+                      <div className="mt-3 flex gap-2">
+                        {student.riskReasons.map((reason, i) => (
+                          <Badge key={i} variant="destructive" className="text-xs">
+                            {reason}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
-                    <div className="mt-3 flex gap-2">
-                      {student.cgpa < 6 && (
-                        <Badge variant="destructive" className="text-xs">
-                          Low CGPA
-                        </Badge>
-                      )}
-                      {student.attendance < 75 && (
-                        <Badge variant="destructive" className="text-xs">
-                          Low Attendance
-                        </Badge>
-                      )}
+                  )) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No at-risk students found. All students are in good standing.
                     </div>
-                  </div>
-                )) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No at-risk students found. All students are in good standing.
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -583,53 +582,65 @@ export default function HODStudentManagement() {
               <CardDescription>Highest achieving students in the department</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {topPerformers.map((student, index) => (
-                  <div
-                    key={student.id}
-                    className={`p-4 rounded-lg border ${
-                      index === 0
-                        ? "border-yellow-300 bg-yellow-50"
-                        : index === 1
-                        ? "border-gray-300 bg-gray-50"
-                        : index === 2
-                        ? "border-orange-300 bg-orange-50"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
-                            index === 0
-                              ? "bg-yellow-500 text-white"
-                              : index === 1
-                              ? "bg-gray-400 text-white"
-                              : index === 2
-                              ? "bg-orange-500 text-white"
-                              : "bg-gray-200"
-                          }`}
-                        >
-                          {student.rank}
+              {topPerformersLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-20 w-full" />
+                  ))}
+                </div>
+              ) : topPerformers.length > 0 ? (
+                <div className="space-y-4">
+                  {topPerformers.map((student, index) => (
+                    <div
+                      key={student.id}
+                      className={`p-4 rounded-lg border ${
+                        index === 0
+                          ? "border-yellow-300 bg-yellow-50"
+                          : index === 1
+                          ? "border-gray-300 bg-gray-50"
+                          : index === 2
+                          ? "border-orange-300 bg-orange-50"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                              index === 0
+                                ? "bg-yellow-500 text-white"
+                                : index === 1
+                                ? "bg-gray-400 text-white"
+                                : index === 2
+                                ? "bg-orange-500 text-white"
+                                : "bg-gray-200"
+                            }`}
+                          >
+                            {student.rank}
+                          </div>
+                          <div>
+                            <p className="font-semibold">{student.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {student.rollNo} | Semester {student.semester}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold">{student.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {student.rollNo} • Semester {student.semester}
-                          </p>
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5 text-green-500" />
+                          <span className="text-2xl font-bold text-green-600">
+                            {student.cgpa.toFixed(1)}
+                          </span>
+                          <span className="text-muted-foreground">CGPA</span>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5 text-green-500" />
-                        <span className="text-2xl font-bold text-green-600">
-                          {student.cgpa.toFixed(1)}
-                        </span>
-                        <span className="text-muted-foreground">CGPA</span>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No top performers data available yet
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
