@@ -85,3 +85,59 @@ export class PrincipalDashboardResponseDto {
   recentActivities: ActivityDto[];
   upcomingEvents: EventDto[];
 }
+
+// Exam stats for principal overview
+export class PrincipalExamStatsDto {
+  totalExams: number;
+  completed: number;
+  ongoing: number;
+  upcoming: number;
+  totalStudentsAppeared: number;
+  averagePassRate: number;
+  resultsPublished: number;
+  resultsPending: number;
+}
+
+// Upcoming exam for principal view
+export class PrincipalUpcomingExamDto {
+  id: string;
+  name: string;
+  type: string;
+  department: string;
+  departmentId: string;
+  date: string;
+  subjectName: string;
+  totalMarks: number;
+}
+
+// Department-wise exam results
+export class DepartmentExamResultDto {
+  departmentId: string;
+  department: string;
+  appeared: number;
+  passed: number;
+  passRate: number;
+  distinction: number;
+  firstClass: number;
+  secondClass: number;
+  failed: number;
+}
+
+// Recently published result
+export class RecentExamResultDto {
+  examId: string;
+  examName: string;
+  department: string;
+  departmentId: string;
+  passRate: number;
+  publishedDate: string;
+  totalStudents: number;
+}
+
+// Full exam overview response
+export class PrincipalExamOverviewDto {
+  stats: PrincipalExamStatsDto;
+  upcomingExams: PrincipalUpcomingExamDto[];
+  departmentResults: DepartmentExamResultDto[];
+  recentResults: RecentExamResultDto[];
+}

@@ -9,6 +9,11 @@ import {
   EventDto,
   SemesterDistributionDto,
   FeeCollectionDto,
+  PrincipalExamOverviewDto,
+  PrincipalExamStatsDto,
+  PrincipalUpcomingExamDto,
+  DepartmentExamResultDto,
+  RecentExamResultDto,
 } from './dto/principal-dashboard.dto';
 
 // Thresholds
@@ -362,5 +367,222 @@ export class PrincipalDashboardService {
   async getFeeCollection(tenantId: string): Promise<FeeCollectionDto> {
     const dashboard = await this.getDashboard(tenantId);
     return dashboard.feeCollection;
+  }
+
+  /**
+   * Get comprehensive exam overview for principal
+   */
+  async getExamOverview(tenantId: string): Promise<PrincipalExamOverviewDto> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayEnd = new Date(today);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    // Fetch all required data in parallel
+    const [
+      allExams,
+      examResults,
+      departments,
+    ] = await Promise.all([
+      // All exams with subject and department info
+      this.prisma.exam.findMany({
+        where: { tenantId },
+        include: {
+          subject: {
+            include: {
+              course: {
+                include: { department: true },
+              },
+            },
+          },
+          results: true,
+        },
+        orderBy: { date: 'desc' },
+      }),
+      // All exam results with student department info
+      this.prisma.examResult.findMany({
+        where: { tenantId },
+        include: {
+          exam: {
+            include: {
+              subject: {
+                include: {
+                  course: {
+                    include: { department: true },
+                  },
+                },
+              },
+            },
+          },
+          student: {
+            include: { department: true },
+          },
+        },
+      }),
+      // All departments
+      this.prisma.department.findMany({
+        where: { tenantId },
+        select: { id: true, name: true },
+      }),
+    ]);
+
+    // Calculate exam stats
+    const completedExams = allExams.filter((e) => new Date(e.date) < today);
+    const ongoingExams = allExams.filter((e) => {
+      const examDate = new Date(e.date);
+      return examDate >= today && examDate <= todayEnd;
+    });
+    const upcomingExams = allExams.filter((e) => new Date(e.date) > todayEnd);
+
+    // Calculate total students appeared and pass rate
+    const examsWithResults = completedExams.filter((e) => e.results.length > 0);
+    const totalStudentsAppeared = examResults.length;
+
+    // Calculate pass rate (passing = >= 40% of total marks)
+    let totalPassed = 0;
+    examResults.forEach((result) => {
+      const passingMarks = Number(result.exam.totalMarks) * 0.4;
+      if (Number(result.marks) >= passingMarks) {
+        totalPassed++;
+      }
+    });
+
+    const averagePassRate = totalStudentsAppeared > 0
+      ? Math.round((totalPassed / totalStudentsAppeared) * 100 * 10) / 10
+      : 0;
+
+    const stats: PrincipalExamStatsDto = {
+      totalExams: allExams.length,
+      completed: completedExams.length,
+      ongoing: ongoingExams.length,
+      upcoming: upcomingExams.length,
+      totalStudentsAppeared,
+      averagePassRate,
+      resultsPublished: examsWithResults.length,
+      resultsPending: completedExams.length - examsWithResults.length,
+    };
+
+    // Build upcoming exams list
+    const upcomingExamsList: PrincipalUpcomingExamDto[] = upcomingExams
+      .slice(0, 10)
+      .map((exam) => ({
+        id: exam.id,
+        name: exam.name,
+        type: exam.type,
+        department: exam.subject.course?.department?.name || 'All Departments',
+        departmentId: exam.subject.course?.department?.id || '',
+        date: exam.date.toISOString().split('T')[0],
+        subjectName: exam.subject.name,
+        totalMarks: Number(exam.totalMarks),
+      }));
+
+    // Build department-wise results
+    const deptResultsMap = new Map<string, {
+      appeared: number;
+      passed: number;
+      distinction: number;
+      firstClass: number;
+      secondClass: number;
+      failed: number;
+    }>();
+
+    // Initialize departments
+    departments.forEach((dept) => {
+      deptResultsMap.set(dept.id, {
+        appeared: 0,
+        passed: 0,
+        distinction: 0,
+        firstClass: 0,
+        secondClass: 0,
+        failed: 0,
+      });
+    });
+
+    // Process all results
+    examResults.forEach((result) => {
+      const deptId = result.student.departmentId;
+      if (!deptId) return;
+
+      let deptStats = deptResultsMap.get(deptId);
+      if (!deptStats) {
+        deptStats = { appeared: 0, passed: 0, distinction: 0, firstClass: 0, secondClass: 0, failed: 0 };
+        deptResultsMap.set(deptId, deptStats);
+      }
+
+      const totalMarks = Number(result.exam.totalMarks);
+      const marks = Number(result.marks);
+      const percentage = (marks / totalMarks) * 100;
+      const passingMarks = totalMarks * 0.4;
+
+      deptStats.appeared++;
+
+      if (marks >= passingMarks) {
+        deptStats.passed++;
+        if (percentage >= 75) {
+          deptStats.distinction++;
+        } else if (percentage >= 60) {
+          deptStats.firstClass++;
+        } else {
+          deptStats.secondClass++;
+        }
+      } else {
+        deptStats.failed++;
+      }
+    });
+
+    const departmentResults: DepartmentExamResultDto[] = departments.map((dept) => {
+      const stats = deptResultsMap.get(dept.id) || {
+        appeared: 0,
+        passed: 0,
+        distinction: 0,
+        firstClass: 0,
+        secondClass: 0,
+        failed: 0,
+      };
+      return {
+        departmentId: dept.id,
+        department: dept.name,
+        appeared: stats.appeared,
+        passed: stats.passed,
+        passRate: stats.appeared > 0 ? Math.round((stats.passed / stats.appeared) * 100) : 0,
+        distinction: stats.distinction,
+        firstClass: stats.firstClass,
+        secondClass: stats.secondClass,
+        failed: stats.failed,
+      };
+    }).filter((d) => d.appeared > 0);
+
+    // Build recent results (exams with results, sorted by most recent)
+    const examsWithResultsSorted = examsWithResults
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 10);
+
+    const recentResults: RecentExamResultDto[] = examsWithResultsSorted.map((exam) => {
+      const examResultsForExam = examResults.filter((r) => r.exam.id === exam.id);
+      const passed = examResultsForExam.filter((r) => {
+        const passingMarks = Number(r.exam.totalMarks) * 0.4;
+        return Number(r.marks) >= passingMarks;
+      }).length;
+
+      return {
+        examId: exam.id,
+        examName: exam.name,
+        department: exam.subject.course?.department?.name || 'All Departments',
+        departmentId: exam.subject.course?.department?.id || '',
+        passRate: examResultsForExam.length > 0
+          ? Math.round((passed / examResultsForExam.length) * 100)
+          : 0,
+        publishedDate: exam.date.toISOString().split('T')[0],
+        totalStudents: examResultsForExam.length,
+      };
+    });
+
+    return {
+      stats,
+      upcomingExams: upcomingExamsList,
+      departmentResults,
+      recentResults,
+    };
   }
 }

@@ -87,6 +87,59 @@ export interface PrincipalDashboardResponse {
   upcomingEvents: EventDto[];
 }
 
+// ============ Exam Overview Types ============
+
+export interface PrincipalExamStatsDto {
+  totalExams: number;
+  completed: number;
+  ongoing: number;
+  upcoming: number;
+  totalStudentsAppeared: number;
+  averagePassRate: number;
+  resultsPublished: number;
+  resultsPending: number;
+}
+
+export interface PrincipalUpcomingExamDto {
+  id: string;
+  name: string;
+  type: string;
+  department: string;
+  departmentId: string;
+  date: string;
+  subjectName: string;
+  totalMarks: number;
+}
+
+export interface DepartmentExamResultDto {
+  departmentId: string;
+  department: string;
+  appeared: number;
+  passed: number;
+  passRate: number;
+  distinction: number;
+  firstClass: number;
+  secondClass: number;
+  failed: number;
+}
+
+export interface RecentExamResultDto {
+  examId: string;
+  examName: string;
+  department: string;
+  departmentId: string;
+  passRate: number;
+  publishedDate: string;
+  totalStudents: number;
+}
+
+export interface PrincipalExamOverviewResponse {
+  stats: PrincipalExamStatsDto;
+  upcomingExams: PrincipalUpcomingExamDto[];
+  departmentResults: DepartmentExamResultDto[];
+  recentResults: RecentExamResultDto[];
+}
+
 // ============ API Client ============
 
 async function principalDashboardApi<T>(
@@ -133,6 +186,8 @@ export const principalDashboardKeys = {
     [...principalDashboardKeys.all, 'alerts', tenantId] as const,
   fees: (tenantId: string) =>
     [...principalDashboardKeys.all, 'fees', tenantId] as const,
+  exams: (tenantId: string) =>
+    [...principalDashboardKeys.all, 'exams', tenantId] as const,
 };
 
 // ============ Query Hooks ============
@@ -188,6 +243,17 @@ export function usePrincipalFeeCollection(tenantId: string) {
   return useQuery({
     queryKey: principalDashboardKeys.fees(tenantId),
     queryFn: () => principalDashboardApi<FeeCollectionDto>('/fees', tenantId),
+    enabled: !!tenantId,
+  });
+}
+
+/**
+ * Get comprehensive exam overview for principal
+ */
+export function usePrincipalExamOverview(tenantId: string) {
+  return useQuery({
+    queryKey: principalDashboardKeys.exams(tenantId),
+    queryFn: () => principalDashboardApi<PrincipalExamOverviewResponse>('/exams', tenantId),
     enabled: !!tenantId,
   });
 }

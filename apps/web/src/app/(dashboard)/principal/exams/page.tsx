@@ -27,138 +27,36 @@ import {
   CheckCircle2,
   Clock,
   AlertTriangle,
-  BarChart3
+  BarChart3,
+  Loader2
 } from "lucide-react";
 import { useState } from "react";
-
-// Mock data - Replace with real API calls
-const examStats = {
-  totalExams: 24,
-  completed: 18,
-  ongoing: 2,
-  upcoming: 4,
-  totalStudents: 1250,
-  averagePassRate: 84.5,
-  resultsPublished: 16,
-  resultsPending: 2,
-};
-
-const upcomingExams = [
-  {
-    id: "1",
-    name: "End Semester Examination",
-    type: "Theory",
-    department: "All Departments",
-    startDate: "2026-01-15",
-    endDate: "2026-01-30",
-    status: "scheduled",
-    studentsRegistered: 1180,
-  },
-  {
-    id: "2",
-    name: "Practical Examination",
-    type: "Practical",
-    department: "Computer Science",
-    startDate: "2026-01-20",
-    endDate: "2026-01-25",
-    status: "scheduled",
-    studentsRegistered: 245,
-  },
-  {
-    id: "3",
-    name: "Mid Semester Test - II",
-    type: "Internal",
-    department: "Electronics",
-    startDate: "2026-02-01",
-    endDate: "2026-02-03",
-    status: "scheduled",
-    studentsRegistered: 198,
-  },
-  {
-    id: "4",
-    name: "Lab Assessment",
-    type: "Practical",
-    department: "Mechanical",
-    startDate: "2026-02-10",
-    endDate: "2026-02-12",
-    status: "scheduled",
-    studentsRegistered: 220,
-  },
-];
-
-const departmentResults = [
-  {
-    department: "Computer Science",
-    appeared: 240,
-    passed: 228,
-    passRate: 95,
-    distinction: 45,
-    firstClass: 120,
-    secondClass: 63,
-    failed: 12,
-  },
-  {
-    department: "Electronics",
-    appeared: 195,
-    passed: 172,
-    passRate: 88,
-    distinction: 28,
-    firstClass: 85,
-    secondClass: 59,
-    failed: 23,
-  },
-  {
-    department: "Mechanical",
-    appeared: 215,
-    passed: 180,
-    passRate: 84,
-    distinction: 22,
-    firstClass: 78,
-    secondClass: 80,
-    failed: 35,
-  },
-  {
-    department: "Civil",
-    appeared: 180,
-    passed: 158,
-    passRate: 88,
-    distinction: 25,
-    firstClass: 72,
-    secondClass: 61,
-    failed: 22,
-  },
-  {
-    department: "Electrical",
-    appeared: 165,
-    passed: 140,
-    passRate: 85,
-    distinction: 18,
-    firstClass: 65,
-    secondClass: 57,
-    failed: 25,
-  },
-];
-
-const recentResults = [
-  { exam: "Mid Semester Test - I", department: "Computer Science", passRate: 94, publishedDate: "2025-12-20" },
-  { exam: "Internal Assessment 2", department: "Electronics", passRate: 87, publishedDate: "2025-12-18" },
-  { exam: "Lab Practical", department: "Mechanical", passRate: 91, publishedDate: "2025-12-15" },
-  { exam: "Mid Semester Test - I", department: "Civil", passRate: 89, publishedDate: "2025-12-12" },
-];
+import { usePrincipalExamOverview } from "@/hooks/use-principal-dashboard";
+import { useTenantId } from "@/hooks/use-tenant";
 
 export default function PrincipalExamsPage() {
+  const tenantId = useTenantId();
   const [selectedSemester, setSelectedSemester] = useState("odd-2025");
 
+  const { data: examData, isLoading, error } = usePrincipalExamOverview(tenantId || '');
+
   const getExamTypeBadge = (type: string) => {
-    switch (type) {
-      case "Theory":
-        return <Badge className="bg-blue-100 text-blue-800">{type}</Badge>;
-      case "Practical":
-        return <Badge className="bg-purple-100 text-purple-800">{type}</Badge>;
-      case "Internal":
-        return <Badge className="bg-orange-100 text-orange-800">{type}</Badge>;
+    const typeLabel = type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    switch (type.toLowerCase()) {
+      case "external":
+      case "end_semester":
+        return <Badge className="bg-blue-100 text-blue-800">{typeLabel}</Badge>;
+      case "practical":
+        return <Badge className="bg-purple-100 text-purple-800">{typeLabel}</Badge>;
+      case "internal":
+      case "internal_1":
+      case "internal_2":
+      case "mid_semester":
+        return <Badge className="bg-orange-100 text-orange-800">{typeLabel}</Badge>;
+      case "quiz":
+        return <Badge className="bg-green-100 text-green-800">{typeLabel}</Badge>;
       default:
-        return <Badge variant="secondary">{type}</Badge>;
+        return <Badge variant="secondary">{typeLabel}</Badge>;
     }
   };
 
@@ -169,6 +67,76 @@ export default function PrincipalExamsPage() {
       year: "numeric",
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 p-6">
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="p-6">
+            <p className="text-red-800">Failed to load exam data. Please try again later.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const stats = examData?.stats || {
+    totalExams: 0,
+    completed: 0,
+    ongoing: 0,
+    upcoming: 0,
+    totalStudentsAppeared: 0,
+    averagePassRate: 0,
+    resultsPublished: 0,
+    resultsPending: 0,
+  };
+
+  const upcomingExams = examData?.upcomingExams || [];
+  const departmentResults = examData?.departmentResults || [];
+  const recentResults = examData?.recentResults || [];
+
+  // Generate performance alerts from data
+  const performanceAlerts: { type: 'warning' | 'info' | 'success'; title: string; message: string }[] = [];
+
+  // Find high failure departments
+  const highFailureDepts = departmentResults.filter(d => d.passRate < 80 && d.appeared > 0);
+  highFailureDepts.forEach(dept => {
+    performanceAlerts.push({
+      type: 'warning',
+      title: `${dept.department} - High Failure Rate`,
+      message: `${dept.failed} students failed with ${dept.passRate}% pass rate. Consider remedial classes.`,
+    });
+  });
+
+  // Pending results alert
+  if (stats.resultsPending > 0) {
+    performanceAlerts.push({
+      type: 'info',
+      title: `${stats.resultsPending} Results Pending Publication`,
+      message: `${stats.resultsPending} exam results are awaiting review and publication.`,
+    });
+  }
+
+  // Top performer
+  const topPerformer = departmentResults.reduce((best, curr) =>
+    curr.passRate > (best?.passRate || 0) && curr.appeared > 0 ? curr : best,
+    departmentResults[0] || null
+  );
+  if (topPerformer && topPerformer.passRate >= 90) {
+    performanceAlerts.push({
+      type: 'success',
+      title: `${topPerformer.department} - Top Performer`,
+      message: `${topPerformer.passRate}% pass rate - highest across all departments.`,
+    });
+  }
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -199,10 +167,10 @@ export default function PrincipalExamsPage() {
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{examStats.totalExams}</div>
+            <div className="text-2xl font-bold">{stats.totalExams}</div>
             <div className="flex gap-2 mt-1">
-              <span className="text-xs text-green-600">{examStats.completed} completed</span>
-              <span className="text-xs text-yellow-600">{examStats.ongoing} ongoing</span>
+              <span className="text-xs text-green-600">{stats.completed} completed</span>
+              <span className="text-xs text-yellow-600">{stats.ongoing} ongoing</span>
             </div>
           </CardContent>
         </Card>
@@ -212,7 +180,7 @@ export default function PrincipalExamsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{examStats.totalStudents.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{stats.totalStudentsAppeared.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               Across all examinations
             </p>
@@ -224,9 +192,9 @@ export default function PrincipalExamsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{examStats.averagePassRate}%</div>
-            <p className="text-xs text-green-600">
-              +1.5% from last semester
+            <div className="text-2xl font-bold">{stats.averagePassRate}%</div>
+            <p className="text-xs text-muted-foreground">
+              Overall institution average
             </p>
           </CardContent>
         </Card>
@@ -236,9 +204,9 @@ export default function PrincipalExamsPage() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{examStats.resultsPublished}/{examStats.completed}</div>
+            <div className="text-2xl font-bold">{stats.resultsPublished}/{stats.completed}</div>
             <p className="text-xs text-muted-foreground">
-              {examStats.resultsPending} results pending
+              {stats.resultsPending} results pending
             </p>
           </CardContent>
         </Card>
@@ -258,37 +226,46 @@ export default function PrincipalExamsPage() {
               <CardDescription>Scheduled exams across all departments</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Examination</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead className="text-center">Students</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {upcomingExams.map((exam) => (
-                    <TableRow key={exam.id}>
-                      <TableCell className="font-medium">{exam.name}</TableCell>
-                      <TableCell>{getExamTypeBadge(exam.type)}</TableCell>
-                      <TableCell>{exam.department}</TableCell>
-                      <TableCell className="text-sm">
-                        {formatDate(exam.startDate)} - {formatDate(exam.endDate)}
-                      </TableCell>
-                      <TableCell className="text-center">{exam.studentsRegistered}</TableCell>
-                      <TableCell>
-                        <Badge className="bg-blue-100 text-blue-800">
-                          <Clock className="w-3 h-3 mr-1" />
-                          Scheduled
-                        </Badge>
-                      </TableCell>
+              {upcomingExams.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  No upcoming examinations scheduled.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Examination</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-center">Max Marks</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {upcomingExams.map((exam) => (
+                      <TableRow key={exam.id}>
+                        <TableCell className="font-medium">
+                          <div>{exam.name}</div>
+                          <div className="text-xs text-muted-foreground">{exam.subjectName}</div>
+                        </TableCell>
+                        <TableCell>{getExamTypeBadge(exam.type)}</TableCell>
+                        <TableCell>{exam.department}</TableCell>
+                        <TableCell className="text-sm">
+                          {formatDate(exam.date)}
+                        </TableCell>
+                        <TableCell className="text-center">{exam.totalMarks}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-blue-100 text-blue-800">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Scheduled
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
 
@@ -302,7 +279,7 @@ export default function PrincipalExamsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">{examStats.completed}</div>
+                <div className="text-3xl font-bold text-green-600">{stats.completed}</div>
                 <p className="text-xs text-muted-foreground mt-1">Examinations conducted</p>
               </CardContent>
             </Card>
@@ -314,7 +291,7 @@ export default function PrincipalExamsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-yellow-600">{examStats.ongoing}</div>
+                <div className="text-3xl font-bold text-yellow-600">{stats.ongoing}</div>
                 <p className="text-xs text-muted-foreground mt-1">Currently in progress</p>
               </CardContent>
             </Card>
@@ -326,8 +303,8 @@ export default function PrincipalExamsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-blue-600">{examStats.upcoming}</div>
-                <p className="text-xs text-muted-foreground mt-1">Scheduled this month</p>
+                <div className="text-3xl font-bold text-blue-600">{stats.upcoming}</div>
+                <p className="text-xs text-muted-foreground mt-1">Scheduled examinations</p>
               </CardContent>
             </Card>
           </div>
@@ -341,39 +318,45 @@ export default function PrincipalExamsPage() {
               <CardDescription>Performance summary across all departments</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Department</TableHead>
-                    <TableHead className="text-center">Appeared</TableHead>
-                    <TableHead className="text-center">Passed</TableHead>
-                    <TableHead className="text-center">Pass Rate</TableHead>
-                    <TableHead className="text-center">Distinction</TableHead>
-                    <TableHead className="text-center">First Class</TableHead>
-                    <TableHead className="text-center">Failed</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {departmentResults.map((dept) => (
-                    <TableRow key={dept.department}>
-                      <TableCell className="font-medium">{dept.department}</TableCell>
-                      <TableCell className="text-center">{dept.appeared}</TableCell>
-                      <TableCell className="text-center text-green-600">{dept.passed}</TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Progress value={dept.passRate} className="w-16 h-2" />
-                          <span className={dept.passRate >= 90 ? "text-green-600 font-medium" : "text-yellow-600"}>
-                            {dept.passRate}%
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center text-purple-600">{dept.distinction}</TableCell>
-                      <TableCell className="text-center text-blue-600">{dept.firstClass}</TableCell>
-                      <TableCell className="text-center text-red-600">{dept.failed}</TableCell>
+              {departmentResults.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  No exam results available yet.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Department</TableHead>
+                      <TableHead className="text-center">Appeared</TableHead>
+                      <TableHead className="text-center">Passed</TableHead>
+                      <TableHead className="text-center">Pass Rate</TableHead>
+                      <TableHead className="text-center">Distinction</TableHead>
+                      <TableHead className="text-center">First Class</TableHead>
+                      <TableHead className="text-center">Failed</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {departmentResults.map((dept) => (
+                      <TableRow key={dept.departmentId}>
+                        <TableCell className="font-medium">{dept.department}</TableCell>
+                        <TableCell className="text-center">{dept.appeared}</TableCell>
+                        <TableCell className="text-center text-green-600">{dept.passed}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Progress value={dept.passRate} className="w-16 h-2" />
+                            <span className={dept.passRate >= 90 ? "text-green-600 font-medium" : "text-yellow-600"}>
+                              {dept.passRate}%
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center text-purple-600">{dept.distinction}</TableCell>
+                        <TableCell className="text-center text-blue-600">{dept.firstClass}</TableCell>
+                        <TableCell className="text-center text-red-600">{dept.failed}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
 
@@ -387,22 +370,28 @@ export default function PrincipalExamsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {recentResults.map((result, index) => (
-                    <div key={index} className="flex items-center justify-between pb-3 border-b last:border-0 last:pb-0">
-                      <div>
-                        <p className="text-sm font-medium">{result.exam}</p>
-                        <p className="text-xs text-muted-foreground">{result.department}</p>
+                {recentResults.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">
+                    No recent results published.
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {recentResults.slice(0, 5).map((result) => (
+                      <div key={result.examId} className="flex items-center justify-between pb-3 border-b last:border-0 last:pb-0">
+                        <div>
+                          <p className="text-sm font-medium">{result.examName}</p>
+                          <p className="text-xs text-muted-foreground">{result.department}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-sm font-medium ${result.passRate >= 90 ? "text-green-600" : "text-yellow-600"}`}>
+                            {result.passRate}% pass
+                          </p>
+                          <p className="text-xs text-muted-foreground">{formatDate(result.publishedDate)}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className={`text-sm font-medium ${result.passRate >= 90 ? "text-green-600" : "text-yellow-600"}`}>
-                          {result.passRate}% pass
-                        </p>
-                        <p className="text-xs text-muted-foreground">{result.publishedDate}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -414,26 +403,45 @@ export default function PrincipalExamsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <p className="text-sm font-medium text-yellow-800">Mechanical - High Failure Rate</p>
-                    <p className="text-xs text-yellow-700 mt-1">
-                      35 students failed in recent exams. Consider remedial classes.
-                    </p>
+                {performanceAlerts.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">
+                    No alerts at this time.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {performanceAlerts.slice(0, 3).map((alert, index) => (
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg border ${
+                          alert.type === 'warning'
+                            ? 'bg-yellow-50 border-yellow-200'
+                            : alert.type === 'success'
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-blue-50 border-blue-200'
+                        }`}
+                      >
+                        <p className={`text-sm font-medium ${
+                          alert.type === 'warning'
+                            ? 'text-yellow-800'
+                            : alert.type === 'success'
+                            ? 'text-green-800'
+                            : 'text-blue-800'
+                        }`}>
+                          {alert.title}
+                        </p>
+                        <p className={`text-xs mt-1 ${
+                          alert.type === 'warning'
+                            ? 'text-yellow-700'
+                            : alert.type === 'success'
+                            ? 'text-green-700'
+                            : 'text-blue-700'
+                        }`}>
+                          {alert.message}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-sm font-medium text-blue-800">2 Results Pending Publication</p>
-                    <p className="text-xs text-blue-700 mt-1">
-                      Electronics Mid-Sem and Civil Lab results awaiting approval.
-                    </p>
-                  </div>
-                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                    <p className="text-sm font-medium text-green-800">Computer Science - Top Performer</p>
-                    <p className="text-xs text-green-700 mt-1">
-                      95% pass rate - highest across all departments this semester.
-                    </p>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
