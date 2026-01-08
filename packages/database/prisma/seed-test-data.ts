@@ -130,6 +130,7 @@ async function createClerkUser(
       },
       body: JSON.stringify({
         public_metadata: { role, tenantId },
+        bypass_client_trust: true,
       }),
     });
     return existing;
@@ -150,6 +151,7 @@ async function createClerkUser(
         last_name: lastName,
         public_metadata: { role, tenantId },
         skip_password_checks: true,
+        bypass_client_trust: true,
       }),
     });
 
