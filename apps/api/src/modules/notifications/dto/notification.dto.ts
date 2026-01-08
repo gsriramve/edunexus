@@ -15,6 +15,7 @@ export enum EmailTemplateType {
   ATTENDANCE_ALERT = 'attendance_alert',
   EXAM_SCHEDULE = 'exam_schedule',
   RESULT_PUBLISHED = 'result_published',
+  INVITATION = 'invitation',
   CUSTOM = 'custom',
 }
 

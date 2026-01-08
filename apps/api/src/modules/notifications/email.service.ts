@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import sgMail from '@sendgrid/mail';
+import { Resend } from 'resend';
 import {
   SendEmailDto,
   SendBulkEmailDto,
@@ -14,6 +14,8 @@ import {
   feeOverdueTemplate,
   welcomeTemplate,
   attendanceAlertTemplate,
+  principalInvitationTemplate,
+  invitationTemplate,
   getPlainTextVersion,
   EmailTemplateData,
 } from './templates/email-templates';
@@ -24,19 +26,20 @@ export class EmailService {
   private readonly fromEmail: string;
   private readonly fromName: string;
   private readonly isConfigured: boolean;
+  private readonly resend: Resend | null = null;
 
   constructor() {
-    const apiKey = process.env.SENDGRID_API_KEY;
-    this.fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@edunexus.app';
-    this.fromName = process.env.SENDGRID_FROM_NAME || 'EduNexus';
+    const apiKey = process.env.RESEND_API_KEY;
+    this.fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+    this.fromName = process.env.RESEND_FROM_NAME || 'EduNexus';
 
     if (apiKey && !apiKey.includes('placeholder')) {
-      sgMail.setApiKey(apiKey);
+      this.resend = new Resend(apiKey);
       this.isConfigured = true;
-      this.logger.log('SendGrid configured successfully');
+      this.logger.log('Resend email service configured successfully');
     } else {
       this.isConfigured = false;
-      this.logger.warn('SendGrid API key not configured. Emails will be logged but not sent.');
+      this.logger.warn('Resend API key not configured. Emails will be logged but not sent.');
     }
   }
 
@@ -67,6 +70,11 @@ export class EmailService {
           html: attendanceAlertTemplate(data),
           text: getPlainTextVersion('attendance_alert', data),
         };
+      case EmailTemplateType.INVITATION:
+        return {
+          html: invitationTemplate(data),
+          text: getPlainTextVersion('invitation', data),
+        };
       default:
         return {
           html: '<p>No template available</p>',
@@ -91,17 +99,6 @@ export class EmailService {
       text = template.text;
     }
 
-    const msg = {
-      to,
-      from: {
-        email: this.fromEmail,
-        name: this.fromName,
-      },
-      subject,
-      text,
-      html,
-    };
-
     // Log email details in development
     if (!this.isConfigured || process.env.NODE_ENV === 'development') {
       this.logger.log(`[EMAIL] To: ${to}`);
@@ -118,12 +115,26 @@ export class EmailService {
     }
 
     try {
-      const response = await sgMail.send(msg);
-      this.logger.log(`Email sent successfully to ${to}`);
+      const response = await this.resend!.emails.send({
+        from: `${this.fromName} <${this.fromEmail}>`,
+        to: [to],
+        subject,
+        html,
+        text,
+      });
 
+      if (response.error) {
+        this.logger.error(`Failed to send email to ${to}: ${response.error.message}`);
+        return {
+          success: false,
+          error: response.error.message,
+        };
+      }
+
+      this.logger.log(`Email sent successfully to ${to}`);
       return {
         success: true,
-        messageId: response[0]?.headers?.['x-message-id'],
+        messageId: response.data?.id,
       };
     } catch (error: any) {
       this.logger.error(`Failed to send email to ${to}: ${error.message}`);
@@ -137,10 +148,6 @@ export class EmailService {
   async sendBulkEmail(dto: SendBulkEmailDto): Promise<NotificationResultDto[]> {
     const { recipients, subject, templateType, templateData } = dto;
     const results: NotificationResultDto[] = [];
-
-    // SendGrid supports up to 1000 recipients per API call
-    // For simplicity, we'll send individual emails
-    // In production, consider using SendGrid's bulk send feature
 
     for (const recipient of recipients) {
       const result = await this.sendEmail({
@@ -156,6 +163,30 @@ export class EmailService {
     this.logger.log(`Bulk email sent: ${successCount}/${recipients.length} successful`);
 
     return results;
+  }
+
+  // Send invitation email to new users (principal, staff, etc.)
+  async sendInvitationEmail(
+    email: string,
+    recipientName: string,
+    role: string,
+    collegeName: string,
+    inviteUrl: string,
+    inviterName?: string,
+  ): Promise<NotificationResultDto> {
+    return this.sendEmail({
+      to: email,
+      subject: `You're invited to join ${collegeName} on EduNexus`,
+      templateType: EmailTemplateType.INVITATION,
+      templateData: {
+        recipientName,
+        role,
+        collegeName,
+        inviteUrl,
+        inviterName: inviterName || 'EduNexus Admin',
+        expiryDays: '7',
+      },
+    });
   }
 
   // Convenience methods for common notification types

@@ -15,7 +15,13 @@ export interface EmailTemplateData {
   semester?: string;
   academicYear?: string;
   attendancePercentage?: string | number;
-  // Principal invitation fields
+  // Invitation fields
+  recipientName?: string;
+  role?: string;
+  inviteUrl?: string;
+  inviterName?: string;
+  expiryDays?: string;
+  // Principal invitation fields (legacy)
   principalName?: string;
   customMessage?: string;
   invitationLink?: string;
@@ -446,6 +452,102 @@ export const principalInvitationTemplate = (data: EmailTemplateData): string => 
   return baseLayout(content, `You're Invited to Manage ${data.collegeName || 'a College'} on EduNexus`);
 };
 
+// Generic Invitation Template (for all roles)
+export const invitationTemplate = (data: EmailTemplateData): string => {
+  const roleDescriptions: Record<string, string> = {
+    PRINCIPAL: 'manage your institution as Principal Administrator',
+    HOD: 'manage your department as Head of Department',
+    TEACHER: 'access your classes and students as a Teacher',
+    ADMIN_STAFF: 'manage administrative operations as Admin Staff',
+    LAB_ASSISTANT: 'manage lab resources as Lab Assistant',
+    STUDENT: 'access your academic portal as a Student',
+    PARENT: 'monitor your child\'s progress as a Parent',
+  };
+
+  const rolePermissions: Record<string, string[]> = {
+    PRINCIPAL: [
+      'Manage departments and staff',
+      'Oversee student records and academics',
+      'Monitor attendance and fee collections',
+      'Access comprehensive reports and analytics',
+      'Configure college settings and branding',
+    ],
+    HOD: [
+      'Manage department faculty',
+      'Oversee curriculum and subjects',
+      'Review student performance',
+      'Access department reports',
+    ],
+    TEACHER: [
+      'Manage your class schedules',
+      'Mark attendance',
+      'Enter and manage grades',
+      'Communicate with students and parents',
+    ],
+    ADMIN_STAFF: [
+      'Manage student records',
+      'Process fee collections',
+      'Handle transport and hostel operations',
+      'Generate administrative reports',
+    ],
+    LAB_ASSISTANT: [
+      'Manage lab equipment inventory',
+      'Schedule lab sessions',
+      'Track lab attendance',
+      'Report equipment issues',
+    ],
+    STUDENT: [
+      'View your attendance and grades',
+      'Access study materials',
+      'Pay fees online',
+      'Track academic progress',
+    ],
+    PARENT: [
+      'Monitor your child\'s attendance',
+      'View academic performance',
+      'Pay fees online',
+      'Communicate with teachers',
+    ],
+  };
+
+  const roleName = data.role || 'TEACHER';
+  const description = roleDescriptions[roleName] || 'join the institution';
+  const permissions = rolePermissions[roleName] || ['Access the platform'];
+
+  const content = `
+    <div class="content">
+      <h2>You're Invited!</h2>
+      <p>Hello ${data.recipientName || 'there'},</p>
+      <p>You have been invited by <strong>${data.inviterName || 'an administrator'}</strong> to join <strong>${data.collegeName || 'EduNexus'}</strong> and ${description}.</p>
+
+      <div class="info-box">
+        <h3 style="margin-top: 0;">As ${roleName.replace('_', ' ')}, you will be able to:</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+          ${permissions.map(p => `<li>${p}</li>`).join('')}
+        </ul>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="${data.inviteUrl || '#'}" class="btn">Accept Invitation</a>
+      </p>
+
+      <div class="warning-box">
+        <span class="icon">⏰</span>
+        <span>This invitation will expire in <strong>${data.expiryDays || '7'} days</strong>. Please accept before it expires.</span>
+      </div>
+
+      <p>If you did not expect this invitation or believe it was sent in error, you can safely ignore this email.</p>
+
+      <p>
+        Best regards,<br>
+        <strong>EduNexus Team</strong>
+      </p>
+    </div>
+  `;
+
+  return baseLayout(content, `You're Invited to ${data.collegeName || 'EduNexus'}`);
+};
+
 // Invitation Resent Template
 export const invitationResentTemplate = (data: EmailTemplateData): string => {
   const content = `
@@ -716,6 +818,25 @@ Your free trial for ${data.collegeName || 'your college'} on EduNexus will expir
 Trial expires on: ${data.expiresAt || 'Soon'}
 
 To continue using EduNexus without interruption, please contact our sales team.
+
+Best regards,
+EduNexus Team
+      `.trim();
+
+    case 'invitation':
+      return `
+You're Invited to ${data.collegeName || 'EduNexus'}!
+
+Hello ${data.recipientName || 'there'},
+
+You have been invited by ${data.inviterName || 'an administrator'} to join ${data.collegeName || 'EduNexus'} as ${data.role || 'a team member'}.
+
+Accept your invitation by clicking this link:
+${data.inviteUrl || '[Invitation Link]'}
+
+This invitation will expire in ${data.expiryDays || '7'} days.
+
+If you did not expect this invitation, you can safely ignore this email.
 
 Best regards,
 EduNexus Team

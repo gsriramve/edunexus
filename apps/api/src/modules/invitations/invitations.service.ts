@@ -1,12 +1,18 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateInvitationDto, InvitationQueryDto } from './dto/invitation.dto';
 import { UserRole } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
+import { EmailService } from '../notifications/email.service';
 
 @Injectable()
 export class InvitationsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(InvitationsService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   /**
    * Create a new invitation
@@ -49,6 +55,14 @@ export class InvitationsService {
       ? new Date(createDto.expiresAt)
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
+    // Get tenant info for the email
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { name: true, displayName: true },
+    });
+
+    const collegeName = tenant?.displayName || tenant?.name || 'Your College';
+
     const invitation = await this.prisma.invitation.create({
       data: {
         tenantId,
@@ -62,8 +76,25 @@ export class InvitationsService {
       },
     });
 
-    // TODO: Send invitation email via notifications service
-    // await this.notificationsService.sendInvitationEmail(invitation);
+    // Send invitation email
+    const appUrl = process.env.APP_URL || 'http://localhost:3000';
+    const inviteUrl = `${appUrl}/accept-invitation?token=${invitation.token}`;
+    const recipientName = createDto.email.split('@')[0]; // Default name from email
+
+    try {
+      await this.emailService.sendInvitationEmail(
+        createDto.email,
+        recipientName,
+        createDto.role,
+        collegeName,
+        inviteUrl,
+        invitedByName,
+      );
+      this.logger.log(`Invitation email sent to ${createDto.email}`);
+    } catch (error) {
+      this.logger.error(`Failed to send invitation email to ${createDto.email}: ${error.message}`);
+      // Don't throw - invitation was created, email failure shouldn't prevent that
+    }
 
     return invitation;
   }
@@ -233,8 +264,30 @@ export class InvitationsService {
       },
     });
 
-    // TODO: Send invitation email via notifications service
-    // await this.notificationsService.sendInvitationEmail(updatedInvitation);
+    // Get tenant info for the email
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { name: true, displayName: true },
+    });
+
+    const collegeName = tenant?.displayName || tenant?.name || 'Your College';
+    const appUrl = process.env.APP_URL || 'http://localhost:3000';
+    const inviteUrl = `${appUrl}/accept-invitation?token=${updatedInvitation.token}`;
+    const recipientName = invitation.email.split('@')[0];
+
+    try {
+      await this.emailService.sendInvitationEmail(
+        invitation.email,
+        recipientName,
+        invitation.role,
+        collegeName,
+        inviteUrl,
+        invitation.invitedByName || undefined,
+      );
+      this.logger.log(`Invitation email resent to ${invitation.email}`);
+    } catch (error) {
+      this.logger.error(`Failed to resend invitation email to ${invitation.email}: ${error.message}`);
+    }
 
     return updatedInvitation;
   }
