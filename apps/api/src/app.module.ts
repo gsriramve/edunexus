@@ -44,6 +44,7 @@ import { HodExamsModule } from './modules/hod-exams/hod-exams.module';
 import { TeacherDashboardModule } from './modules/teacher-dashboard/teacher-dashboard.module';
 import { TeacherMessagesModule } from './modules/teacher-messages/teacher-messages.module';
 import { TeacherAssignmentsModule } from './modules/teacher-assignments/teacher-assignments.module';
+import { TeacherMaterialsModule } from './modules/teacher-materials/teacher-materials.module';
 import { PrincipalDashboardModule } from './modules/principal-dashboard/principal-dashboard.module';
 
 @Module({
@@ -107,6 +108,7 @@ import { PrincipalDashboardModule } from './modules/principal-dashboard/principa
     TeacherDashboardModule,
     TeacherMessagesModule,
     TeacherAssignmentsModule,
+    TeacherMaterialsModule,
     PrincipalDashboardModule,
   ],
   controllers: [AppController],

@@ -18,6 +18,8 @@ import {
   List,
   FolderPlus,
   Link as LinkIcon,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,49 +59,119 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Mock data
-const subjects = [
-  { id: "cs501", name: "Data Structures", code: "CS501" },
-  { id: "cs505", name: "Data Structures Lab", code: "CS505" },
-  { id: "cs502", name: "Algorithms", code: "CS502" },
-];
-
-const folders = [
-  { id: "f1", name: "Unit 1 - Introduction", subject: "CS501", files: 5, lastModified: "2026-01-02" },
-  { id: "f2", name: "Unit 2 - Arrays & Strings", subject: "CS501", files: 8, lastModified: "2026-01-05" },
-  { id: "f3", name: "Unit 3 - Linked Lists", subject: "CS501", files: 6, lastModified: "2025-12-28" },
-  { id: "f4", name: "Unit 4 - Trees", subject: "CS501", files: 7, lastModified: "2026-01-06" },
-  { id: "f5", name: "Unit 5 - Graphs", subject: "CS501", files: 4, lastModified: "2026-01-03" },
-];
-
-const materials = [
-  { id: "m1", name: "Introduction to Data Structures.pdf", type: "pdf", size: "2.4 MB", folder: "Unit 1 - Introduction", uploadedAt: "2025-12-15", downloads: 156, subject: "CS501" },
-  { id: "m2", name: "Complexity Analysis Notes.pdf", type: "pdf", size: "1.8 MB", folder: "Unit 1 - Introduction", uploadedAt: "2025-12-18", downloads: 142, subject: "CS501" },
-  { id: "m3", name: "Array Operations Demo.mp4", type: "video", size: "145 MB", folder: "Unit 2 - Arrays & Strings", uploadedAt: "2025-12-20", downloads: 98, subject: "CS501" },
-  { id: "m4", name: "String Algorithms PPT.pptx", type: "pptx", size: "5.2 MB", folder: "Unit 2 - Arrays & Strings", uploadedAt: "2025-12-22", downloads: 134, subject: "CS501" },
-  { id: "m5", name: "Linked List Implementation.pdf", type: "pdf", size: "3.1 MB", folder: "Unit 3 - Linked Lists", uploadedAt: "2025-12-25", downloads: 167, subject: "CS501" },
-  { id: "m6", name: "Tree Traversal Visualization.mp4", type: "video", size: "210 MB", folder: "Unit 4 - Trees", uploadedAt: "2026-01-02", downloads: 78, subject: "CS501" },
-  { id: "m7", name: "Binary Search Trees Notes.pdf", type: "pdf", size: "2.8 MB", folder: "Unit 4 - Trees", uploadedAt: "2026-01-04", downloads: 89, subject: "CS501" },
-  { id: "m8", name: "Graph Algorithms Slides.pptx", type: "pptx", size: "4.5 MB", folder: "Unit 5 - Graphs", uploadedAt: "2026-01-05", downloads: 45, subject: "CS501" },
-];
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useTenantId } from "@/hooks/use-tenant";
+import {
+  useTeacherMaterials,
+  useTeacherFolders,
+  useTeacherSubjectsForMaterials,
+  useCreateFolder,
+  useCreateMaterial,
+  useDeleteFolder,
+  useDeleteMaterial,
+  useTrackDownload,
+  Material,
+  MaterialFolder,
+} from "@/hooks/use-teacher-materials";
 
 export default function TeacherMaterials() {
-  const [selectedSubject, setSelectedSubject] = useState("cs501");
+  const tenantIdValue = useTenantId();
+  const tenantId = tenantIdValue || "";
+  const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isFolderDialogOpen, setIsFolderDialogOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
 
-  const filteredMaterials = materials.filter((material) =>
-    material.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Form states
+  const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderSubject, setNewFolderSubject] = useState("");
+  const [newMaterialName, setNewMaterialName] = useState("");
+  const [newMaterialSubject, setNewMaterialSubject] = useState("");
+  const [newMaterialFolder, setNewMaterialFolder] = useState("");
+  const [newMaterialDescription, setNewMaterialDescription] = useState("");
+
+  // Queries
+  const { data: subjectsData, isLoading: subjectsLoading } = useTeacherSubjectsForMaterials(tenantId);
+  const { data: materialsData, isLoading: materialsLoading, error: materialsError } = useTeacherMaterials(
+    tenantId,
+    {
+      subjectCode: selectedSubject !== "all" ? selectedSubject : undefined,
+      search: searchQuery || undefined,
+      folderId: selectedFolder || undefined,
+    }
+  );
+  const { data: foldersData, isLoading: foldersLoading } = useTeacherFolders(
+    tenantId,
+    {
+      subjectCode: selectedSubject !== "all" ? selectedSubject : undefined,
+    }
   );
 
-  const stats = {
-    totalFiles: materials.length,
-    totalFolders: folders.length,
-    totalSize: "385 MB",
-    totalDownloads: materials.reduce((sum, m) => sum + m.downloads, 0),
+  // Mutations
+  const createFolderMutation = useCreateFolder(tenantId);
+  const createMaterialMutation = useCreateMaterial(tenantId);
+  const deleteFolderMutation = useDeleteFolder(tenantId);
+  const deleteMaterialMutation = useDeleteMaterial(tenantId);
+  const trackDownloadMutation = useTrackDownload(tenantId);
+
+  const subjects = subjectsData || [];
+  const materials = materialsData?.materials || [];
+  const folders = foldersData?.folders || [];
+  const stats = materialsData?.stats || {
+    totalFiles: 0,
+    totalFolders: 0,
+    totalSizeFormatted: "0 B",
+    totalDownloads: 0,
+  };
+
+  const isLoading = subjectsLoading || materialsLoading || foldersLoading;
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName || !newFolderSubject) return;
+
+    try {
+      await createFolderMutation.mutateAsync({
+        teacherSubjectId: newFolderSubject,
+        name: newFolderName,
+      });
+      setNewFolderName("");
+      setNewFolderSubject("");
+      setIsFolderDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to create folder:", error);
+    }
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    if (!confirm("Are you sure you want to delete this folder? Materials will be moved to root.")) return;
+
+    try {
+      await deleteFolderMutation.mutateAsync(folderId);
+    } catch (error) {
+      console.error("Failed to delete folder:", error);
+    }
+  };
+
+  const handleDeleteMaterial = async (materialId: string) => {
+    if (!confirm("Are you sure you want to delete this material?")) return;
+
+    try {
+      await deleteMaterialMutation.mutateAsync(materialId);
+    } catch (error) {
+      console.error("Failed to delete material:", error);
+    }
+  };
+
+  const handleDownload = async (material: Material) => {
+    try {
+      await trackDownloadMutation.mutateAsync(material.id);
+      window.open(material.fileUrl, "_blank");
+    } catch (error) {
+      console.error("Failed to track download:", error);
+      window.open(material.fileUrl, "_blank");
+    }
   };
 
   const getFileIcon = (type: string) => {
@@ -107,10 +179,16 @@ export default function TeacherMaterials() {
       case "pdf":
         return <File className="h-5 w-5 text-red-500" />;
       case "video":
+      case "mp4":
+      case "webm":
         return <Video className="h-5 w-5 text-blue-500" />;
       case "pptx":
+      case "ppt":
         return <FileText className="h-5 w-5 text-orange-500" />;
       case "image":
+      case "png":
+      case "jpg":
+      case "jpeg":
         return <Image className="h-5 w-5 text-green-500" />;
       default:
         return <File className="h-5 w-5 text-gray-500" />;
@@ -121,11 +199,39 @@ export default function TeacherMaterials() {
     const colors: Record<string, string> = {
       pdf: "bg-red-100 text-red-700",
       video: "bg-blue-100 text-blue-700",
+      mp4: "bg-blue-100 text-blue-700",
+      webm: "bg-blue-100 text-blue-700",
       pptx: "bg-orange-100 text-orange-700",
+      ppt: "bg-orange-100 text-orange-700",
       image: "bg-green-100 text-green-700",
+      png: "bg-green-100 text-green-700",
+      jpg: "bg-green-100 text-green-700",
+      jpeg: "bg-green-100 text-green-700",
+      doc: "bg-blue-100 text-blue-700",
+      docx: "bg-blue-100 text-blue-700",
+      zip: "bg-purple-100 text-purple-700",
     };
     return <Badge className={colors[type] || "bg-gray-100 text-gray-700"}>{type.toUpperCase()}</Badge>;
   };
+
+  if (materialsError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Study Materials</h1>
+          <p className="text-muted-foreground">
+            Upload and manage course materials for your students
+          </p>
+        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load materials. Please try again later.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -138,7 +244,7 @@ export default function TeacherMaterials() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Dialog>
+          <Dialog open={isFolderDialogOpen} onOpenChange={setIsFolderDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
                 <FolderPlus className="mr-2 h-4 w-4" />
@@ -155,18 +261,23 @@ export default function TeacherMaterials() {
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="folderName">Folder Name</Label>
-                  <Input id="folderName" placeholder="e.g., Unit 6 - Sorting Algorithms" />
+                  <Input
+                    id="folderName"
+                    placeholder="e.g., Unit 6 - Sorting Algorithms"
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label>Subject</Label>
-                  <Select defaultValue="cs501">
+                  <Select value={newFolderSubject} onValueChange={setNewFolderSubject}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select subject" />
                     </SelectTrigger>
                     <SelectContent>
                       {subjects.map((subject) => (
                         <SelectItem key={subject.id} value={subject.id}>
-                          {subject.name} ({subject.code})
+                          {subject.subjectName} ({subject.subjectCode})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -174,8 +285,16 @@ export default function TeacherMaterials() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline">Cancel</Button>
-                <Button>Create Folder</Button>
+                <Button variant="outline" onClick={() => setIsFolderDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateFolder}
+                  disabled={createFolderMutation.isPending || !newFolderName || !newFolderSubject}
+                >
+                  {createFolderMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Create Folder
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -196,26 +315,27 @@ export default function TeacherMaterials() {
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label>Subject</Label>
-                  <Select defaultValue="cs501">
+                  <Select value={newMaterialSubject} onValueChange={setNewMaterialSubject}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select subject" />
                     </SelectTrigger>
                     <SelectContent>
                       {subjects.map((subject) => (
                         <SelectItem key={subject.id} value={subject.id}>
-                          {subject.name} ({subject.code})
+                          {subject.subjectName} ({subject.subjectCode})
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Folder</Label>
-                  <Select>
+                  <Label>Folder (Optional)</Label>
+                  <Select value={newMaterialFolder} onValueChange={setNewMaterialFolder}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select folder" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="">No folder (root)</SelectItem>
                       {folders.map((folder) => (
                         <SelectItem key={folder.id} value={folder.id}>
                           {folder.name}
@@ -243,6 +363,8 @@ export default function TeacherMaterials() {
                     id="description"
                     placeholder="Brief description of the uploaded materials..."
                     rows={2}
+                    value={newMaterialDescription}
+                    onChange={(e) => setNewMaterialDescription(e.target.value)}
                   />
                 </div>
               </div>
@@ -269,7 +391,9 @@ export default function TeacherMaterials() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Files</p>
-                <p className="text-2xl font-bold">{stats.totalFiles}</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.totalFiles}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -282,7 +406,9 @@ export default function TeacherMaterials() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Folders</p>
-                <p className="text-2xl font-bold">{stats.totalFolders}</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.totalFolders}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -295,7 +421,9 @@ export default function TeacherMaterials() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Size</p>
-                <p className="text-2xl font-bold">{stats.totalSize}</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.totalSizeFormatted}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -308,7 +436,9 @@ export default function TeacherMaterials() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Downloads</p>
-                <p className="text-2xl font-bold">{stats.totalDownloads}</p>
+                <p className="text-2xl font-bold">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.totalDownloads}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -325,9 +455,10 @@ export default function TeacherMaterials() {
                   <SelectValue placeholder="Select subject" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">All Subjects</SelectItem>
                   {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
+                    <SelectItem key={subject.id} value={subject.subjectCode}>
+                      {subject.subjectName}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -371,30 +502,71 @@ export default function TeacherMaterials() {
 
         {/* Folders Tab */}
         <TabsContent value="folders">
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-            {folders.map((folder) => (
-              <Card
-                key={folder.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => setSelectedFolder(folder.id)}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="p-4 rounded-lg bg-yellow-50 mb-3">
-                      <Folder className="h-10 w-10 text-yellow-600" />
+          {foldersLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : folders.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Folder className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium">No folders yet</h3>
+                <p className="text-muted-foreground mt-1">
+                  Create folders to organize your study materials
+                </p>
+                <Button className="mt-4" onClick={() => setIsFolderDialogOpen(true)}>
+                  <FolderPlus className="mr-2 h-4 w-4" />
+                  Create First Folder
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+              {folders.map((folder) => (
+                <Card
+                  key={folder.id}
+                  className="cursor-pointer hover:shadow-md transition-shadow relative group"
+                  onClick={() => setSelectedFolder(folder.id)}
+                >
+                  <CardContent className="pt-6">
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteFolder(folder.id);
+                            }}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <h3 className="font-medium text-sm line-clamp-2">{folder.name}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {folder.files} files
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Modified: {new Date(folder.lastModified).toLocaleDateString()}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <div className="flex flex-col items-center text-center">
+                      <div className="p-4 rounded-lg bg-yellow-50 mb-3">
+                        <Folder className="h-10 w-10 text-yellow-600" />
+                      </div>
+                      <h3 className="font-medium text-sm line-clamp-2">{folder.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {folder.fileCount} files
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Modified: {new Date(folder.lastModified).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* Files Tab */}
@@ -403,11 +575,30 @@ export default function TeacherMaterials() {
             <CardHeader>
               <CardTitle>All Materials</CardTitle>
               <CardDescription>
-                {subjects.find((s) => s.id === selectedSubject)?.name} - All uploaded files
+                {selectedSubject === "all"
+                  ? "All uploaded files across subjects"
+                  : `${subjects.find((s) => s.subjectCode === selectedSubject)?.subjectName || selectedSubject} - All uploaded files`
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {viewMode === "list" ? (
+              {materialsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : materials.length === 0 ? (
+                <div className="py-12 text-center">
+                  <File className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">No materials yet</h3>
+                  <p className="text-muted-foreground mt-1">
+                    Upload study materials for your students
+                  </p>
+                  <Button className="mt-4" onClick={() => setIsUploadDialogOpen(true)}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload First Material
+                  </Button>
+                </div>
+              ) : viewMode === "list" ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -421,22 +612,26 @@ export default function TeacherMaterials() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredMaterials.map((material) => (
+                    {materials.map((material) => (
                       <TableRow key={material.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            {getFileIcon(material.type)}
+                            {getFileIcon(material.fileType)}
                             <span className="font-medium">{material.name}</span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{material.folder}</Badge>
+                          {material.folderName ? (
+                            <Badge variant="outline">{material.folderName}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
-                        <TableCell>{getTypeBadge(material.type)}</TableCell>
-                        <TableCell>{material.size}</TableCell>
+                        <TableCell>{getTypeBadge(material.fileType)}</TableCell>
+                        <TableCell>{material.fileSizeFormatted}</TableCell>
                         <TableCell className="text-center">{material.downloads}</TableCell>
                         <TableCell>
-                          {new Date(material.uploadedAt).toLocaleDateString()}
+                          {new Date(material.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -446,20 +641,23 @@ export default function TeacherMaterials() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.open(material.fileUrl, "_blank")}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 Preview
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDownload(material)}>
                                 <Download className="mr-2 h-4 w-4" />
                                 Download
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(material.fileUrl)}>
                                 <LinkIcon className="mr-2 h-4 w-4" />
                                 Copy Link
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => handleDeleteMaterial(material.id)}
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
                               </DropdownMenuItem>
@@ -472,17 +670,39 @@ export default function TeacherMaterials() {
                 </Table>
               ) : (
                 <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-                  {filteredMaterials.map((material) => (
-                    <Card key={material.id} className="hover:shadow-md transition-shadow">
+                  {materials.map((material) => (
+                    <Card key={material.id} className="hover:shadow-md transition-shadow relative group">
                       <CardContent className="pt-6">
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleDownload(material)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Download
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => handleDeleteMaterial(material.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                         <div className="flex flex-col items-center text-center">
                           <div className="p-4 rounded-lg bg-muted mb-3">
-                            {getFileIcon(material.type)}
+                            {getFileIcon(material.fileType)}
                           </div>
                           <h3 className="font-medium text-sm line-clamp-2">{material.name}</h3>
                           <div className="flex items-center gap-2 mt-2">
-                            {getTypeBadge(material.type)}
-                            <span className="text-xs text-muted-foreground">{material.size}</span>
+                            {getTypeBadge(material.fileType)}
+                            <span className="text-xs text-muted-foreground">{material.fileSizeFormatted}</span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {material.downloads} downloads

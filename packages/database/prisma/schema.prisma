@@ -480,6 +480,8 @@ model TeacherSubject {
   subject     Subject      @relation(fields: [subjectId], references: [id])
   timetables  Timetable[]
   assignments Assignment[]
+  folders     MaterialFolder[]
+  materials   Material[]
 
   @@unique([tenantId, staffId, subjectId, section, academicYear])
   @@index([tenantId])
@@ -542,6 +544,56 @@ model AssignmentSubmission {
   @@index([studentId])
   @@index([status])
   @@map("assignment_submissions")
+}
+
+// =============================================================================
+// STUDY MATERIALS
+// =============================================================================
+
+/// Folders for organizing study materials
+model MaterialFolder {
+  id               String   @id @default(cuid())
+  tenantId         String
+  teacherSubjectId String
+  name             String
+  description      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  teacherSubject   TeacherSubject @relation(fields: [teacherSubjectId], references: [id], onDelete: Cascade)
+  materials        Material[]
+
+  @@unique([teacherSubjectId, name])
+  @@index([tenantId])
+  @@index([teacherSubjectId])
+  @@map("material_folders")
+}
+
+/// Study materials uploaded by teachers
+model Material {
+  id          String   @id @default(cuid())
+  tenantId    String
+  folderId    String?
+  teacherSubjectId String
+  name        String
+  description String?
+  fileUrl     String
+  fileType    String   // pdf, video, pptx, doc, image, zip, etc.
+  fileSize    Int      // Size in bytes
+  mimeType    String?
+  downloads   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  folder         MaterialFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  teacherSubject TeacherSubject  @relation(fields: [teacherSubjectId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([folderId])
+  @@index([teacherSubjectId])
+  @@index([fileType])
+  @@map("materials")
 }
 
 // =============================================================================
