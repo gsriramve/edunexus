@@ -149,4 +149,40 @@ export class ParentDashboardController {
     }
     return this.parentDashboardService.getSubjectPerformance(tenantId, studentId, query);
   }
+
+  /**
+   * Get teachers for a student's enrolled courses
+   */
+  @Get(':studentId/teachers')
+  async getTeachersForStudent(
+    @Headers('x-tenant-id') tenantId: string,
+    @Headers('x-user-id') userId: string,
+    @Param('studentId') studentId: string,
+  ) {
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required');
+    }
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+    return this.parentDashboardService.getTeachersForStudent(tenantId, studentId);
+  }
+
+  /**
+   * Get comprehensive academics overview for a student
+   */
+  @Get(':studentId/academics')
+  async getAcademicsOverview(
+    @Headers('x-tenant-id') tenantId: string,
+    @Headers('x-user-id') userId: string,
+    @Param('studentId') studentId: string,
+  ) {
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required');
+    }
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+    return this.parentDashboardService.getAcademicsOverview(tenantId, studentId);
+  }
 }

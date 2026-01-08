@@ -53,6 +53,7 @@ import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.
 import { ParentDashboardModule } from './modules/parent-dashboard/parent-dashboard.module';
 import { StudentCareerModule } from './modules/student-career/student-career.module';
 import { StudentInsightsModule } from './modules/student-insights/student-insights.module';
+import { StudentNotificationsModule } from './modules/student-notifications/student-notifications.module';
 
 @Module({
   imports: [
@@ -124,6 +125,7 @@ import { StudentInsightsModule } from './modules/student-insights/student-insigh
     ParentDashboardModule,
     StudentCareerModule,
     StudentInsightsModule,
+    StudentNotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -87,6 +87,56 @@ export interface QueryPerformanceParams {
   semester?: number;
 }
 
+export interface TeacherInfo {
+  id: string;
+  name: string;
+  subject: string;
+  email: string;
+  phone: string;
+}
+
+export interface AcademicOverview {
+  cgpa: number;
+  totalCredits: number;
+  earnedCredits: number;
+  rank: number;
+  totalStudents: number;
+  percentile: number;
+}
+
+export interface SemesterResult {
+  semester: number;
+  sgpa: number;
+  credits: number;
+  status: string;
+}
+
+export interface CurrentSubject {
+  code: string;
+  name: string;
+  credits: number;
+  internal1: number | null;
+  internal2: number | null;
+  midterm: number | null;
+  assignment: number | null;
+  attendance: number;
+  teacher: string;
+}
+
+export interface TeacherRemark {
+  subject: string;
+  teacher: string;
+  date: string;
+  remark: string;
+}
+
+export interface AcademicsData {
+  overview: AcademicOverview;
+  semesterResults: SemesterResult[];
+  currentSubjects: CurrentSubject[];
+  teacherRemarks: TeacherRemark[];
+}
+
 // ============ API Client ============
 
 async function parentDashboardApi<T>(
@@ -141,6 +191,10 @@ export const parentDashboardKeys = {
     [...parentDashboardKeys.all, 'events', tenantId, studentId, params] as const,
   performance: (tenantId: string, studentId: string, params?: QueryPerformanceParams) =>
     [...parentDashboardKeys.all, 'performance', tenantId, studentId, params] as const,
+  teachers: (tenantId: string, studentId: string) =>
+    [...parentDashboardKeys.all, 'teachers', tenantId, studentId] as const,
+  academics: (tenantId: string, studentId: string) =>
+    [...parentDashboardKeys.all, 'academics', tenantId, studentId] as const,
 };
 
 // ============ Helper to build query string ============
@@ -251,6 +305,30 @@ export function useSubjectPerformance(tenantId: string, studentId: string, param
         `/${studentId}/performance${buildQueryString(params)}`,
         tenantId
       ),
+    enabled: !!tenantId && !!studentId,
+  });
+}
+
+/**
+ * Get teachers for a student's enrolled courses
+ */
+export function useStudentTeachers(tenantId: string, studentId: string) {
+  return useQuery({
+    queryKey: parentDashboardKeys.teachers(tenantId, studentId),
+    queryFn: () =>
+      parentDashboardApi<TeacherInfo[]>(`/${studentId}/teachers`, tenantId),
+    enabled: !!tenantId && !!studentId,
+  });
+}
+
+/**
+ * Get comprehensive academics overview for a student
+ */
+export function useStudentAcademicsOverview(tenantId: string, studentId: string) {
+  return useQuery({
+    queryKey: parentDashboardKeys.academics(tenantId, studentId),
+    queryFn: () =>
+      parentDashboardApi<AcademicsData>(`/${studentId}/academics`, tenantId),
     enabled: !!tenantId && !!studentId,
   });
 }

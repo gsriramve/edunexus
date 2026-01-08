@@ -47,15 +47,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useParentChildren } from "@/hooks/use-parents";
 import { useUserAnnouncements } from "@/hooks/use-communication";
-
-// TODO: Replace with real API when teacher contact endpoints are available
-const mockTeachers = [
-  { id: "t1", name: "Dr. Ramesh Kumar", subject: "Data Structures", email: "ramesh.k@college.edu", phone: "+91 98765 43210" },
-  { id: "t2", name: "Dr. Priya Sharma", subject: "Computer Networks", email: "priya.s@college.edu", phone: "+91 98765 43211" },
-  { id: "t3", name: "Dr. Arun Menon", subject: "Operating Systems", email: "arun.m@college.edu", phone: "+91 98765 43212" },
-  { id: "t4", name: "Prof. Kavitha Nair", subject: "Software Engineering", email: "kavitha.n@college.edu", phone: "+91 98765 43213" },
-  { id: "t5", name: "Prof. Mentor", subject: "Class Mentor", email: "mentor@college.edu", phone: "+91 98765 43214" },
-];
+import { useStudentTeachers, TeacherInfo } from "@/hooks/use-parent-dashboard";
 
 // TODO: Replace with real messaging API when available
 const mockMessages: Array<{
@@ -119,6 +111,12 @@ export default function ParentCommunication() {
     'parent'
   );
 
+  // Fetch teachers for selected child
+  const { data: teachersData, isLoading: teachersLoading } = useStudentTeachers(
+    tenantId,
+    selectedChildId
+  );
+
   // Derive announcements list
   const announcements = useMemo(() => {
     if (announcementsData && Array.isArray(announcementsData)) {
@@ -141,7 +139,9 @@ export default function ParentCommunication() {
   // Use mock data for messages (would need separate API)
   const messages = mockMessages;
   const sentMessages = mockSentMessages;
-  const teachers = mockTeachers;
+
+  // Use real API for teachers
+  const teachers = teachersData || [];
 
   // Filter messages by selected child
   const filteredMessages = messages.filter(

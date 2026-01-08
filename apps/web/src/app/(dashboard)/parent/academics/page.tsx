@@ -38,69 +38,11 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useParentChildren } from "@/hooks/use-parents";
-import { useStudentAcademics } from "@/hooks/use-api";
-
-// TODO: Replace mock data with API calls when backend endpoints are implemented
-// Required endpoints:
-// - GET /students/:id/academics - Student academic overview (already exists)
-// - GET /students/:id/academics/current - Current semester marks
-// - GET /students/:id/academics/results - Past semester results
-// - GET /students/:id/academics/remarks - Teacher remarks/feedback
-
-// Mock data
-const childInfo = {
-  name: "Rahul Sharma",
-  rollNo: "21CSE101",
-  department: "Computer Science & Engineering",
-  currentSemester: 5,
-};
-
-const academicOverview = {
-  cgpa: 8.5,
-  totalCredits: 95,
-  earnedCredits: 95,
-  rank: 12,
-  totalStudents: 120,
-  percentile: 90,
-};
-
-const semesterResults = [
-  { semester: 5, sgpa: 8.7, credits: 20, status: "ongoing" },
-  { semester: 4, sgpa: 8.5, credits: 20, status: "completed" },
-  { semester: 3, sgpa: 8.3, credits: 22, status: "completed" },
-  { semester: 2, sgpa: 8.6, credits: 18, status: "completed" },
-  { semester: 1, sgpa: 8.4, credits: 15, status: "completed" },
-];
-
-const currentSubjects = [
-  { code: "CS501", name: "Data Structures & Algorithms", credits: 4, internal1: 18, internal2: 17, midterm: 42, assignment: 18, attendance: 90, teacher: "Dr. Ramesh Kumar" },
-  { code: "CS502", name: "Computer Networks", credits: 4, internal1: 15, internal2: 16, midterm: 35, assignment: 16, attendance: 78, teacher: "Dr. Priya Sharma" },
-  { code: "CS503", name: "Operating Systems", credits: 4, internal1: 17, internal2: 18, midterm: 44, assignment: 17, attendance: 92, teacher: "Dr. Arun Menon" },
-  { code: "CS504", name: "Software Engineering", credits: 3, internal1: 16, internal2: 17, midterm: 40, assignment: 18, attendance: 85, teacher: "Prof. Kavitha Nair" },
-  { code: "CS505", name: "Data Structures Lab", credits: 2, internal1: 19, internal2: null, midterm: null, assignment: 18, attendance: 95, teacher: "Dr. Ramesh Kumar" },
-  { code: "CS506", name: "Computer Networks Lab", credits: 2, internal1: 17, internal2: null, midterm: null, assignment: 16, attendance: 82, teacher: "Dr. Priya Sharma" },
-];
-
-const semesterDetailedResults = {
-  4: [
-    { code: "CS401", name: "Database Systems", credits: 4, grade: "A", marks: 85, total: 100 },
-    { code: "CS402", name: "Theory of Computation", credits: 4, grade: "A+", marks: 92, total: 100 },
-    { code: "CS403", name: "Computer Architecture", credits: 4, grade: "A", marks: 82, total: 100 },
-    { code: "CS404", name: "Discrete Mathematics", credits: 3, grade: "B+", marks: 75, total: 100 },
-    { code: "CS405", name: "Database Lab", credits: 2, grade: "A+", marks: 95, total: 100 },
-    { code: "CS406", name: "Web Development Lab", credits: 2, grade: "A", marks: 88, total: 100 },
-  ],
-};
+import { useStudentAcademicsOverview } from "@/hooks/use-parent-dashboard";
 
 const gradePoints: Record<string, number> = {
   "A+": 10, A: 9, "B+": 8, B: 7, "C+": 6, C: 5, D: 4, F: 0,
 };
-
-const teacherRemarks = [
-  { subject: "Data Structures", teacher: "Dr. Ramesh Kumar", date: "Jan 5, 2026", remark: "Excellent performance in problem-solving. Keep up the good work!" },
-  { subject: "Computer Networks", teacher: "Dr. Priya Sharma", date: "Jan 3, 2026", remark: "Needs to improve attendance. Good understanding of concepts but missing classes affects continuity." },
-  { subject: "Operating Systems", teacher: "Dr. Arun Menon", date: "Jan 2, 2026", remark: "Very active in class discussions. Strong grasp of OS concepts." },
-];
 
 export default function ParentAcademics() {
   const { user } = useUser();
@@ -132,23 +74,22 @@ export default function ParentAcademics() {
     };
   }, [children, selectedChildId]);
 
-  // Fetch academics data for selected child
-  const { data: academicsData, isLoading: academicsLoading } = useStudentAcademics(tenantId, selectedChildId);
+  // Fetch comprehensive academics data for selected child
+  const { data: academicsData, isLoading: academicsLoading } = useStudentAcademicsOverview(tenantId, selectedChildId);
 
-  // Derive overview from API data or use mock
-  // TODO: StudentAcademics API doesn't include these aggregate fields yet
-  // When backend adds them, update to use: academicsData?.cgpa, etc.
-  const displayOverview = useMemo(() => {
-    // Currently using mock data since StudentAcademics only has currentSemester, subjects, results
-    return {
-      cgpa: 8.5,
-      totalCredits: 95,
-      earnedCredits: 95,
-      rank: 12,
-      totalStudents: 120,
-      percentile: 90,
-    };
-  }, []);
+  // Use API data
+  const displayOverview = academicsData?.overview || {
+    cgpa: 0,
+    totalCredits: 0,
+    earnedCredits: 0,
+    rank: 0,
+    totalStudents: 0,
+    percentile: 0,
+  };
+
+  const semesterResults = academicsData?.semesterResults || [];
+  const currentSubjects = academicsData?.currentSubjects || [];
+  const teacherRemarks = academicsData?.teacherRemarks || [];
 
   // Loading state
   if (childrenLoading) {
@@ -196,8 +137,13 @@ export default function ParentAcademics() {
     );
   }
 
-  // Use API child info or fallback to mock
-  const displayChild = currentChild || childInfo;
+  // Use API child info
+  const displayChild = currentChild || {
+    name: 'Unknown Student',
+    rollNo: 'N/A',
+    department: 'N/A',
+    currentSemester: 1,
+  };
 
   const getGradeBadge = (grade: string) => {
     const colorMap: Record<string, string> = {
@@ -446,36 +392,47 @@ export default function ParentAcademics() {
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">SGPA</p>
                     <p className="text-3xl font-bold text-primary">
-                      {semesterResults.find(s => s.semester.toString() === selectedSemester)?.sgpa}
+                      {semesterResults.find(s => s.semester.toString() === selectedSemester)?.sgpa?.toFixed(1) || 'N/A'}
                     </p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead className="text-center">Credits</TableHead>
-                      <TableHead className="text-center">Marks</TableHead>
-                      <TableHead className="text-center">Grade</TableHead>
-                      <TableHead className="text-center">Grade Points</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(semesterDetailedResults[4] || []).map((subject) => (
-                      <TableRow key={subject.code}>
-                        <TableCell className="font-mono">{subject.code}</TableCell>
-                        <TableCell className="font-medium">{subject.name}</TableCell>
-                        <TableCell className="text-center">{subject.credits}</TableCell>
-                        <TableCell className="text-center">{subject.marks}/{subject.total}</TableCell>
-                        <TableCell className="text-center">{getGradeBadge(subject.grade)}</TableCell>
-                        <TableCell className="text-center font-bold">{gradePoints[subject.grade]}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                {(() => {
+                  const selectedSem = semesterResults.find(s => s.semester.toString() === selectedSemester);
+                  if (!selectedSem) {
+                    return (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No results found for this semester</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">SGPA</p>
+                          <p className="text-2xl font-bold">{selectedSem.sgpa.toFixed(1)}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Credits</p>
+                          <p className="text-2xl font-bold">{selectedSem.credits}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Status</p>
+                          <Badge className={selectedSem.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'}>
+                            {selectedSem.status === 'completed' ? 'Completed' : 'Ongoing'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground text-center">
+                        Subject-wise detailed marks will be available in your academic transcript.
+                        Contact the examination cell for detailed mark sheets.
+                      </p>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>
