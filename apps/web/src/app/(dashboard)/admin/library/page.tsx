@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@clerk/nextjs';
 import {
   BookOpen,
   FolderTree,
@@ -16,7 +15,6 @@ import {
   Eye,
   RotateCcw,
   Check,
-  X,
   Download,
   BookCopy,
 } from 'lucide-react';
@@ -26,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -51,53 +50,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useTenantId } from '@/hooks/use-tenant';
+import {
+  useBooks,
+  useCategories,
+  useLibraryCards,
+  useBookIssues,
+  useEResources,
+  useLibrarySettings,
+  useLibraryStats,
+  useUpdateLibrarySettings,
+} from '@/hooks/use-library';
+import type { LibraryBook, BookCategory, LibraryCard, BookIssue, EResource, LibrarySettings } from '@/lib/api';
 
-// Mock data
-const mockBooks = [
-  { id: '1', isbn: '978-0-13-468599-1', title: 'Clean Code', author: 'Robert C. Martin', category: 'Programming', totalCopies: 5, availableCopies: 2, status: 'available' },
-  { id: '2', isbn: '978-0-201-63361-0', title: 'Design Patterns', author: 'Gang of Four', category: 'Software Engineering', totalCopies: 3, availableCopies: 0, status: 'unavailable' },
-  { id: '3', isbn: '978-0-596-51774-8', title: 'JavaScript: The Good Parts', author: 'Douglas Crockford', category: 'Programming', totalCopies: 4, availableCopies: 1, status: 'limited' },
-  { id: '4', isbn: '978-1-59327-584-6', title: 'The Linux Command Line', author: 'William Shotts', category: 'Operating Systems', totalCopies: 6, availableCopies: 4, status: 'available' },
-];
-
-const mockCategories = [
-  { id: '1', name: 'Programming', code: 'PRG', bookCount: 45 },
-  { id: '2', name: 'Software Engineering', code: 'SWE', bookCount: 28 },
-  { id: '3', name: 'Operating Systems', code: 'OSY', bookCount: 15 },
-  { id: '4', name: 'Computer Networks', code: 'CNW', bookCount: 22 },
-  { id: '5', name: 'Database Systems', code: 'DBS', bookCount: 18 },
-];
-
-const mockCards = [
-  { id: '1', cardNumber: 'LIB000001', studentName: 'Rahul Sharma', rollNo: 'CS2021001', status: 'active', currentBooks: 2, maxBooks: 5, expiryDate: '2026-12-31' },
-  { id: '2', cardNumber: 'LIB000002', studentName: 'Priya Patel', rollNo: 'CS2021002', status: 'active', currentBooks: 3, maxBooks: 5, expiryDate: '2026-12-31' },
-  { id: '3', cardNumber: 'LIB000003', studentName: 'Amit Kumar', rollNo: 'EC2021001', status: 'suspended', currentBooks: 0, maxBooks: 5, expiryDate: '2026-12-31' },
-];
-
-const mockIssues = [
-  { id: '1', bookTitle: 'Clean Code', studentName: 'Rahul Sharma', cardNumber: 'LIB000001', issueDate: '2026-01-01', dueDate: '2026-01-15', status: 'issued' },
-  { id: '2', bookTitle: 'Design Patterns', studentName: 'Priya Patel', cardNumber: 'LIB000002', issueDate: '2025-12-20', dueDate: '2026-01-03', status: 'overdue' },
-  { id: '3', bookTitle: 'JavaScript: The Good Parts', studentName: 'Amit Kumar', cardNumber: 'LIB000003', issueDate: '2025-12-25', dueDate: '2026-01-08', status: 'returned' },
-];
-
-const mockEResources = [
-  { id: '1', title: 'Introduction to Algorithms (eBook)', author: 'CLRS', type: 'ebook', category: 'Algorithms', downloads: 245, views: 1230, accessType: 'open' },
-  { id: '2', title: 'IEEE Transactions on Software', author: 'Various', type: 'journal', category: 'Research', downloads: 89, views: 456, accessType: 'subscription' },
-  { id: '3', title: 'Machine Learning Fundamentals', author: 'Andrew Ng', type: 'video', category: 'AI/ML', downloads: 567, views: 2340, accessType: 'open' },
-];
-
-const mockStats = {
-  totalBooks: 1250,
-  totalCopies: 3850,
-  availableCopies: 2890,
-  activeCards: 1840,
-  currentIssues: 456,
-  overdueBooks: 23,
-  totalEResources: 89,
-  pendingReservations: 12,
-};
-
-const mockSettings = {
+// Default settings for fallback
+const defaultSettings: LibrarySettings = {
   finePerDay: 5,
   maxFineAmount: 500,
   loanPeriodDays: 14,
@@ -109,14 +76,55 @@ const mockSettings = {
 };
 
 export default function AdminLibraryPage() {
-  const { getToken } = useAuth();
+  const tenantId = useTenantId() || '';
   const [activeTab, setActiveTab] = useState('books');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddBookDialog, setShowAddBookDialog] = useState(false);
   const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
   const [showAddResourceDialog, setShowAddResourceDialog] = useState(false);
   const [showIssueBookDialog, setShowIssueBookDialog] = useState(false);
-  const [settings, setSettings] = useState(mockSettings);
+
+  // Fetch all library data using real API hooks
+  const { data: booksData, isLoading: booksLoading } = useBooks(tenantId);
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories(tenantId);
+  const { data: cardsData, isLoading: cardsLoading } = useLibraryCards(tenantId);
+  const { data: issuesData, isLoading: issuesLoading } = useBookIssues(tenantId);
+  const { data: eResourcesData, isLoading: eResourcesLoading } = useEResources(tenantId);
+  const { data: settingsData, isLoading: settingsLoading } = useLibrarySettings(tenantId);
+  const { data: statsData, isLoading: statsLoading } = useLibraryStats(tenantId);
+  const updateSettingsMutation = useUpdateLibrarySettings(tenantId);
+
+  // Use API data with fallbacks
+  const books = booksData?.data || [];
+  const categories = categoriesData?.data || [];
+  const cards = cardsData?.data || [];
+  const issues = issuesData?.data || [];
+  const eResources = eResourcesData?.data || [];
+  const settings = settingsData || defaultSettings;
+  const stats = statsData || {
+    totalBooks: 0,
+    totalCopies: 0,
+    availableCopies: 0,
+    activeCards: 0,
+    currentIssues: 0,
+    overdueBooks: 0,
+    totalEResources: 0,
+    pendingReservations: 0,
+  };
+
+  // Local state for settings form
+  const [localSettings, setLocalSettings] = useState<LibrarySettings>(defaultSettings);
+
+  // Update local settings when API data loads
+  useState(() => {
+    if (settingsData) {
+      setLocalSettings(settingsData);
+    }
+  });
+
+  const handleSaveSettings = async () => {
+    await updateSettingsMutation.mutateAsync(localSettings);
+  };
 
   // Status badge helper
   const getStatusBadge = (status: string) => {
@@ -155,8 +163,14 @@ export default function AdminLibraryPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Books</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalBooks.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">{mockStats.availableCopies.toLocaleString()} available</p>
+            {statsLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.totalBooks.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">{stats.availableCopies.toLocaleString()} available</p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -164,8 +178,14 @@ export default function AdminLibraryPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Active Cards</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.activeCards.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Library memberships</p>
+            {statsLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.activeCards.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground">Library memberships</p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -173,8 +193,14 @@ export default function AdminLibraryPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Current Issues</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.currentIssues}</div>
-            <p className="text-xs text-destructive">{mockStats.overdueBooks} overdue</p>
+            {statsLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.currentIssues}</div>
+                <p className="text-xs text-destructive">{stats.overdueBooks} overdue</p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -182,8 +208,14 @@ export default function AdminLibraryPage() {
             <CardTitle className="text-sm font-medium text-muted-foreground">E-Resources</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalEResources}</div>
-            <p className="text-xs text-muted-foreground">Digital content</p>
+            {statsLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.totalEResources}</div>
+                <p className="text-xs text-muted-foreground">Digital content</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -245,7 +277,7 @@ export default function AdminLibraryPage() {
                         <Select>
                           <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                           <SelectContent>
-                            {mockCategories.map(cat => (
+                            {categories.map(cat => (
                               <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -307,7 +339,7 @@ export default function AdminLibraryPage() {
                   <SelectTrigger className="w-40"><SelectValue placeholder="Category" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                    {mockCategories.map(cat => (
+                    {categories.map(cat => (
                       <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -335,7 +367,7 @@ export default function AdminLibraryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockBooks.map((book) => (
+                  {books.map((book) => (
                     <TableRow key={book.id}>
                       <TableCell className="font-mono text-sm">{book.isbn}</TableCell>
                       <TableCell className="font-medium">{book.title}</TableCell>
@@ -395,7 +427,7 @@ export default function AdminLibraryPage() {
                           <SelectTrigger><SelectValue placeholder="Select parent" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none">None (Top Level)</SelectItem>
-                            {mockCategories.map(cat => (
+                            {categories.map(cat => (
                               <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -421,7 +453,7 @@ export default function AdminLibraryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockCategories.map((category) => (
+                  {categories.map((category) => (
                     <TableRow key={category.id}>
                       <TableCell className="font-mono">{category.code}</TableCell>
                       <TableCell className="font-medium">{category.name}</TableCell>
@@ -481,7 +513,7 @@ export default function AdminLibraryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockCards.map((card) => (
+                  {cards.map((card) => (
                     <TableRow key={card.id}>
                       <TableCell className="font-mono">{card.cardNumber}</TableCell>
                       <TableCell className="font-medium">{card.studentName}</TableCell>
@@ -527,7 +559,7 @@ export default function AdminLibraryPage() {
                         <Select>
                           <SelectTrigger><SelectValue placeholder="Select book" /></SelectTrigger>
                           <SelectContent>
-                            {mockBooks.filter(b => b.availableCopies > 0).map(book => (
+                            {books.filter(b => b.availableCopies > 0).map(book => (
                               <SelectItem key={book.id} value={book.id}>{book.title}</SelectItem>
                             ))}
                           </SelectContent>
@@ -538,7 +570,7 @@ export default function AdminLibraryPage() {
                         <Select>
                           <SelectTrigger><SelectValue placeholder="Select card" /></SelectTrigger>
                           <SelectContent>
-                            {mockCards.filter(c => c.status === 'active').map(card => (
+                            {cards.filter(c => c.status === 'active').map(card => (
                               <SelectItem key={card.id} value={card.id}>{card.cardNumber} - {card.studentName}</SelectItem>
                             ))}
                           </SelectContent>
@@ -590,7 +622,7 @@ export default function AdminLibraryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockIssues.map((issue) => (
+                  {issues.map((issue) => (
                     <TableRow key={issue.id}>
                       <TableCell className="font-medium">{issue.bookTitle}</TableCell>
                       <TableCell>{issue.studentName}</TableCell>
@@ -730,7 +762,7 @@ export default function AdminLibraryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockEResources.map((resource) => (
+                  {eResources.map((resource) => (
                     <TableRow key={resource.id}>
                       <TableCell className="font-medium">{resource.title}</TableCell>
                       <TableCell>{resource.author}</TableCell>
@@ -762,6 +794,13 @@ export default function AdminLibraryPage() {
               <CardDescription>Configure library policies and fine rules</CardDescription>
             </CardHeader>
             <CardContent>
+              {settingsLoading ? (
+                <div className="space-y-4">
+                  {[...Array(8)].map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <h3 className="font-semibold">Loan Settings</h3>
@@ -769,8 +808,8 @@ export default function AdminLibraryPage() {
                     <Label>Loan Period (days)</Label>
                     <Input
                       type="number"
-                      value={settings.loanPeriodDays}
-                      onChange={(e) => setSettings({ ...settings, loanPeriodDays: parseInt(e.target.value) })}
+                      value={localSettings.loanPeriodDays}
+                      onChange={(e) => setLocalSettings({ ...localSettings, loanPeriodDays: parseInt(e.target.value) })}
                     />
                     <p className="text-xs text-muted-foreground">Default number of days a book can be borrowed</p>
                   </div>
@@ -778,8 +817,8 @@ export default function AdminLibraryPage() {
                     <Label>Renewal Period (days)</Label>
                     <Input
                       type="number"
-                      value={settings.renewalPeriodDays}
-                      onChange={(e) => setSettings({ ...settings, renewalPeriodDays: parseInt(e.target.value) })}
+                      value={localSettings.renewalPeriodDays}
+                      onChange={(e) => setLocalSettings({ ...localSettings, renewalPeriodDays: parseInt(e.target.value) })}
                     />
                     <p className="text-xs text-muted-foreground">Days added when renewing a book</p>
                   </div>
@@ -787,8 +826,8 @@ export default function AdminLibraryPage() {
                     <Label>Maximum Renewals</Label>
                     <Input
                       type="number"
-                      value={settings.maxRenewals}
-                      onChange={(e) => setSettings({ ...settings, maxRenewals: parseInt(e.target.value) })}
+                      value={localSettings.maxRenewals}
+                      onChange={(e) => setLocalSettings({ ...localSettings, maxRenewals: parseInt(e.target.value) })}
                     />
                     <p className="text-xs text-muted-foreground">How many times a book can be renewed</p>
                   </div>
@@ -796,8 +835,8 @@ export default function AdminLibraryPage() {
                     <Label>Reservation Period (days)</Label>
                     <Input
                       type="number"
-                      value={settings.reservationDays}
-                      onChange={(e) => setSettings({ ...settings, reservationDays: parseInt(e.target.value) })}
+                      value={localSettings.reservationDays}
+                      onChange={(e) => setLocalSettings({ ...localSettings, reservationDays: parseInt(e.target.value) })}
                     />
                     <p className="text-xs text-muted-foreground">Days to collect a reserved book</p>
                   </div>
@@ -808,8 +847,8 @@ export default function AdminLibraryPage() {
                     <Label>Fine Per Day (₹)</Label>
                     <Input
                       type="number"
-                      value={settings.finePerDay}
-                      onChange={(e) => setSettings({ ...settings, finePerDay: parseInt(e.target.value) })}
+                      value={localSettings.finePerDay}
+                      onChange={(e) => setLocalSettings({ ...localSettings, finePerDay: parseInt(e.target.value) })}
                     />
                     <p className="text-xs text-muted-foreground">Daily fine for overdue books</p>
                   </div>
@@ -817,8 +856,8 @@ export default function AdminLibraryPage() {
                     <Label>Maximum Fine (₹)</Label>
                     <Input
                       type="number"
-                      value={settings.maxFineAmount}
-                      onChange={(e) => setSettings({ ...settings, maxFineAmount: parseInt(e.target.value) })}
+                      value={localSettings.maxFineAmount}
+                      onChange={(e) => setLocalSettings({ ...localSettings, maxFineAmount: parseInt(e.target.value) })}
                     />
                     <p className="text-xs text-muted-foreground">Cap on total fine per book</p>
                   </div>
@@ -826,8 +865,8 @@ export default function AdminLibraryPage() {
                     <Label>Grace Period (days)</Label>
                     <Input
                       type="number"
-                      value={settings.gracePeriodDays}
-                      onChange={(e) => setSettings({ ...settings, gracePeriodDays: parseInt(e.target.value) })}
+                      value={localSettings.gracePeriodDays}
+                      onChange={(e) => setLocalSettings({ ...localSettings, gracePeriodDays: parseInt(e.target.value) })}
                     />
                     <p className="text-xs text-muted-foreground">Days after due date before fines apply</p>
                   </div>
@@ -836,16 +875,19 @@ export default function AdminLibraryPage() {
                     <Input
                       type="number"
                       step="0.5"
-                      value={settings.lostBookMultiplier}
-                      onChange={(e) => setSettings({ ...settings, lostBookMultiplier: parseFloat(e.target.value) })}
+                      value={localSettings.lostBookMultiplier}
+                      onChange={(e) => setLocalSettings({ ...localSettings, lostBookMultiplier: parseFloat(e.target.value) })}
                     />
                     <p className="text-xs text-muted-foreground">Multiplier applied to book price for lost books</p>
                   </div>
                 </div>
               </div>
               <div className="mt-6 flex justify-end">
-                <Button>Save Settings</Button>
+                <Button onClick={handleSaveSettings} disabled={updateSettingsMutation.isPending}>
+                  {updateSettingsMutation.isPending ? 'Saving...' : 'Save Settings'}
+                </Button>
               </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
