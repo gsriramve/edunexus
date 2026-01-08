@@ -26,6 +26,12 @@ import {
   DepartmentCurriculumDto,
   RecentCurriculumUpdateDto,
   SemesterProgressDto,
+  PrincipalReportsOverviewDto,
+  ReportStatsDto,
+  ReportCategoryDto,
+  ReportTemplateDto,
+  RecentReportDto,
+  ScheduledReportDto,
 } from './dto/principal-dashboard.dto';
 
 // Thresholds
@@ -1166,5 +1172,185 @@ export class PrincipalDashboardService {
       recentUpdates,
       semesterProgress,
     };
+  }
+
+  /**
+   * Get comprehensive reports overview for principal
+   */
+  async getReportsOverview(tenantId: string): Promise<PrincipalReportsOverviewDto> {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    // Fetch all required data in parallel
+    const [
+      reportTemplates,
+      reportJobs,
+      scheduledReports,
+    ] = await Promise.all([
+      // Report templates
+      this.prisma.reportTemplate.findMany({
+        where: { tenantId },
+        orderBy: { category: 'asc' },
+      }),
+      // Report jobs (generated reports)
+      this.prisma.reportJob.findMany({
+        where: { tenantId },
+        include: {
+          template: { select: { name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      // Scheduled reports
+      this.prisma.scheduledReport.findMany({
+        where: { tenantId },
+        include: {
+          template: { select: { name: true } },
+        },
+        orderBy: { nextRunAt: 'asc' },
+      }),
+    ]);
+
+    // Calculate report stats
+    const generatedThisMonth = reportJobs.filter(
+      (job) => new Date(job.createdAt) >= startOfMonth
+    ).length;
+
+    const pendingJobs = reportJobs.filter(
+      (job) => job.status === 'pending' || job.status === 'processing'
+    ).length;
+
+    const stats: ReportStatsDto = {
+      totalTemplates: reportTemplates.length,
+      generatedThisMonth,
+      scheduledReports: scheduledReports.filter((s) => s.isActive).length,
+      pendingJobs,
+    };
+
+    // Group templates by category
+    const categoryMap = new Map<string, {
+      templates: typeof reportTemplates;
+    }>();
+
+    reportTemplates.forEach((template) => {
+      const category = template.category || 'Other';
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, { templates: [] });
+      }
+      categoryMap.get(category)!.templates.push(template);
+    });
+
+    // Get last generated date for each template
+    const lastGeneratedMap = new Map<string, Date>();
+    reportJobs
+      .filter((job) => job.status === 'completed')
+      .forEach((job) => {
+        if (job.templateId && !lastGeneratedMap.has(job.templateId)) {
+          lastGeneratedMap.set(job.templateId, job.createdAt);
+        }
+      });
+
+    // Build category list with icons
+    const categoryIcons: Record<string, string> = {
+      academic: 'GraduationCap',
+      attendance: 'Calendar',
+      financial: 'Wallet',
+      staff: 'Users',
+      student: 'Users',
+      exam: 'FileText',
+      Other: 'FileText',
+    };
+
+    const categories: ReportCategoryDto[] = Array.from(categoryMap.entries()).map(
+      ([category, data]) => ({
+        id: category.toLowerCase().replace(/\s+/g, '-'),
+        name: this.formatCategoryName(category),
+        icon: categoryIcons[category.toLowerCase()] || 'FileText',
+        reports: data.templates.map((template): ReportTemplateDto => {
+          const lastGenerated = lastGeneratedMap.get(template.id);
+          return {
+            id: template.id,
+            name: template.name,
+            description: template.description,
+            category: template.category,
+            reportType: template.reportType,
+            format: 'PDF', // Default format; actual format is in job
+            lastGenerated: lastGenerated
+              ? lastGenerated.toISOString().split('T')[0]
+              : null,
+          };
+        }),
+      })
+    );
+
+    // Build recent reports list
+    const recentReports: RecentReportDto[] = reportJobs
+      .slice(0, 10)
+      .map((job) => ({
+        id: job.id,
+        name: job.name || job.template?.name || 'Unknown Report',
+        generatedBy: 'System', // Could be enhanced to track user
+        date: job.createdAt.toISOString(),
+        status: job.status as 'pending' | 'processing' | 'completed' | 'failed',
+        size: job.fileSize ? this.formatFileSize(Number(job.fileSize)) : null,
+        outputUrl: job.fileUrl,
+      }));
+
+    // Build scheduled reports list
+    const scheduledReportsList: ScheduledReportDto[] = scheduledReports.map(
+      (schedule) => ({
+        id: schedule.id,
+        name: schedule.name || schedule.template?.name || 'Unknown Report',
+        frequency: this.formatFrequency(schedule.frequency, schedule.dayOfWeek, schedule.time),
+        nextRun: schedule.nextRunAt?.toISOString() || 'Not scheduled',
+        recipients: schedule.recipients?.length > 0 ? schedule.recipients.join(', ') : 'None',
+        isActive: schedule.isActive,
+      })
+    );
+
+    return {
+      stats,
+      categories,
+      recentReports,
+      scheduledReports: scheduledReportsList,
+    };
+  }
+
+  /**
+   * Format category name for display
+   */
+  private formatCategoryName(category: string): string {
+    return category
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ') + ' Reports';
+  }
+
+  /**
+   * Format file size for display
+   */
+  private formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Format frequency for display
+   */
+  private formatFrequency(frequency: string, dayOfWeek?: number | null, time?: string | null): string {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    let result = frequency.charAt(0).toUpperCase() + frequency.slice(1).toLowerCase();
+
+    if (dayOfWeek !== null && dayOfWeek !== undefined && frequency.toLowerCase() === 'weekly') {
+      result += ` (${days[dayOfWeek]})`;
+    }
+
+    if (time) {
+      result += ` at ${time}`;
+    }
+
+    return result;
   }
 }

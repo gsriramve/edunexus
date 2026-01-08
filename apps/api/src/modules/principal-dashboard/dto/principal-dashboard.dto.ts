@@ -266,3 +266,61 @@ export class PrincipalAcademicsOverviewDto {
   recentUpdates: RecentCurriculumUpdateDto[];
   semesterProgress: SemesterProgressDto[];
 }
+
+// ============ Reports Overview DTOs ============
+
+// Report stats
+export class ReportStatsDto {
+  totalTemplates: number;
+  generatedThisMonth: number;
+  scheduledReports: number;
+  pendingJobs: number;
+}
+
+// Report template by category
+export class ReportTemplateDto {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  reportType: string;
+  format: string;
+  lastGenerated: string | null;
+}
+
+// Report category
+export class ReportCategoryDto {
+  id: string;
+  name: string;
+  icon: string;
+  reports: ReportTemplateDto[];
+}
+
+// Recent generated report
+export class RecentReportDto {
+  id: string;
+  name: string;
+  generatedBy: string;
+  date: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  size: string | null;
+  outputUrl: string | null;
+}
+
+// Scheduled report
+export class ScheduledReportDto {
+  id: string;
+  name: string;
+  frequency: string;
+  nextRun: string;
+  recipients: string;
+  isActive: boolean;
+}
+
+// Full reports overview response
+export class PrincipalReportsOverviewDto {
+  stats: ReportStatsDto;
+  categories: ReportCategoryDto[];
+  recentReports: RecentReportDto[];
+  scheduledReports: ScheduledReportDto[];
+}

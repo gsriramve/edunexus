@@ -253,6 +253,58 @@ export interface PrincipalAcademicsOverviewResponse {
   semesterProgress: SemesterProgressDto[];
 }
 
+// ============ Reports Overview Types ============
+
+export interface ReportStatsDto {
+  totalTemplates: number;
+  generatedThisMonth: number;
+  scheduledReports: number;
+  pendingJobs: number;
+}
+
+export interface ReportTemplateDto {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  reportType: string;
+  format: string;
+  lastGenerated: string | null;
+}
+
+export interface ReportCategoryDto {
+  id: string;
+  name: string;
+  icon: string;
+  reports: ReportTemplateDto[];
+}
+
+export interface RecentReportDto {
+  id: string;
+  name: string;
+  generatedBy: string;
+  date: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  size: string | null;
+  outputUrl: string | null;
+}
+
+export interface ScheduledReportDto {
+  id: string;
+  name: string;
+  frequency: string;
+  nextRun: string;
+  recipients: string;
+  isActive: boolean;
+}
+
+export interface PrincipalReportsOverviewResponse {
+  stats: ReportStatsDto;
+  categories: ReportCategoryDto[];
+  recentReports: RecentReportDto[];
+  scheduledReports: ScheduledReportDto[];
+}
+
 // ============ API Client ============
 
 async function principalDashboardApi<T>(
@@ -305,6 +357,8 @@ export const principalDashboardKeys = {
     [...principalDashboardKeys.all, 'exams', tenantId] as const,
   academics: (tenantId: string) =>
     [...principalDashboardKeys.all, 'academics', tenantId] as const,
+  reports: (tenantId: string) =>
+    [...principalDashboardKeys.all, 'reports', tenantId] as const,
 };
 
 // ============ Query Hooks ============
@@ -393,6 +447,17 @@ export function usePrincipalAcademicsOverview(tenantId: string) {
   return useQuery({
     queryKey: principalDashboardKeys.academics(tenantId),
     queryFn: () => principalDashboardApi<PrincipalAcademicsOverviewResponse>('/academics', tenantId),
+    enabled: !!tenantId,
+  });
+}
+
+/**
+ * Get comprehensive reports overview for principal
+ */
+export function usePrincipalReportsOverview(tenantId: string) {
+  return useQuery({
+    queryKey: principalDashboardKeys.reports(tenantId),
+    queryFn: () => principalDashboardApi<PrincipalReportsOverviewResponse>('/reports', tenantId),
     enabled: !!tenantId,
   });
 }
