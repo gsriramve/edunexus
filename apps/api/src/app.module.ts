@@ -34,6 +34,7 @@ import { AccreditationModule } from './modules/accreditation/accreditation.modul
 import { FaceRecognitionModule } from './modules/face-recognition/face-recognition.module';
 import { TeacherClassesModule } from './modules/teacher-classes/teacher-classes.module';
 import { TeacherAttendanceModule } from './modules/teacher-attendance/teacher-attendance.module';
+import { TeacherResultsModule } from './modules/teacher-results/teacher-results.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { TeacherAttendanceModule } from './modules/teacher-attendance/teacher-at
     FaceRecognitionModule,
     TeacherClassesModule,
     TeacherAttendanceModule,
+    TeacherResultsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -44,92 +44,19 @@ import {
   Edit2,
   Save,
   TrendingUp,
-  TrendingDown,
   Users,
   Award,
+  Loader2,
+  BookOpen,
 } from "lucide-react";
 import { useTenantId } from "@/hooks/use-tenant";
-
-// Mock data - will be replaced with API calls
-const mockResultsData = {
-  subjects: [
-    { id: "1", code: "CS301", name: "Data Structures & Algorithms" },
-    { id: "2", code: "CS302", name: "Database Management Systems" },
-    { id: "3", code: "CS401", name: "Machine Learning" },
-  ],
-  examTypes: ["Internal 1", "Internal 2", "Mid-Semester", "End-Semester"],
-  results: [
-    {
-      id: "1",
-      studentId: "STU001",
-      studentName: "Rahul Sharma",
-      rollNumber: "CS2023001",
-      marks: 85,
-      maxMarks: 100,
-      grade: "A",
-      status: "pass",
-    },
-    {
-      id: "2",
-      studentId: "STU002",
-      studentName: "Priya Patel",
-      rollNumber: "CS2023002",
-      marks: 92,
-      maxMarks: 100,
-      grade: "A+",
-      status: "pass",
-    },
-    {
-      id: "3",
-      studentId: "STU003",
-      studentName: "Amit Kumar",
-      rollNumber: "CS2023003",
-      marks: 78,
-      maxMarks: 100,
-      grade: "B+",
-      status: "pass",
-    },
-    {
-      id: "4",
-      studentId: "STU004",
-      studentName: "Sneha Gupta",
-      rollNumber: "CS2023004",
-      marks: 65,
-      maxMarks: 100,
-      grade: "B",
-      status: "pass",
-    },
-    {
-      id: "5",
-      studentId: "STU005",
-      studentName: "Ravi Singh",
-      rollNumber: "CS2023005",
-      marks: 45,
-      maxMarks: 100,
-      grade: "D",
-      status: "pass",
-    },
-    {
-      id: "6",
-      studentId: "STU006",
-      studentName: "Meera Nair",
-      rollNumber: "CS2023006",
-      marks: 32,
-      maxMarks: 100,
-      grade: "F",
-      status: "fail",
-    },
-  ],
-  stats: {
-    totalStudents: 45,
-    appeared: 42,
-    passed: 38,
-    failed: 4,
-    average: 72.5,
-    highest: 98,
-    lowest: 28,
-  },
-};
+import {
+  useTeacherExams,
+  useExamResults,
+  useSaveResults,
+  type StudentResultDto,
+} from "@/hooks/use-teacher-results";
+import { toast } from "sonner";
 
 const gradeColors: Record<string, string> = {
   "A+": "bg-green-100 text-green-800",
@@ -145,23 +72,118 @@ const gradeColors: Record<string, string> = {
 export default function TeacherResultsPage() {
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedExamType, setSelectedExamType] = useState("");
+  const [selectedExam, setSelectedExam] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [editedMarks, setEditedMarks] = useState<Record<string, number>>({});
 
   const tenantId = useTenantId();
 
-  const isLoading = false;
-  const data = mockResultsData;
+  // Load exams and subjects
+  const { data: examsData, isLoading: isLoadingExams } = useTeacherExams(tenantId || "", {
+    teacherSubjectId: selectedSubject || undefined,
+    type: selectedExamType || undefined,
+  });
 
-  const filteredResults = data.results.filter((result) =>
-    result.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    result.rollNumber.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Load results for selected exam
+  const {
+    data: resultsData,
+    isLoading: isLoadingResults,
+    error: resultsError,
+  } = useExamResults(tenantId || "", selectedExam);
 
-  const passPercentage = Math.round((data.stats.passed / data.stats.appeared) * 100);
+  // Save results mutation
+  const { mutate: saveResults, isPending: isSaving } = useSaveResults(tenantId || "");
 
-  if (isLoading) {
+  // Auto-select first exam when data loads
+  useEffect(() => {
+    if (examsData?.exams && examsData.exams.length > 0 && !selectedExam) {
+      setSelectedExam(examsData.exams[0].id);
+    }
+  }, [examsData?.exams, selectedExam]);
+
+  // Initialize edited marks when results load
+  useEffect(() => {
+    if (resultsData?.results && editMode) {
+      const marks: Record<string, number> = {};
+      for (const result of resultsData.results) {
+        marks[result.studentId] = result.marks;
+      }
+      setEditedMarks(marks);
+    }
+  }, [resultsData?.results, editMode]);
+
+  const subjects = examsData?.subjects || [];
+  const examTypes = examsData?.examTypes || [];
+  const exams = examsData?.exams || [];
+
+  // Filter exams by subject and type
+  const filteredExams = useMemo(() => {
+    return exams.filter((exam) => {
+      const matchesSubject = !selectedSubject ||
+        subjects.find((s) => s.teacherSubjectId === selectedSubject)?.id === exam.subjectId;
+      const matchesType = !selectedExamType || exam.type === selectedExamType;
+      return matchesSubject && matchesType;
+    });
+  }, [exams, selectedSubject, selectedExamType, subjects]);
+
+  const filteredResults = useMemo(() => {
+    if (!resultsData?.results) return [];
+    return resultsData.results.filter(
+      (result) =>
+        result.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        result.rollNo.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [resultsData?.results, searchQuery]);
+
+  const stats = resultsData?.stats || {
+    totalStudents: 0,
+    appeared: 0,
+    passed: 0,
+    failed: 0,
+    average: 0,
+    highest: 0,
+    lowest: 0,
+    gradeDistribution: {},
+  };
+
+  const passPercentage = stats.appeared > 0
+    ? Math.round((stats.passed / stats.appeared) * 100)
+    : 0;
+
+  const handleSaveResults = () => {
+    if (!selectedExam) return;
+
+    const resultsToSave = Object.entries(editedMarks).map(([studentId, marks]) => ({
+      studentId,
+      marks,
+    }));
+
+    saveResults(
+      {
+        examId: selectedExam,
+        results: resultsToSave,
+      },
+      {
+        onSuccess: (response) => {
+          toast.success(response.message);
+          setEditMode(false);
+          setEditedMarks({});
+        },
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : "Failed to save results");
+        },
+      }
+    );
+  };
+
+  const handleMarksChange = (studentId: string, marks: number) => {
+    setEditedMarks((prev) => ({ ...prev, [studentId]: marks }));
+  };
+
+  // Loading state
+  if (isLoadingExams) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
@@ -171,6 +193,29 @@ export default function TeacherResultsPage() {
           ))}
         </div>
         <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  // No exams
+  if (exams.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Results</h1>
+          <p className="text-muted-foreground">
+            View and manage student examination results
+          </p>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-medium">No Exams Found</h3>
+            <p className="text-muted-foreground">
+              You haven't created any exams yet, or no classes are assigned.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -201,11 +246,12 @@ export default function TeacherResultsPage() {
       <div className="flex flex-wrap gap-4">
         <Select value={selectedSubject} onValueChange={setSelectedSubject}>
           <SelectTrigger className="w-[250px]">
-            <SelectValue placeholder="Select Subject" />
+            <SelectValue placeholder="All Subjects" />
           </SelectTrigger>
           <SelectContent>
-            {data.subjects.map((subject) => (
-              <SelectItem key={subject.id} value={subject.id}>
+            <SelectItem value="">All Subjects</SelectItem>
+            {subjects.map((subject) => (
+              <SelectItem key={subject.teacherSubjectId} value={subject.teacherSubjectId}>
                 {subject.code} - {subject.name}
               </SelectItem>
             ))}
@@ -214,12 +260,26 @@ export default function TeacherResultsPage() {
 
         <Select value={selectedExamType} onValueChange={setSelectedExamType}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Exam Type" />
+            <SelectValue placeholder="All Exam Types" />
           </SelectTrigger>
           <SelectContent>
-            {data.examTypes.map((type) => (
-              <SelectItem key={type} value={type.toLowerCase().replace(" ", "-")}>
-                {type}
+            <SelectItem value="">All Exam Types</SelectItem>
+            {examTypes.map((type) => (
+              <SelectItem key={type} value={type}>
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={selectedExam} onValueChange={setSelectedExam}>
+          <SelectTrigger className="w-[300px]">
+            <SelectValue placeholder="Select Exam" />
+          </SelectTrigger>
+          <SelectContent>
+            {filteredExams.map((exam) => (
+              <SelectItem key={exam.id} value={exam.id}>
+                {exam.name} - {exam.subjectCode} ({exam.date})
               </SelectItem>
             ))}
           </SelectContent>
@@ -246,9 +306,9 @@ export default function TeacherResultsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">{data.stats.appeared}</span>
+              <span className="text-2xl font-bold">{stats.appeared}</span>
               <span className="text-sm text-muted-foreground">
-                / {data.stats.totalStudents}
+                / {stats.totalStudents}
               </span>
               <Users className="h-5 w-5 text-blue-500" />
             </div>
@@ -279,7 +339,7 @@ export default function TeacherResultsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">{data.stats.average}</span>
+              <span className="text-2xl font-bold">{stats.average}</span>
               <BarChart3 className="h-5 w-5 text-purple-500" />
             </div>
           </CardContent>
@@ -294,7 +354,7 @@ export default function TeacherResultsPage() {
           <CardContent>
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-yellow-600">
-                {data.stats.highest}
+                {stats.highest}
               </span>
               <Award className="h-5 w-5 text-yellow-500" />
             </div>
@@ -310,13 +370,23 @@ export default function TeacherResultsPage() {
               <CardTitle>Results Table</CardTitle>
               <CardDescription>
                 {filteredResults.length} students
+                {resultsData?.exam && ` - ${resultsData.exam.name}`}
               </CardDescription>
             </div>
             <Button
               variant={editMode ? "default" : "outline"}
-              onClick={() => setEditMode(!editMode)}
+              onClick={() => {
+                if (editMode) {
+                  handleSaveResults();
+                } else {
+                  setEditMode(true);
+                }
+              }}
+              disabled={isSaving}
             >
-              {editMode ? (
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : editMode ? (
                 <>
                   <Save className="h-4 w-4 mr-2" />
                   Save Changes
@@ -331,78 +401,99 @@ export default function TeacherResultsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Roll No.</TableHead>
-                <TableHead>Student Name</TableHead>
-                <TableHead className="text-center">Marks</TableHead>
-                <TableHead className="text-center">Grade</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredResults.map((result) => (
-                <TableRow key={result.id}>
-                  <TableCell className="font-medium">{result.rollNumber}</TableCell>
-                  <TableCell>{result.studentName}</TableCell>
-                  <TableCell className="text-center">
-                    {editMode ? (
-                      <Input
-                        type="number"
-                        defaultValue={result.marks}
-                        className="w-20 text-center mx-auto"
-                        min={0}
-                        max={result.maxMarks}
-                      />
-                    ) : (
-                      <span>
-                        {result.marks} / {result.maxMarks}
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge className={gradeColors[result.grade]}>
-                      {result.grade}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge
-                      variant={result.status === "pass" ? "default" : "destructive"}
-                    >
-                      {result.status === "pass" ? "Pass" : "Fail"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
+          {isLoadingResults ? (
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} className="h-12" />
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          ) : resultsError ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {resultsError instanceof Error ? resultsError.message : "Failed to load results"}
+            </div>
+          ) : filteredResults.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No results found. Select an exam to view results.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Roll No.</TableHead>
+                  <TableHead>Student Name</TableHead>
+                  <TableHead className="text-center">Marks</TableHead>
+                  <TableHead className="text-center">Grade</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredResults.map((result) => (
+                  <TableRow key={result.studentId}>
+                    <TableCell className="font-medium">{result.rollNo}</TableCell>
+                    <TableCell>{result.studentName}</TableCell>
+                    <TableCell className="text-center">
+                      {editMode ? (
+                        <Input
+                          type="number"
+                          value={editedMarks[result.studentId] ?? result.marks}
+                          onChange={(e) =>
+                            handleMarksChange(result.studentId, Number(e.target.value))
+                          }
+                          className="w-20 text-center mx-auto"
+                          min={0}
+                          max={result.maxMarks}
+                        />
+                      ) : (
+                        <span>
+                          {result.marks} / {result.maxMarks}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge className={gradeColors[result.grade] || "bg-gray-100"}>
+                        {result.grade}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge
+                        variant={result.status === "pass" ? "default" : "destructive"}
+                      >
+                        {result.status === "pass" ? "Pass" : "Fail"}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
       {/* Grade Distribution */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Grade Distribution</CardTitle>
-          <CardDescription>Overview of grade distribution</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 flex-wrap">
-            {["A+", "A", "B+", "B", "C+", "C", "D", "F"].map((grade) => {
-              const count = data.results.filter((r) => r.grade === grade).length;
-              return (
-                <div
-                  key={grade}
-                  className="flex items-center gap-3 p-3 border rounded-lg min-w-[100px]"
-                >
-                  <Badge className={gradeColors[grade]}>{grade}</Badge>
-                  <span className="text-lg font-semibold">{count}</span>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {stats.appeared > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Grade Distribution</CardTitle>
+            <CardDescription>Overview of grade distribution</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4 flex-wrap">
+              {["A+", "A", "B+", "B", "C+", "C", "D", "F"].map((grade) => {
+                const count = stats.gradeDistribution[grade] || 0;
+                return (
+                  <div
+                    key={grade}
+                    className="flex items-center gap-3 p-3 border rounded-lg min-w-[100px]"
+                  >
+                    <Badge className={gradeColors[grade]}>{grade}</Badge>
+                    <span className="text-lg font-semibold">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Upload Dialog */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
