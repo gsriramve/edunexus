@@ -40,6 +40,7 @@ import { HodAttendanceModule } from './modules/hod-attendance/hod-attendance.mod
 import { HodFacultyModule } from './modules/hod-faculty/hod-faculty.module';
 import { HodStudentsModule } from './modules/hod-students/hod-students.module';
 import { HodDashboardModule } from './modules/hod-dashboard/hod-dashboard.module';
+import { TeacherDashboardModule } from './modules/teacher-dashboard/teacher-dashboard.module';
 
 @Module({
   imports: [
@@ -98,6 +99,7 @@ import { HodDashboardModule } from './modules/hod-dashboard/hod-dashboard.module
     HodFacultyModule,
     HodStudentsModule,
     HodDashboardModule,
+    TeacherDashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

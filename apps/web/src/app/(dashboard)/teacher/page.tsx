@@ -8,8 +8,6 @@ import {
   Clock,
   BookOpen,
   FileText,
-  Bell,
-  CheckCircle2,
   AlertCircle,
   ClipboardList,
   GraduationCap,
@@ -17,59 +15,17 @@ import {
   ChevronRight,
   PenLine,
   Upload,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-// Mock data
-const teacherData = {
-  id: "teacher-001",
-  name: "Dr. Ramesh Kumar",
-  employeeId: "EMP2020001",
-  department: "Computer Science & Engineering",
-  departmentCode: "CSE",
-  designation: "Associate Professor",
-  email: "ramesh.kumar@college.edu",
-  subjects: 3,
-  totalStudents: 180,
-};
-
-const todaySchedule = [
-  { id: 1, time: "09:00 AM", subject: "Data Structures", section: "CSE-A", room: "Room 301", type: "Lecture", students: 60 },
-  { id: 2, time: "11:00 AM", subject: "Data Structures", section: "CSE-B", room: "Room 302", type: "Lecture", students: 58 },
-  { id: 3, time: "02:00 PM", subject: "Data Structures Lab", section: "CSE-A (Batch 1)", room: "Lab 3", type: "Lab", students: 30 },
-  { id: 4, time: "04:00 PM", subject: "Algorithms", section: "CSE-C", room: "Room 205", type: "Lecture", students: 55 },
-];
-
-const pendingTasks = [
-  { id: 1, task: "Mark attendance for CSE-B", type: "attendance", due: "Today", urgent: true },
-  { id: 2, task: "Grade Assignment 3 - Data Structures", type: "assignment", due: "Tomorrow", urgent: false },
-  { id: 3, task: "Upload lecture notes - Week 8", type: "material", due: "Jan 10", urgent: false },
-  { id: 4, task: "Enter internal marks - Mid Semester", type: "marks", due: "Jan 12", urgent: true },
-];
-
-const recentSubmissions = [
-  { id: 1, student: "Rahul Sharma", rollNo: "21CSE101", assignment: "DSA Assignment 3", time: "2 hours ago" },
-  { id: 2, student: "Priya Patel", rollNo: "21CSE045", assignment: "DSA Assignment 3", time: "3 hours ago" },
-  { id: 3, student: "Amit Singh", rollNo: "21CSE078", assignment: "DSA Assignment 3", time: "5 hours ago" },
-  { id: 4, student: "Sneha Reddy", rollNo: "21CSE112", assignment: "Algorithms Quiz 2", time: "1 day ago" },
-];
-
-const subjectStats = [
-  { subject: "Data Structures", code: "CS501", sections: 2, students: 118, avgAttendance: 85, pendingAssignments: 45 },
-  { subject: "Data Structures Lab", code: "CS505", sections: 2, students: 60, avgAttendance: 92, pendingAssignments: 12 },
-  { subject: "Algorithms", code: "CS502", sections: 1, students: 55, avgAttendance: 78, pendingAssignments: 20 },
-];
-
-const quickStats = [
-  { title: "Total Students", value: teacherData.totalStudents, icon: Users, color: "text-blue-600", bgColor: "bg-blue-50" },
-  { title: "Classes Today", value: todaySchedule.length, icon: Calendar, color: "text-green-600", bgColor: "bg-green-50" },
-  { title: "Subjects", value: teacherData.subjects, icon: BookOpen, color: "text-purple-600", bgColor: "bg-purple-50" },
-  { title: "Pending Tasks", value: pendingTasks.length, icon: ClipboardList, color: "text-orange-600", bgColor: "bg-orange-50" },
-];
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useTeacherDashboard, type ScheduleItemDto, type PendingTaskDto, type SubjectStatsDto } from "@/hooks/use-teacher-dashboard";
 
 const quickActions = [
   { title: "Mark Attendance", icon: CheckCircle2, href: "/teacher/attendance", description: "Today's classes" },
@@ -80,8 +36,71 @@ const quickActions = [
   { title: "Reports", icon: TrendingUp, href: "/teacher/reports", description: "Analytics" },
 ];
 
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Header Skeleton */}
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-16 w-16 rounded-full" />
+        <div>
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+      </div>
+
+      {/* Stats Skeleton */}
+      <div className="grid gap-4 md:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i}>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-12 w-12 rounded-lg" />
+                <div>
+                  <Skeleton className="h-4 w-20 mb-2" />
+                  <Skeleton className="h-8 w-12" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Content Skeleton */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-32" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-20 w-full rounded-lg" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-32" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 export default function TeacherDashboard() {
   const [greeting, setGreeting] = useState("Good morning");
+  const tenantId = useTenantId() || "";
+  const { data: dashboardData, isLoading, error } = useTeacherDashboard(tenantId);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -105,6 +124,42 @@ export default function TeacherDashboard() {
     }
   };
 
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+        <h2 className="text-lg font-semibold mb-2">Failed to load dashboard</h2>
+        <p className="text-muted-foreground mb-4">
+          {error instanceof Error ? error.message : "An error occurred"}
+        </p>
+        <Button onClick={() => window.location.reload()}>Try Again</Button>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-lg font-semibold">No data available</h2>
+        <p className="text-muted-foreground">Please ensure you are assigned as a teacher with subjects.</p>
+      </div>
+    );
+  }
+
+  const { teacher, quickStats, todaySchedule, pendingTasks, subjectStats } = dashboardData;
+
+  const statsConfig = [
+    { title: "Total Students", value: quickStats.totalStudents, icon: Users, color: "text-blue-600", bgColor: "bg-blue-50" },
+    { title: "Classes Today", value: quickStats.classesToday, icon: Calendar, color: "text-green-600", bgColor: "bg-green-50" },
+    { title: "Subjects", value: quickStats.subjectsCount, icon: BookOpen, color: "text-purple-600", bgColor: "bg-purple-50" },
+    { title: "Pending Tasks", value: quickStats.pendingTasks, icon: ClipboardList, color: "text-orange-600", bgColor: "bg-orange-50" },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
@@ -113,13 +168,13 @@ export default function TeacherDashboard() {
           <Avatar className="h-16 w-16">
             <AvatarImage src="/placeholder-avatar.jpg" />
             <AvatarFallback className="text-lg bg-primary text-primary-foreground">
-              {teacherData.name.split(" ").map(n => n[0]).join("")}
+              {teacher.name.split(" ").map(n => n[0]).join("")}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{greeting}, {teacherData.name.split(" ")[1]}!</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{greeting}, {teacher.name.split(" ").slice(-1)[0]}!</h1>
             <p className="text-muted-foreground">
-              {teacherData.designation} • {teacherData.departmentCode}
+              {teacher.designation} • {teacher.departmentCode}
             </p>
           </div>
         </div>
@@ -140,7 +195,7 @@ export default function TeacherDashboard() {
 
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-4">
-        {quickStats.map((stat) => (
+        {statsConfig.map((stat) => (
           <Card key={stat.title}>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -156,6 +211,42 @@ export default function TeacherDashboard() {
           </Card>
         ))}
       </div>
+
+      {/* Additional Stats Row */}
+      {(quickStats.upcomingExams > 0 || quickStats.lowAttendanceStudents > 0) && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {quickStats.upcomingExams > 0 && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-yellow-50">
+                    <FileText className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Upcoming Exams</p>
+                    <p className="text-2xl font-bold">{quickStats.upcomingExams}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {quickStats.lowAttendanceStudents > 0 && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-red-50">
+                    <AlertCircle className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Low Attendance Students</p>
+                    <p className="text-2xl font-bold text-red-600">{quickStats.lowAttendanceStudents}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
@@ -174,42 +265,49 @@ export default function TeacherDashboard() {
             </Link>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {todaySchedule.map((item, index) => (
-                <div
-                  key={item.id}
-                  className={`flex items-center justify-between p-4 rounded-lg border ${
-                    index === 0 ? "bg-primary/5 border-primary/20" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex flex-col items-center w-20">
-                      <Clock className="h-4 w-4 text-muted-foreground mb-1" />
-                      <span className="text-sm font-medium">{item.time}</span>
+            {todaySchedule.length === 0 ? (
+              <div className="text-center py-8">
+                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No classes scheduled for today</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {todaySchedule.map((item: ScheduleItemDto, index: number) => (
+                  <div
+                    key={item.id}
+                    className={`flex items-center justify-between p-4 rounded-lg border ${
+                      index === 0 ? "bg-primary/5 border-primary/20" : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-center w-20">
+                        <Clock className="h-4 w-4 text-muted-foreground mb-1" />
+                        <span className="text-sm font-medium">{item.time}</span>
+                      </div>
+                      <div>
+                        <p className="font-medium">{item.subject}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {item.section ? `${item.section} • ` : ""}{item.room || "Room TBD"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{item.subject}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {item.section} • {item.room}
-                      </p>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-sm font-medium">{item.students} students</p>
+                        <Badge variant={item.type === "Lab" ? "default" : "outline"}>
+                          {item.type}
+                        </Badge>
+                      </div>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/teacher/attendance?class=${item.id}`}>
+                          Mark
+                        </Link>
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{item.students} students</p>
-                      <Badge variant={item.type === "Lab" ? "default" : "outline"}>
-                        {item.type}
-                      </Badge>
-                    </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/teacher/attendance?class=${item.id}`}>
-                        Mark
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -223,41 +321,47 @@ export default function TeacherDashboard() {
             <CardDescription>Items requiring your attention</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {pendingTasks.map((task) => (
-              <div
-                key={task.id}
-                className={`flex items-start gap-3 p-3 rounded-lg border ${
-                  task.urgent ? "border-red-200 bg-red-50" : ""
-                }`}
-              >
-                {getTaskIcon(task.type)}
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{task.task}</p>
-                  <p className="text-xs text-muted-foreground">Due: {task.due}</p>
-                </div>
-                {task.urgent && (
-                  <Badge variant="destructive" className="text-xs">
-                    Urgent
-                  </Badge>
-                )}
+            {pendingTasks.length === 0 ? (
+              <div className="text-center py-8">
+                <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                <p className="text-muted-foreground">All caught up!</p>
               </div>
-            ))}
+            ) : (
+              pendingTasks.map((task: PendingTaskDto) => (
+                <div
+                  key={task.id}
+                  className={`flex items-start gap-3 p-3 rounded-lg border ${
+                    task.urgent ? "border-red-200 bg-red-50" : ""
+                  }`}
+                >
+                  {getTaskIcon(task.type)}
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{task.task}</p>
+                    <p className="text-xs text-muted-foreground">Due: {task.due}</p>
+                  </div>
+                  {task.urgent && (
+                    <Badge variant="destructive" className="text-xs">
+                      Urgent
+                    </Badge>
+                  )}
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Second Row */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Subject Overview */}
+      {/* Subject Overview */}
+      {subjectStats.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>My Subjects</CardTitle>
             <CardDescription>Current semester assignments</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {subjectStats.map((subject) => (
-                <div key={subject.code} className="p-4 rounded-lg border">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {subjectStats.map((subject: SubjectStatsDto) => (
+                <div key={subject.id} className="p-4 rounded-lg border">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <div className="flex items-center gap-2">
@@ -271,19 +375,19 @@ export default function TeacherDashboard() {
                       </p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-2">
                     <div>
-                      <p className="text-muted-foreground">Avg. Attendance</p>
+                      <p className="text-sm text-muted-foreground">Avg. Attendance</p>
                       <div className="flex items-center gap-2">
                         <Progress value={subject.avgAttendance} className="h-2 flex-1" />
-                        <span className={`font-medium ${subject.avgAttendance >= 75 ? "text-green-600" : "text-red-600"}`}>
+                        <span className={`text-sm font-medium ${subject.avgAttendance >= 75 ? "text-green-600" : "text-red-600"}`}>
                           {subject.avgAttendance}%
                         </span>
                       </div>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Pending Submissions</p>
-                      <p className="font-medium">{subject.pendingAssignments} assignments</p>
+                      <p className="text-sm text-muted-foreground">Classes This Week</p>
+                      <p className="font-medium">{subject.classesThisWeek}</p>
                     </div>
                   </div>
                 </div>
@@ -291,43 +395,7 @@ export default function TeacherDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Recent Submissions */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Recent Submissions</CardTitle>
-              <CardDescription>Latest assignment submissions</CardDescription>
-            </div>
-            <Link href="/teacher/assignments">
-              <Button variant="ghost" size="sm">
-                View All
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentSubmissions.map((submission) => (
-                <div key={submission.id} className="flex items-center gap-4">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="text-xs">
-                      {submission.student.split(" ").map(n => n[0]).join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{submission.student}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {submission.rollNo} • {submission.assignment}
-                    </p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{submission.time}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      )}
 
       {/* Quick Actions */}
       <Card>
