@@ -30,56 +30,7 @@ import {
   AlertCircle,
   ChevronRight,
 } from "lucide-react";
-import { useTenantId } from "@/hooks/use-tenant";
-import { useUser } from "@clerk/nextjs";
-
-// Mock data - will be replaced with API hooks when feedback module is fully integrated
-const mockFeedbackData = {
-  currentCycle: {
-    name: "January 2026",
-    month: 1,
-    year: 2026,
-    status: "active",
-    startDate: "2026-01-01",
-    endDate: "2026-01-31",
-  },
-  summary: {
-    overallScore: 4.2,
-    previousScore: 4.0,
-    trend: "improving",
-    totalFeedbacks: 12,
-    byType: {
-      faculty: { count: 4, avgScore: 4.3 },
-      mentor: { count: 2, avgScore: 4.5 },
-      peer: { count: 5, avgScore: 4.0 },
-      self: { count: 1, score: 4.2 },
-    },
-    topStrengths: [
-      "Excellent teamwork and collaboration",
-      "Strong technical problem-solving skills",
-      "Active participation in class discussions",
-    ],
-    areasForImprovement: [
-      "Time management could be improved",
-      "More initiative in group projects",
-      "Communication with peers",
-    ],
-  },
-  categoryScores: {
-    academic: 4.3,
-    participation: 4.0,
-    teamwork: 4.5,
-    communication: 3.8,
-    leadership: 4.0,
-    punctuality: 4.2,
-  },
-  history: [
-    { month: "Dec 2025", score: 4.0 },
-    { month: "Nov 2025", score: 3.8 },
-    { month: "Oct 2025", score: 3.9 },
-    { month: "Sep 2025", score: 3.7 },
-  ],
-};
+import { useMyFeedbackSummary } from "@/hooks/use-student-feedback";
 
 const getTrendIcon = (trend: string) => {
   switch (trend) {
@@ -116,11 +67,38 @@ const getEvaluatorIcon = (type: string) => {
 
 export default function StudentFeedbackPage() {
   const [activeTab, setActiveTab] = useState("summary");
-  const tenantId = useTenantId();
-  const { user } = useUser();
 
-  const isLoading = false; // Will use actual loading state when API is connected
-  const data = mockFeedbackData;
+  const { data: feedbackData, isLoading } = useMyFeedbackSummary();
+
+  // Use API data with defaults
+  const data = feedbackData || {
+    currentCycle: { name: 'Loading...', month: 1, year: 2026, status: 'active', startDate: '', endDate: '' },
+    summary: {
+      overallScore: 0,
+      previousScore: 0,
+      trend: 'stable',
+      totalFeedbacks: 0,
+      byType: {
+        faculty: { count: 0, avgScore: 0 },
+        mentor: { count: 0, avgScore: 0 },
+        peer: { count: 0, avgScore: 0 },
+        self: { count: 0, score: 0 },
+      },
+      topStrengths: [],
+      areasForImprovement: [],
+      categoryScores: {
+        academic: 0,
+        participation: 0,
+        teamwork: 0,
+        communication: 0,
+        leadership: 0,
+        punctuality: 0,
+      },
+    },
+    history: [],
+  };
+
+  const categoryScores = data.summary.categoryScores;
 
   if (isLoading) {
     return (
@@ -275,7 +253,7 @@ export default function StudentFeedbackPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {Object.entries(data.categoryScores).map(([category, score]) => (
+                {Object.entries(categoryScores).map(([category, score]) => (
                   <div key={category}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="capitalize font-medium">{category}</span>

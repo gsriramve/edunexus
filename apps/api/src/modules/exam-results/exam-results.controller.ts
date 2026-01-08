@@ -91,6 +91,17 @@ export class ExamResultsController {
     return this.examResultsService.calculateCGPA(tenantId, studentId);
   }
 
+  @Get('student/:studentId/predictions')
+  getPredictions(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('studentId') studentId: string,
+  ) {
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required');
+    }
+    return this.examResultsService.getPredictions(tenantId, studentId);
+  }
+
   @Patch(':id')
   update(
     @Headers('x-tenant-id') tenantId: string,

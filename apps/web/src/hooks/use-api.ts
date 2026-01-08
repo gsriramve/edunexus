@@ -380,6 +380,7 @@ export {
   useExamResultsByStudent,
   useSemesterResults,
   useStudentCGPA,
+  useExamPredictions,
   // Exam result mutation hooks
   useCreateExamResult,
   useBulkCreateExamResults,

@@ -956,7 +956,32 @@ export const examResultsApi = {
 
   cgpa: (tenantId: string, studentId: string) =>
     api<number>(`/exam-results/student/${studentId}/cgpa`, { tenantId }),
+
+  predictions: (tenantId: string, studentId: string) =>
+    api<ExamPredictionsResponse>(`/exam-results/student/${studentId}/predictions`, { tenantId }),
 };
+
+// Exam Prediction Types
+export interface ExamPrediction {
+  subjectId: string;
+  subject: string;
+  subjectCode: string;
+  credits: number;
+  predicted: number;
+  confidence: 'High' | 'Medium' | 'Low';
+  trend: 'improving' | 'declining' | 'stable';
+  improvement: string;
+  historyCount: number;
+}
+
+export interface ExamPredictionsResponse {
+  studentId: string;
+  studentName: string;
+  semester: number;
+  predictions: ExamPrediction[];
+  recommendations: string[];
+  overallPredictedAverage: number;
+}
 
 // Exam Types
 export type ExamType = 'internal' | 'midterm' | 'endsem' | 'practical' | 'assignment' | 'lab' | 'viva';

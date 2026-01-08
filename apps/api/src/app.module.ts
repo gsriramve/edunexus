@@ -55,6 +55,7 @@ import { StudentCareerModule } from './modules/student-career/student-career.mod
 import { StudentInsightsModule } from './modules/student-insights/student-insights.module';
 import { StudentNotificationsModule } from './modules/student-notifications/student-notifications.module';
 import { HodSkillGapsModule } from './modules/hod-skill-gaps/hod-skill-gaps.module';
+import { StudentAcademicsModule } from './modules/student-academics/student-academics.module';
 
 @Module({
   imports: [
@@ -128,6 +129,7 @@ import { HodSkillGapsModule } from './modules/hod-skill-gaps/hod-skill-gaps.modu
     StudentInsightsModule,
     StudentNotificationsModule,
     HodSkillGapsModule,
+    StudentAcademicsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

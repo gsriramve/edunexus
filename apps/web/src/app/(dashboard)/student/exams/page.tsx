@@ -42,8 +42,9 @@ import {
   useSemesterResults,
   useStudentCGPA,
   useExamResultsByStudent,
+  useExamPredictions,
 } from "@/hooks/use-api";
-import type { Exam, SemesterResult } from "@/lib/api";
+import type { Exam, SemesterResult, ExamPrediction } from "@/lib/api";
 
 // Grade points mapping
 const gradePoints: Record<string, number> = {
@@ -56,14 +57,6 @@ const gradePoints: Record<string, number> = {
   D: 4,
   F: 0,
 };
-
-// AI Predictions mock data (to be replaced with actual AI service later)
-const aiPredictions = [
-  { subject: "Data Structures", predicted: 82, confidence: "High", improvement: "+5% from last" },
-  { subject: "Computer Networks", predicted: 75, confidence: "Medium", improvement: "Focus needed" },
-  { subject: "Operating Systems", predicted: 88, confidence: "High", improvement: "+8% from last" },
-  { subject: "Software Engineering", predicted: 80, confidence: "High", improvement: "On track" },
-];
 
 // Helper to get student ID from localStorage (for development)
 function getStudentId(): string | null {
@@ -106,6 +99,11 @@ export default function StudentExams() {
     data: allResultsData,
     isLoading: allResultsLoading,
   } = useExamResultsByStudent(tenantId || "", studentId || "");
+
+  const {
+    data: predictionsData,
+    isLoading: predictionsLoading,
+  } = useExamPredictions(tenantId || "", studentId || "");
 
   // Transform API data
   const upcomingExams = upcomingExamsData || [];
@@ -502,79 +500,126 @@ export default function StudentExams() {
 
         {/* AI Predictions Tab */}
         <TabsContent value="predictions" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-purple-500" />
-                AI Score Predictions
-              </CardTitle>
-              <CardDescription>
-                Predicted scores for upcoming mid-semester exams based on your performance
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {aiPredictions.map((prediction, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">{prediction.subject}</span>
-                      <div className="flex items-center gap-4">
-                        <Badge
-                          variant="outline"
-                          className={
-                            prediction.confidence === "High"
-                              ? "border-green-500 text-green-600"
-                              : "border-yellow-500 text-yellow-600"
-                          }
-                        >
-                          {prediction.confidence} confidence
-                        </Badge>
-                        <span className="text-2xl font-bold">{prediction.predicted}/100</span>
-                      </div>
+          {predictionsLoading ? (
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="space-y-2">
+                      <Skeleton className="h-6 w-full" />
+                      <Skeleton className="h-3 w-full" />
+                      <Skeleton className="h-4 w-32" />
                     </div>
-                    <Progress value={prediction.predicted} className="h-3" />
-                    <p className="text-sm text-muted-foreground">{prediction.improvement}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 p-4 bg-purple-50 rounded-lg">
-                <h4 className="font-semibold text-purple-800 mb-2">AI Recommendations</h4>
-                <ul className="text-sm text-purple-700 space-y-2">
-                  <li className="flex items-start gap-2">
-                    <ChevronRight className="h-4 w-4 mt-0.5" />
-                    Focus on Computer Networks - Practice more networking protocols questions
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <ChevronRight className="h-4 w-4 mt-0.5" />
-                    Your Operating Systems concepts are strong - maintain consistency
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <ChevronRight className="h-4 w-4 mt-0.5" />
-                    Take 2-3 mock tests before exams to improve time management
-                  </li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <Target className="h-6 w-6 text-blue-500" />
-                <div>
-                  <h3 className="font-semibold text-blue-800">Practice Zone</h3>
-                  <p className="text-sm text-blue-700 mt-1">
-                    Take AI-generated practice tests to improve your predicted scores
-                  </p>
-                  <Button className="mt-4" variant="outline">
-                    Start Practice Test
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
+                  ))}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ) : !predictionsData || predictionsData.predictions.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Target className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="font-semibold text-lg">No Predictions Available</h3>
+                  <p className="text-muted-foreground">
+                    Complete some exams to get AI-powered score predictions.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-purple-500" />
+                    AI Score Predictions
+                  </CardTitle>
+                  <CardDescription>
+                    Predicted scores for upcoming exams based on your performance history
+                    {predictionsData.overallPredictedAverage > 0 && (
+                      <span className="ml-2 font-medium">
+                        (Overall predicted average: {predictionsData.overallPredictedAverage}%)
+                      </span>
+                    )}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {predictionsData.predictions.map((prediction: ExamPrediction) => (
+                      <div key={prediction.subjectId} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="font-medium">{prediction.subject}</span>
+                            <Badge variant="outline" className="ml-2 text-xs font-mono">
+                              {prediction.subjectCode}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <Badge
+                              variant="outline"
+                              className={
+                                prediction.confidence === "High"
+                                  ? "border-green-500 text-green-600"
+                                  : prediction.confidence === "Medium"
+                                  ? "border-yellow-500 text-yellow-600"
+                                  : "border-gray-500 text-gray-600"
+                              }
+                            >
+                              {prediction.confidence} confidence
+                            </Badge>
+                            <span className="text-2xl font-bold">{prediction.predicted}/100</span>
+                          </div>
+                        </div>
+                        <Progress value={prediction.predicted} className="h-3" />
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <span>{prediction.improvement}</span>
+                          {prediction.historyCount > 0 && (
+                            <span className="text-xs">Based on {prediction.historyCount} past exam(s)</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {predictionsData.recommendations.length > 0 && (
+                    <div className="mt-6 p-4 bg-purple-50 rounded-lg">
+                      <h4 className="font-semibold text-purple-800 mb-2">AI Recommendations</h4>
+                      <ul className="text-sm text-purple-700 space-y-2">
+                        {predictionsData.recommendations.map((recommendation: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <ChevronRight className="h-4 w-4 mt-0.5" />
+                            {recommendation}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-blue-200 bg-blue-50">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <Target className="h-6 w-6 text-blue-500" />
+                    <div>
+                      <h3 className="font-semibold text-blue-800">Practice Zone</h3>
+                      <p className="text-sm text-blue-700 mt-1">
+                        Take AI-generated practice tests to improve your predicted scores
+                      </p>
+                      <Button className="mt-4" variant="outline">
+                        Start Practice Test
+                        <ChevronRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </div>

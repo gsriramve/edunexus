@@ -531,4 +531,174 @@ export class ExamResultsService {
 
     return totalCredits > 0 ? Math.round((totalPoints / totalCredits) * 100) / 100 : 0;
   }
+
+  /**
+   * Generate AI-based predictions for upcoming exams based on past performance
+   */
+  async getPredictions(tenantId: string, studentId: string) {
+    const student = await this.prisma.student.findFirst({
+      where: { id: studentId, tenantId },
+      include: {
+        user: { select: { name: true } },
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
+
+    // Get student's current semester subjects
+    const currentSubjects = await this.prisma.subject.findMany({
+      where: {
+        tenantId,
+        semester: student.semester,
+      },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        credits: true,
+      },
+    });
+
+    // Get all past results grouped by subject
+    const pastResults = await this.prisma.examResult.findMany({
+      where: { studentId, tenantId },
+      include: {
+        exam: {
+          include: {
+            subject: true,
+          },
+        },
+      },
+      orderBy: {
+        exam: { date: 'asc' },
+      },
+    });
+
+    // Group results by subject
+    const subjectHistory = new Map<string, { scores: number[]; subject: any }>();
+
+    for (const result of pastResults) {
+      const subjectId = result.exam.subject.id;
+      const percentage = (Number(result.marks) / result.exam.totalMarks) * 100;
+
+      if (!subjectHistory.has(subjectId)) {
+        subjectHistory.set(subjectId, {
+          scores: [],
+          subject: result.exam.subject,
+        });
+      }
+      subjectHistory.get(subjectId)!.scores.push(percentage);
+    }
+
+    // Calculate overall average for confidence baseline
+    const allScores = pastResults.map(r => (Number(r.marks) / r.exam.totalMarks) * 100);
+    const overallAvg = allScores.length > 0
+      ? allScores.reduce((a, b) => a + b, 0) / allScores.length
+      : 70;
+
+    // Generate predictions for current semester subjects
+    const predictions = currentSubjects.map(subject => {
+      const history = subjectHistory.get(subject.id);
+
+      let predicted: number;
+      let confidence: 'High' | 'Medium' | 'Low';
+      let improvement: string;
+      let trend: 'improving' | 'declining' | 'stable';
+
+      if (history && history.scores.length >= 2) {
+        // Calculate weighted average (more recent exams have higher weight)
+        const weights = history.scores.map((_, i) => i + 1);
+        const totalWeight = weights.reduce((a, b) => a + b, 0);
+        predicted = history.scores.reduce((sum, score, i) => sum + score * weights[i], 0) / totalWeight;
+
+        // Analyze trend
+        const recent = history.scores.slice(-2);
+        const change = recent[recent.length - 1] - recent[0];
+
+        if (change > 3) {
+          trend = 'improving';
+          improvement = `+${Math.round(change)}% from previous`;
+          predicted = Math.min(100, predicted + 2); // Boost prediction for improving trend
+        } else if (change < -3) {
+          trend = 'declining';
+          improvement = 'Focus needed';
+          predicted = Math.max(0, predicted - 2); // Lower prediction for declining trend
+        } else {
+          trend = 'stable';
+          improvement = 'On track';
+        }
+
+        confidence = history.scores.length >= 3 ? 'High' : 'Medium';
+      } else if (history && history.scores.length === 1) {
+        predicted = history.scores[0];
+        confidence = 'Medium';
+        trend = 'stable';
+        improvement = 'Building history';
+      } else {
+        // No history for this subject, use overall average
+        predicted = overallAvg;
+        confidence = 'Low';
+        trend = 'stable';
+        improvement = 'New subject';
+      }
+
+      return {
+        subjectId: subject.id,
+        subject: subject.name,
+        subjectCode: subject.code,
+        credits: subject.credits,
+        predicted: Math.round(predicted),
+        confidence,
+        trend,
+        improvement,
+        historyCount: history?.scores.length || 0,
+      };
+    });
+
+    // Generate recommendations based on predictions
+    const recommendations = this.generateRecommendations(predictions);
+
+    return {
+      studentId,
+      studentName: student.user.name,
+      semester: student.semester,
+      predictions,
+      recommendations,
+      overallPredictedAverage: predictions.length > 0
+        ? Math.round(predictions.reduce((sum, p) => sum + p.predicted, 0) / predictions.length)
+        : 0,
+    };
+  }
+
+  private generateRecommendations(predictions: any[]): string[] {
+    const recommendations: string[] = [];
+
+    // Find subjects that need attention
+    const needsAttention = predictions.filter(p => p.predicted < 60 || p.trend === 'declining');
+    const performing = predictions.filter(p => p.predicted >= 80 && p.trend === 'improving');
+
+    if (needsAttention.length > 0) {
+      const subjects = needsAttention.map(p => p.subject).slice(0, 2).join(' and ');
+      recommendations.push(`Focus on ${subjects} - Practice more problems in these areas`);
+    }
+
+    if (performing.length > 0) {
+      const subject = performing[0].subject;
+      recommendations.push(`Your ${subject} concepts are strong - maintain consistency`);
+    }
+
+    // Add general recommendations
+    const lowConfidencePredictions = predictions.filter(p => p.confidence === 'Low');
+    if (lowConfidencePredictions.length > 0) {
+      recommendations.push('Take more practice tests to build prediction accuracy');
+    }
+
+    if (predictions.some(p => p.predicted >= 75)) {
+      recommendations.push('Take 2-3 mock tests before exams to improve time management');
+    }
+
+    return recommendations.slice(0, 4);
+  }
 }

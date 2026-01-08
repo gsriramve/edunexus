@@ -38,6 +38,7 @@ export const examResultKeys = {
   semester: (tenantId: string, studentId: string, semester: number) =>
     [...examResultKeys.all, 'semester', tenantId, studentId, semester] as const,
   cgpa: (tenantId: string, studentId: string) => [...examResultKeys.all, 'cgpa', tenantId, studentId] as const,
+  predictions: (tenantId: string, studentId: string) => [...examResultKeys.all, 'predictions', tenantId, studentId] as const,
 };
 
 // === EXAM QUERIES ===
@@ -155,6 +156,14 @@ export function useStudentCGPA(tenantId: string, studentId: string) {
   return useQuery({
     queryKey: examResultKeys.cgpa(tenantId, studentId),
     queryFn: () => examResultsApi.cgpa(tenantId, studentId),
+    enabled: !!tenantId && !!studentId,
+  });
+}
+
+export function useExamPredictions(tenantId: string, studentId: string) {
+  return useQuery({
+    queryKey: examResultKeys.predictions(tenantId, studentId),
+    queryFn: () => examResultsApi.predictions(tenantId, studentId),
     enabled: !!tenantId && !!studentId,
   });
 }

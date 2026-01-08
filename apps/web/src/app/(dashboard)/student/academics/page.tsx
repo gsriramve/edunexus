@@ -34,142 +34,112 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useStudentByUserId } from "@/hooks/use-api";
 import { useStudentCGPA } from "@/hooks/use-exams";
+import { useStudentSubjects, useStudentAcademicSummary, type AcademicSubject } from "@/hooks/use-student-academics";
 
-// TODO: Implement course enrollment and curriculum API for subjects and materials
-// Mock data - Replace with API calls when course/curriculum endpoints are available
-const currentSemester = 5;
-
-const subjects = [
-  {
-    id: "1",
-    code: "CS501",
-    name: "Data Structures & Algorithms",
-    credits: 4,
-    type: "Theory",
-    teacher: "Dr. Ramesh Kumar",
-    attendance: 85,
-    progress: 72,
-    materials: [
-      { id: "m1", name: "Unit 1 - Arrays & Linked Lists", type: "pdf", size: "2.4 MB" },
-      { id: "m2", name: "Unit 2 - Trees & Graphs", type: "pdf", size: "3.1 MB" },
-      { id: "m3", name: "Lecture Recording - Week 5", type: "video", size: "145 MB" },
-    ],
-  },
-  {
-    id: "2",
-    code: "CS502",
-    name: "Computer Networks",
-    credits: 4,
-    type: "Theory",
-    teacher: "Dr. Priya Sharma",
-    attendance: 78,
-    progress: 65,
-    materials: [
-      { id: "m4", name: "OSI Model Notes", type: "pdf", size: "1.8 MB" },
-      { id: "m5", name: "TCP/IP Protocol Suite", type: "pdf", size: "2.2 MB" },
-    ],
-  },
-  {
-    id: "3",
-    code: "CS503",
-    name: "Operating Systems",
-    credits: 4,
-    type: "Theory",
-    teacher: "Dr. Arun Menon",
-    attendance: 92,
-    progress: 80,
-    materials: [
-      { id: "m6", name: "Process Management", type: "pdf", size: "2.0 MB" },
-      { id: "m7", name: "Memory Management", type: "pdf", size: "1.9 MB" },
-      { id: "m8", name: "Lab Manual - Week 6", type: "pdf", size: "0.8 MB" },
-    ],
-  },
-  {
-    id: "4",
-    code: "CS504",
-    name: "Software Engineering",
-    credits: 3,
-    type: "Theory",
-    teacher: "Prof. Kavitha Nair",
-    attendance: 88,
-    progress: 70,
-    materials: [
-      { id: "m9", name: "SDLC Models", type: "pdf", size: "1.5 MB" },
-      { id: "m10", name: "Agile & Scrum Guide", type: "pdf", size: "2.1 MB" },
-    ],
-  },
-  {
-    id: "5",
-    code: "CS505",
-    name: "Data Structures Lab",
-    credits: 2,
-    type: "Lab",
-    teacher: "Dr. Ramesh Kumar",
-    attendance: 90,
-    progress: 85,
-    materials: [
-      { id: "m11", name: "Lab Manual", type: "pdf", size: "3.5 MB" },
-      { id: "m12", name: "Practice Problems Set", type: "pdf", size: "1.2 MB" },
-    ],
-  },
-  {
-    id: "6",
-    code: "CS506",
-    name: "Computer Networks Lab",
-    credits: 2,
-    type: "Lab",
-    teacher: "Dr. Priya Sharma",
-    attendance: 82,
-    progress: 60,
-    materials: [
-      { id: "m13", name: "Lab Manual - Networking", type: "pdf", size: "2.8 MB" },
-    ],
-  },
-];
-
-const semesterProgress = {
-  totalCredits: 19,
-  completedTopics: 45,
-  totalTopics: 62,
-  cgpa: 8.5,
-  sgpa: 8.7,
+// Sample materials data - Course materials model doesn't exist in the database yet
+// These are sample files shown when no real materials are available
+const sampleMaterialsBySubject: Record<string, Array<{ id: string; name: string; type: string; size: string }>> = {
+  default: [
+    { id: "m1", name: "Course Syllabus", type: "pdf", size: "0.5 MB" },
+    { id: "m2", name: "Lecture Notes - Week 1", type: "pdf", size: "2.1 MB" },
+  ],
 };
 
-const timetable = [
-  { day: "Monday", slots: ["CS501", "CS502", "-", "CS505", "-"] },
-  { day: "Tuesday", slots: ["CS503", "CS504", "-", "CS506", "-"] },
-  { day: "Wednesday", slots: ["CS501", "CS503", "-", "CS504", "-"] },
-  { day: "Thursday", slots: ["CS502", "CS501", "-", "CS505", "-"] },
-  { day: "Friday", slots: ["CS503", "CS504", "-", "CS506", "-"] },
-  { day: "Saturday", slots: ["CS502", "-", "-", "-", "-"] },
+// Sample timetable data - Timetable/Schedule model doesn't exist in the database yet
+// This is sample data shown when no real timetable is available
+const sampleTimetable = [
+  { day: "Monday", slots: ["Subject 1", "Subject 2", "-", "Lab 1", "-"] },
+  { day: "Tuesday", slots: ["Subject 3", "Subject 4", "-", "Lab 2", "-"] },
+  { day: "Wednesday", slots: ["Subject 1", "Subject 3", "-", "Subject 4", "-"] },
+  { day: "Thursday", slots: ["Subject 2", "Subject 1", "-", "Lab 1", "-"] },
+  { day: "Friday", slots: ["Subject 3", "Subject 4", "-", "Lab 2", "-"] },
+  { day: "Saturday", slots: ["Subject 2", "-", "-", "-", "-"] },
 ];
 
 const timeSlots = ["9:00-10:00", "10:00-11:00", "11:00-12:00", "2:00-3:00", "3:00-4:00"];
 
+// Helper to generate a sample timetable based on available subjects
+function generateTimetableFromSubjects(subjects: AcademicSubject[]) {
+  const theorySubjects = subjects.filter(s => s.type === 'Theory');
+  const labSubjects = subjects.filter(s => s.type === 'Lab');
+
+  // Create a simple rotation schedule
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  return days.map((day, dayIndex) => {
+    const slots: string[] = [];
+
+    // Morning slots (3)
+    for (let i = 0; i < 3; i++) {
+      const subjectIndex = (dayIndex + i) % theorySubjects.length;
+      if (i < 2 && theorySubjects[subjectIndex]) {
+        slots.push(theorySubjects[subjectIndex].code);
+      } else {
+        slots.push('-');
+      }
+    }
+
+    // Afternoon slots (2) - usually labs
+    for (let i = 0; i < 2; i++) {
+      const labIndex = dayIndex % Math.max(1, labSubjects.length);
+      if (i === 0 && labSubjects[labIndex] && (dayIndex % 2 === 0)) {
+        slots.push(labSubjects[labIndex].code);
+      } else {
+        slots.push('-');
+      }
+    }
+
+    return { day, slots };
+  });
+}
+
+// Helper to get materials for a subject (uses sample data since materials model doesn't exist)
+function getMaterialsForSubject(subject: AcademicSubject) {
+  return sampleMaterialsBySubject[subject.code] || sampleMaterialsBySubject.default || [];
+}
+
 export default function StudentAcademics() {
   const { user } = useUser();
   const tenantId = useTenantId() || '';
-  const [selectedSemester, setSelectedSemester] = useState(currentSemester.toString());
+  const [selectedSemester, setSelectedSemester] = useState("0"); // "0" means current semester
 
   // Get student data for context
   const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
   const studentId = studentData?.id || '';
 
+  // Set initial semester once student data loads
+  const currentSemester = studentData?.semester || 1;
+
+  // Fetch subjects for the selected semester
+  const semesterNum = selectedSemester === "0" ? undefined : parseInt(selectedSemester, 10);
+  const { data: academicsData, isLoading: subjectsLoading } = useStudentSubjects(studentId, semesterNum);
+
+  // Fetch academic summary (CGPA and semester-wise SGPA)
+  const { data: summaryData, isLoading: summaryLoading } = useStudentAcademicSummary(studentId);
+
   // Fetch CGPA - this is real data from the API (returns a number)
   const { data: cgpaData, isLoading: cgpaLoading } = useStudentCGPA(tenantId, studentId);
 
-  // TODO: Replace with actual API hooks when available:
-  // const { data: enrolledCourses } = useStudentCourses(tenantId, studentId, selectedSemester);
-  // const { data: timetableData } = useStudentTimetable(tenantId, studentId, selectedSemester);
-  // const { data: courseMaterials } = useCourseMaterials(tenantId, studentId);
+  // Use real data with fallbacks
+  const subjects = academicsData?.subjects || [];
+  const progress = academicsData?.progress || { totalCredits: 0, totalSubjects: 0, avgProgress: 0, avgAttendance: 0 };
 
   // Use real CGPA if available (API returns a single number for cgpa)
-  const actualCgpa = cgpaData ?? semesterProgress.cgpa;
-  // SGPA would need a separate endpoint or semester results call
-  const actualSgpa = semesterProgress.sgpa;
+  const actualCgpa = cgpaData ?? summaryData?.cgpa ?? 0;
+  // Get SGPA for selected semester from summary
+  const selectedSemesterNum = selectedSemester === "0" ? currentSemester : parseInt(selectedSemester, 10);
+  const semesterResult = summaryData?.semesterResults?.find(s => s.semester === selectedSemesterNum);
+  const actualSgpa = semesterResult?.sgpa ?? 0;
+
+  // Generate timetable from subjects when available
+  const timetable = subjects.length > 0
+    ? generateTimetableFromSubjects(subjects)
+    : sampleTimetable;
+
+  const isLoading = studentLoading || (studentId && subjectsLoading);
 
   // Loading state
-  if (studentLoading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -205,10 +175,12 @@ export default function StudentAcademics() {
             <SelectValue placeholder="Select Semester" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="0">
+              Current Semester ({currentSemester})
+            </SelectItem>
             {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
               <SelectItem key={sem} value={sem.toString()}>
                 Semester {sem}
-                {sem === currentSemester && " (Current)"}
               </SelectItem>
             ))}
           </SelectContent>
@@ -225,7 +197,7 @@ export default function StudentAcademics() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Credits</p>
-                <p className="text-2xl font-bold">{semesterProgress.totalCredits}</p>
+                <p className="text-2xl font-bold">{progress.totalCredits}</p>
               </div>
             </div>
           </CardContent>
@@ -237,9 +209,9 @@ export default function StudentAcademics() {
                 <FileText className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Topics Covered</p>
+                <p className="text-sm text-muted-foreground">Avg Progress</p>
                 <p className="text-2xl font-bold">
-                  {semesterProgress.completedTopics}/{semesterProgress.totalTopics}
+                  {progress.avgProgress}%
                 </p>
               </div>
             </div>
@@ -287,6 +259,19 @@ export default function StudentAcademics() {
 
         {/* Subjects Tab */}
         <TabsContent value="subjects" className="space-y-4">
+          {subjects.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="font-semibold text-lg">No Subjects Found</h3>
+                  <p className="text-muted-foreground">
+                    No subjects enrolled for this semester yet.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {subjects.map((subject) => (
               <Card key={subject.id}>
@@ -338,6 +323,7 @@ export default function StudentAcademics() {
               </Card>
             ))}
           </div>
+          )}
         </TabsContent>
 
         {/* Timetable Tab */}
@@ -345,7 +331,10 @@ export default function StudentAcademics() {
           <Card>
             <CardHeader>
               <CardTitle>Weekly Timetable</CardTitle>
-              <CardDescription>Semester {selectedSemester} class schedule</CardDescription>
+              <CardDescription>
+                Semester {selectedSemester === "0" ? currentSemester : selectedSemester} class schedule
+                {subjects.length === 0 && " (Sample data - no subjects enrolled)"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -386,58 +375,78 @@ export default function StudentAcademics() {
 
         {/* Study Materials Tab */}
         <TabsContent value="materials" className="space-y-4">
-          {subjects.map((subject) => (
-            <Collapsible key={subject.id}>
-              <Card>
-                <CollapsibleTrigger className="w-full">
-                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <BookOpen className="h-5 w-5 text-primary" />
-                        <div className="text-left">
-                          <CardTitle className="text-base">{subject.name}</CardTitle>
-                          <CardDescription>{subject.code}</CardDescription>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">{subject.materials.length} files</Badge>
-                        <ChevronDown className="h-4 w-4" />
-                      </div>
-                    </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <CardContent className="pt-0">
-                    <div className="space-y-2">
-                      {subject.materials.map((material) => (
-                        <div
-                          key={material.id}
-                          className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50"
-                        >
+          {subjects.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="font-semibold text-lg">No Subjects Found</h3>
+                  <p className="text-muted-foreground">
+                    No subjects enrolled for this semester yet.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            subjects.map((subject) => {
+              const materials = getMaterialsForSubject(subject);
+              return (
+                <Collapsible key={subject.id}>
+                  <Card>
+                    <CollapsibleTrigger className="w-full">
+                      <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            {material.type === "pdf" ? (
-                              <File className="h-5 w-5 text-red-500" />
-                            ) : (
-                              <Video className="h-5 w-5 text-blue-500" />
-                            )}
-                            <div>
-                              <p className="text-sm font-medium">{material.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {material.type.toUpperCase()} • {material.size}
-                              </p>
+                            <BookOpen className="h-5 w-5 text-primary" />
+                            <div className="text-left">
+                              <CardTitle className="text-base">{subject.name}</CardTitle>
+                              <CardDescription>{subject.code}</CardDescription>
                             </div>
                           </div>
-                          <Button variant="ghost" size="sm">
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">{materials.length} files</Badge>
+                            <ChevronDown className="h-4 w-4" />
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-          ))}
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2">
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Sample materials - Course materials feature coming soon
+                          </p>
+                          {materials.map((material) => (
+                            <div
+                              key={material.id}
+                              className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50"
+                            >
+                              <div className="flex items-center gap-3">
+                                {material.type === "pdf" ? (
+                                  <File className="h-5 w-5 text-red-500" />
+                                ) : (
+                                  <Video className="h-5 w-5 text-blue-500" />
+                                )}
+                                <div>
+                                  <p className="text-sm font-medium">{material.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {material.type.toUpperCase()} • {material.size}
+                                  </p>
+                                </div>
+                              </div>
+                              <Button variant="ghost" size="sm">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
+              );
+            })
+          )}
         </TabsContent>
       </Tabs>
     </div>
