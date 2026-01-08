@@ -4,7 +4,6 @@ import {
   IsNumber,
   IsEnum,
   IsDateString,
-  IsBoolean,
   Min,
   Max,
   MinLength,
@@ -14,20 +13,13 @@ import { Type } from 'class-transformer';
 export enum ExamType {
   INTERNAL_1 = 'internal_1',
   INTERNAL_2 = 'internal_2',
+  INTERNAL = 'internal',
+  EXTERNAL = 'external',
   MID_SEMESTER = 'mid_semester',
   END_SEMESTER = 'end_semester',
   PRACTICAL = 'practical',
   ASSIGNMENT = 'assignment',
   QUIZ = 'quiz',
-}
-
-export enum ExamStatus {
-  DRAFT = 'draft',
-  SCHEDULED = 'scheduled',
-  ONGOING = 'ongoing',
-  COMPLETED = 'completed',
-  CANCELLED = 'cancelled',
-  POSTPONED = 'postponed',
 }
 
 export class QueryExamsDto {
@@ -36,12 +28,12 @@ export class QueryExamsDto {
   semester?: string;
 
   @IsOptional()
-  @IsEnum(ExamType)
-  type?: ExamType;
+  @IsString()
+  type?: string;
 
   @IsOptional()
-  @IsEnum(ExamStatus)
-  status?: ExamStatus;
+  @IsString()
+  status?: string;
 
   @IsOptional()
   @IsString()
@@ -65,8 +57,8 @@ export class ScheduleExamDto {
   @MinLength(1)
   subjectId: string;
 
-  @IsEnum(ExamType)
-  type: ExamType;
+  @IsString()
+  type: string;
 
   @IsString()
   @MinLength(1)
@@ -76,14 +68,15 @@ export class ScheduleExamDto {
   date: string;
 
   @IsString()
-  @MinLength(1)
-  startTime: string;
+  @IsOptional()
+  startTime?: string;
 
   @IsNumber()
+  @IsOptional()
   @Min(30)
   @Max(300)
   @Type(() => Number)
-  durationMinutes: number;
+  durationMinutes?: number;
 
   @IsNumber()
   @Min(1)
@@ -92,9 +85,10 @@ export class ScheduleExamDto {
   maxMarks: number;
 
   @IsNumber()
+  @IsOptional()
   @Min(0)
   @Type(() => Number)
-  passingMarks: number;
+  passingMarks?: number;
 
   @IsString()
   @IsOptional()
@@ -104,7 +98,6 @@ export class ScheduleExamDto {
   @IsOptional()
   instructions?: string;
 
-  @IsBoolean()
   @IsOptional()
   @Type(() => Boolean)
   isPublished?: boolean;
@@ -122,7 +115,6 @@ export class UpdateExamDto {
 
   @IsString()
   @IsOptional()
-  @MinLength(1)
   startTime?: string;
 
   @IsNumber()
@@ -153,19 +145,18 @@ export class UpdateExamDto {
   @IsOptional()
   instructions?: string;
 
-  @IsEnum(ExamStatus)
+  @IsString()
   @IsOptional()
-  status?: ExamStatus;
+  status?: string;
 
-  @IsBoolean()
   @IsOptional()
   @Type(() => Boolean)
   isPublished?: boolean;
 }
 
 export class UpdateExamStatusDto {
-  @IsEnum(ExamStatus)
-  status: ExamStatus;
+  @IsString()
+  status: string;
 
   @IsString()
   @IsOptional()

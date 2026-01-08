@@ -139,10 +139,45 @@ export interface ReplyMessageParams {
   attachments?: { name: string; url: string; type: string; size?: number }[];
 }
 
+// ============ API Helper ============
+
+async function teacherMessagesApi<T>(
+  endpoint: string,
+  tenantId: string,
+  options: { method?: string; body?: unknown } = {}
+): Promise<T> {
+  const { method = 'GET', body } = options;
+  const authContext = getAuthContext();
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'x-tenant-id': tenantId,
+  };
+
+  if (authContext) {
+    if (authContext.userId) headers['x-user-id'] = authContext.userId;
+    if (authContext.role) headers['x-user-role'] = authContext.role;
+    if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/teacher/messages${endpoint}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'API request failed');
+  }
+
+  if (response.status === 204) return {} as T;
+  return response.json();
+}
+
 // ============ API Functions ============
 
 async function fetchInbox(tenantId: string, params: MessageQueryParams = {}): Promise<InboxResponse> {
-  const authContext = getAuthContext();
   const queryParams = new URLSearchParams();
 
   if (params.search) queryParams.append('search', params.search);
@@ -155,25 +190,11 @@ async function fetchInbox(tenantId: string, params: MessageQueryParams = {}): Pr
   if (params.limit) queryParams.append('limit', params.limit.toString());
   if (params.offset) queryParams.append('offset', params.offset.toString());
 
-  const url = `${API_BASE_URL}/teacher/messages/inbox?${queryParams.toString()}`;
-
-  const response = await fetch(url, {
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch inbox');
-  }
-
-  return response.json();
+  const queryString = queryParams.toString();
+  return teacherMessagesApi<InboxResponse>(`/inbox${queryString ? `?${queryString}` : ''}`, tenantId);
 }
 
 async function fetchSent(tenantId: string, params: MessageQueryParams = {}): Promise<SentResponse> {
-  const authContext = getAuthContext();
   const queryParams = new URLSearchParams();
 
   if (params.search) queryParams.append('search', params.search);
@@ -183,217 +204,51 @@ async function fetchSent(tenantId: string, params: MessageQueryParams = {}): Pro
   if (params.limit) queryParams.append('limit', params.limit.toString());
   if (params.offset) queryParams.append('offset', params.offset.toString());
 
-  const url = `${API_BASE_URL}/teacher/messages/sent?${queryParams.toString()}`;
-
-  const response = await fetch(url, {
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch sent messages');
-  }
-
-  return response.json();
+  const queryString = queryParams.toString();
+  return teacherMessagesApi<SentResponse>(`/sent${queryString ? `?${queryString}` : ''}`, tenantId);
 }
 
 async function fetchMessageById(tenantId: string, messageId: string): Promise<MessageDetail> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/teacher/messages/${messageId}`, {
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch message');
-  }
-
-  return response.json();
+  return teacherMessagesApi<MessageDetail>(`/${messageId}`, tenantId);
 }
 
 async function fetchStats(tenantId: string): Promise<MessageStats> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/teacher/messages/stats/overview`, {
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch message stats');
-  }
-
-  return response.json();
+  return teacherMessagesApi<MessageStats>('/stats/overview', tenantId);
 }
 
 async function fetchTeacherClasses(tenantId: string): Promise<TeacherClass[]> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/teacher/messages/recipients/classes`, {
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch classes');
-  }
-
-  return response.json();
+  return teacherMessagesApi<TeacherClass[]>('/recipients/classes', tenantId);
 }
 
 async function searchRecipients(tenantId: string, search: string, type?: string): Promise<SearchRecipient[]> {
-  const authContext = getAuthContext();
   const queryParams = new URLSearchParams();
   queryParams.append('q', search);
   if (type) queryParams.append('type', type);
-
-  const response = await fetch(`${API_BASE_URL}/teacher/messages/recipients/search?${queryParams.toString()}`, {
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to search recipients');
-  }
-
-  return response.json();
+  return teacherMessagesApi<SearchRecipient[]>(`/recipients/search?${queryParams.toString()}`, tenantId);
 }
 
 async function sendMessage(tenantId: string, data: SendMessageParams): Promise<{ message: string; id: string; totalRecipients: number }> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/teacher/messages/send`, {
-    method: 'POST',
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to send message');
-  }
-
-  return response.json();
+  return teacherMessagesApi<{ message: string; id: string; totalRecipients: number }>('/send', tenantId, { method: 'POST', body: data });
 }
 
 async function replyToMessage(tenantId: string, data: ReplyMessageParams): Promise<{ message: string; id: string }> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/teacher/messages/reply`, {
-    method: 'POST',
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to send reply');
-  }
-
-  return response.json();
+  return teacherMessagesApi<{ message: string; id: string }>('/reply', tenantId, { method: 'POST', body: data });
 }
 
 async function markAsRead(tenantId: string, messageIds: string[]): Promise<{ message: string; count: number }> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/teacher/messages/read`, {
-    method: 'POST',
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ messageIds }),
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to mark messages as read');
-  }
-
-  return response.json();
+  return teacherMessagesApi<{ message: string; count: number }>('/read', tenantId, { method: 'POST', body: { messageIds } });
 }
 
 async function toggleStar(tenantId: string, messageId: string): Promise<{ message: string; isStarred: boolean }> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/teacher/messages/${messageId}/star`, {
-    method: 'PATCH',
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to toggle star');
-  }
-
-  return response.json();
+  return teacherMessagesApi<{ message: string; isStarred: boolean }>(`/${messageId}/star`, tenantId, { method: 'PATCH' });
 }
 
 async function archiveMessages(tenantId: string, messageIds: string[]): Promise<{ message: string; count: number }> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/teacher/messages/archive`, {
-    method: 'POST',
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ messageIds }),
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to archive messages');
-  }
-
-  return response.json();
+  return teacherMessagesApi<{ message: string; count: number }>('/archive', tenantId, { method: 'POST', body: { messageIds } });
 }
 
 async function deleteMessages(tenantId: string, messageIds: string[]): Promise<{ message: string; count: number }> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/teacher/messages/delete`, {
-    method: 'POST',
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ messageIds }),
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to delete messages');
-  }
-
-  return response.json();
+  return teacherMessagesApi<{ message: string; count: number }>('/delete', tenantId, { method: 'POST', body: { messageIds } });
 }
 
 // ============ Hooks ============

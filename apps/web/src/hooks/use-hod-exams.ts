@@ -149,10 +149,45 @@ export interface UpdateExamStatusInput {
   reason?: string;
 }
 
+// ============ API Helper ============
+
+async function hodExamsApi<T>(
+  endpoint: string,
+  tenantId: string,
+  options: { method?: string; body?: unknown } = {}
+): Promise<T> {
+  const { method = 'GET', body } = options;
+  const authContext = getAuthContext();
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'x-tenant-id': tenantId,
+  };
+
+  if (authContext) {
+    if (authContext.userId) headers['x-user-id'] = authContext.userId;
+    if (authContext.role) headers['x-user-role'] = authContext.role;
+    if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/hod/exams${endpoint}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'API request failed');
+  }
+
+  if (response.status === 204) return {} as T;
+  return response.json();
+}
+
 // ============ API Functions ============
 
 async function fetchExamsOverview(tenantId: string, params: QueryExamsParams = {}): Promise<ExamsOverviewDto> {
-  const authContext = getAuthContext();
   const queryParams = new URLSearchParams();
 
   if (params.semester) queryParams.append('semester', params.semester);
@@ -163,140 +198,32 @@ async function fetchExamsOverview(tenantId: string, params: QueryExamsParams = {
   if (params.startDate) queryParams.append('startDate', params.startDate);
   if (params.endDate) queryParams.append('endDate', params.endDate);
 
-  const url = `${API_BASE_URL}/hod/exams?${queryParams.toString()}`;
-
-  const response = await fetch(url, {
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch exams');
-  }
-
-  return response.json();
+  const queryString = queryParams.toString();
+  return hodExamsApi<ExamsOverviewDto>(queryString ? `?${queryString}` : '', tenantId);
 }
 
 async function fetchExamById(tenantId: string, examId: string): Promise<ExamDetailDto> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/hod/exams/${examId}`, {
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch exam');
-  }
-
-  return response.json();
+  return hodExamsApi<ExamDetailDto>(`/${examId}`, tenantId);
 }
 
 async function fetchExamStats(tenantId: string): Promise<ExamAnalyticsDto> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/hod/exams/stats`, {
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch exam stats');
-  }
-
-  return response.json();
+  return hodExamsApi<ExamAnalyticsDto>('/stats', tenantId);
 }
 
 async function scheduleExam(tenantId: string, data: ScheduleExamInput): Promise<{ message: string; exam: ExamDto }> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/hod/exams`, {
-    method: 'POST',
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to schedule exam');
-  }
-
-  return response.json();
+  return hodExamsApi<{ message: string; exam: ExamDto }>('', tenantId, { method: 'POST', body: data });
 }
 
 async function updateExam(tenantId: string, examId: string, data: UpdateExamInput): Promise<{ message: string; exam: ExamDto }> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/hod/exams/${examId}`, {
-    method: 'PATCH',
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to update exam');
-  }
-
-  return response.json();
+  return hodExamsApi<{ message: string; exam: ExamDto }>(`/${examId}`, tenantId, { method: 'PATCH', body: data });
 }
 
 async function updateExamStatus(tenantId: string, examId: string, data: UpdateExamStatusInput): Promise<{ message: string; exam: ExamDto }> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/hod/exams/${examId}/status`, {
-    method: 'PATCH',
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to update exam status');
-  }
-
-  return response.json();
+  return hodExamsApi<{ message: string; exam: ExamDto }>(`/${examId}/status`, tenantId, { method: 'PATCH', body: data });
 }
 
 async function deleteExam(tenantId: string, examId: string): Promise<{ message: string }> {
-  const authContext = getAuthContext();
-
-  const response = await fetch(`${API_BASE_URL}/hod/exams/${examId}`, {
-    method: 'DELETE',
-    headers: {
-      'x-tenant-id': tenantId,
-      'x-user-id': authContext.userId,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to delete exam');
-  }
-
-  return response.json();
+  return hodExamsApi<{ message: string }>(`/${examId}`, tenantId, { method: 'DELETE' });
 }
 
 // ============ Hooks ============

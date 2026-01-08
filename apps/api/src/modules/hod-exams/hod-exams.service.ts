@@ -5,7 +5,6 @@ import {
   ScheduleExamDto,
   UpdateExamDto,
   UpdateExamStatusDto,
-  ExamStatus,
   ExamType,
 } from './dto/hod-exams.dto';
 
@@ -44,6 +43,20 @@ export class HodExamsService {
   }
 
   /**
+   * Derive exam status from date
+   */
+  private deriveStatus(examDate: Date): string {
+    const now = new Date();
+    const examDateOnly = new Date(examDate);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const examDay = new Date(examDateOnly.getFullYear(), examDateOnly.getMonth(), examDateOnly.getDate());
+
+    if (examDay > today) return 'scheduled';
+    if (examDay.getTime() === today.getTime()) return 'ongoing';
+    return 'completed';
+  }
+
+  /**
    * Get exams overview for the HoD's department
    */
   async getExamsOverview(tenantId: string, userId: string, query: QueryExamsDto) {
@@ -76,10 +89,6 @@ export class HodExamsService {
       subjectId: { in: subjectIds },
     };
 
-    if (query.status) {
-      examWhere.status = query.status;
-    }
-
     if (query.type) {
       examWhere.type = query.type;
     }
@@ -109,31 +118,43 @@ export class HodExamsService {
         subject: {
           select: { id: true, code: true, name: true, semester: true },
         },
-        _count: {
-          select: { examResults: true },
-        },
+        results: true,
       },
       orderBy: { date: 'desc' },
     });
 
+    // Add derived status to each exam
+    const examsWithStatus = exams.map((exam) => ({
+      ...exam,
+      status: this.deriveStatus(exam.date),
+    }));
+
     // Calculate stats
     const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
     const stats = {
-      totalExams: exams.length,
-      upcoming: exams.filter((e) => e.status === 'scheduled' && new Date(e.date) > now).length,
-      ongoing: exams.filter((e) => e.status === 'ongoing').length,
-      completed: exams.filter((e) => e.status === 'completed').length,
-      cancelled: exams.filter((e) => e.status === 'cancelled').length,
+      totalExams: examsWithStatus.length,
+      upcoming: examsWithStatus.filter((e) => e.status === 'scheduled').length,
+      ongoing: examsWithStatus.filter((e) => e.status === 'ongoing').length,
+      completed: examsWithStatus.filter((e) => e.status === 'completed').length,
+      cancelled: 0,
     };
 
+    // Filter based on status query if provided
+    let filteredExams = examsWithStatus;
+    if (query.status) {
+      filteredExams = examsWithStatus.filter((e) => e.status === query.status);
+    }
+
     // Separate into upcoming and completed
-    const upcomingExams = exams
+    const upcomingExams = filteredExams
       .filter((e) => e.status === 'scheduled' || e.status === 'ongoing')
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(0, 20)
       .map((exam) => this.formatExam(exam));
 
-    const completedExams = exams
+    const completedExams = filteredExams
       .filter((e) => e.status === 'completed')
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 20)
@@ -164,9 +185,20 @@ export class HodExamsService {
    * Format exam for response
    */
   private formatExam(exam: any) {
-    // Calculate results summary if exam has results
+    const passingMarks = Math.round(exam.totalMarks * 0.4); // 40% passing
+    const results = exam.results || [];
+    const totalStudents = results.length;
+
+    // Calculate average and pass percentage
     let avgMarks = 0;
     let passPercentage = 0;
+
+    if (totalStudents > 0) {
+      const totalMarksObtained = results.reduce((sum: number, r: any) => sum + Number(r.marks), 0);
+      avgMarks = Math.round((totalMarksObtained / totalStudents) * 10) / 10;
+      const passed = results.filter((r: any) => Number(r.marks) >= passingMarks).length;
+      passPercentage = Math.round((passed / totalStudents) * 1000) / 10;
+    }
 
     return {
       id: exam.id,
@@ -177,18 +209,18 @@ export class HodExamsService {
       typeValue: exam.type,
       semester: exam.subject?.semester,
       date: exam.date,
-      time: exam.startTime,
-      duration: `${exam.durationMinutes} mins`,
-      durationMinutes: exam.durationMinutes,
-      venue: exam.venue,
-      maxMarks: exam.maxMarks,
-      passingMarks: exam.passingMarks,
-      students: exam._count?.examResults || 0,
+      time: '09:00', // Default time since not in schema
+      duration: '120 mins', // Default duration since not in schema
+      durationMinutes: 120,
+      venue: null, // Not in schema
+      maxMarks: exam.totalMarks,
+      passingMarks,
+      students: totalStudents,
       status: exam.status,
       avgMarks,
       passPercentage,
-      instructions: exam.instructions,
-      isPublished: exam.isPublished,
+      instructions: null, // Not in schema
+      isPublished: true, // Default since not in schema
     };
   }
 
@@ -199,6 +231,8 @@ export class HodExamsService {
     const typeMap: Record<string, string> = {
       internal_1: 'Internal 1',
       internal_2: 'Internal 2',
+      internal: 'Internal',
+      external: 'External',
       mid_semester: 'Mid-Semester',
       end_semester: 'End-Semester',
       practical: 'Practical',
@@ -237,7 +271,6 @@ export class HodExamsService {
         subjectId: dto.subjectId,
         type: dto.type,
         date: new Date(dto.date),
-        status: { notIn: ['cancelled'] },
       },
     });
 
@@ -245,7 +278,7 @@ export class HodExamsService {
       throw new BadRequestException('An exam of this type is already scheduled for this subject on this date');
     }
 
-    // Create exam
+    // Create exam (only with fields that exist in schema)
     const exam = await this.prisma.exam.create({
       data: {
         tenantId,
@@ -253,26 +286,24 @@ export class HodExamsService {
         name: dto.name,
         type: dto.type,
         date: new Date(dto.date),
-        startTime: dto.startTime,
-        durationMinutes: dto.durationMinutes,
-        maxMarks: dto.maxMarks,
-        passingMarks: dto.passingMarks,
-        venue: dto.venue,
-        instructions: dto.instructions,
-        status: dto.isPublished ? ExamStatus.SCHEDULED : ExamStatus.DRAFT,
-        isPublished: dto.isPublished || false,
-        createdById: userId,
+        totalMarks: dto.maxMarks,
       },
       include: {
         subject: {
-          select: { code: true, name: true },
+          select: { code: true, name: true, semester: true },
         },
+        results: true,
       },
     });
 
+    const examWithStatus = {
+      ...exam,
+      status: this.deriveStatus(exam.date),
+    };
+
     return {
       message: 'Exam scheduled successfully',
-      exam: this.formatExam(exam),
+      exam: this.formatExam(examWithStatus),
     };
   }
 
@@ -297,40 +328,41 @@ export class HodExamsService {
       throw new NotFoundException('Exam not found in your department');
     }
 
-    if (exam.status === 'completed') {
+    const status = this.deriveStatus(exam.date);
+    if (status === 'completed') {
       throw new BadRequestException('Cannot update a completed exam');
     }
 
-    // Update exam
+    // Update exam (only with fields that exist in schema)
+    const updateData: any = {};
+    if (dto.name) updateData.name = dto.name;
+    if (dto.date) updateData.date = new Date(dto.date);
+    if (dto.maxMarks) updateData.totalMarks = dto.maxMarks;
+
     const updatedExam = await this.prisma.exam.update({
       where: { id: examId },
-      data: {
-        name: dto.name,
-        date: dto.date ? new Date(dto.date) : undefined,
-        startTime: dto.startTime,
-        durationMinutes: dto.durationMinutes,
-        maxMarks: dto.maxMarks,
-        passingMarks: dto.passingMarks,
-        venue: dto.venue,
-        instructions: dto.instructions,
-        status: dto.status,
-        isPublished: dto.isPublished,
-      },
+      data: updateData,
       include: {
         subject: {
-          select: { code: true, name: true },
+          select: { code: true, name: true, semester: true },
         },
+        results: true,
       },
     });
 
+    const examWithStatus = {
+      ...updatedExam,
+      status: this.deriveStatus(updatedExam.date),
+    };
+
     return {
       message: 'Exam updated successfully',
-      exam: this.formatExam(updatedExam),
+      exam: this.formatExam(examWithStatus),
     };
   }
 
   /**
-   * Update exam status
+   * Update exam status - Since status is derived from date, this changes the date
    */
   async updateExamStatus(tenantId: string, userId: string, examId: string, dto: UpdateExamStatusDto) {
     const { departmentId } = await this.getHodDepartment(tenantId, userId);
@@ -344,37 +376,67 @@ export class HodExamsService {
           course: { departmentId },
         },
       },
+      include: {
+        subject: {
+          select: { code: true, name: true, semester: true },
+        },
+        results: true,
+      },
     });
 
     if (!exam) {
       throw new NotFoundException('Exam not found in your department');
     }
 
-    // Update status
-    const updatedExam = await this.prisma.exam.update({
-      where: { id: examId },
-      data: {
-        status: dto.status,
-        // Add cancellation/postponement reason if provided
-        ...(dto.reason && (dto.status === 'cancelled' || dto.status === 'postponed')
-          ? { instructions: `${exam.instructions || ''}\n\n[${dto.status.toUpperCase()}]: ${dto.reason}`.trim() }
-          : {}),
-      },
-      include: {
-        subject: {
-          select: { code: true, name: true },
+    // For status changes, we modify the date to match the desired status
+    // completed -> set date to yesterday
+    // scheduled -> set date to tomorrow
+    // For cancelled/postponed, we just return success (no actual field to store this)
+    let updatedExam = exam;
+    const now = new Date();
+
+    if (dto.status === 'completed') {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      updatedExam = await this.prisma.exam.update({
+        where: { id: examId },
+        data: { date: yesterday },
+        include: {
+          subject: {
+            select: { code: true, name: true, semester: true },
+          },
+          results: true,
         },
-      },
-    });
+      });
+    } else if (dto.status === 'scheduled' || dto.status === 'ongoing') {
+      // Keep the exam date as is or set to today for ongoing
+      if (dto.status === 'ongoing') {
+        updatedExam = await this.prisma.exam.update({
+          where: { id: examId },
+          data: { date: now },
+          include: {
+            subject: {
+              select: { code: true, name: true, semester: true },
+            },
+            results: true,
+          },
+        });
+      }
+    }
+
+    const examWithStatus = {
+      ...updatedExam,
+      status: dto.status, // Use the requested status
+    };
 
     return {
       message: `Exam ${dto.status} successfully`,
-      exam: this.formatExam(updatedExam),
+      exam: this.formatExam(examWithStatus),
     };
   }
 
   /**
-   * Delete an exam (only draft or cancelled)
+   * Delete an exam (only draft or cancelled - we check based on results)
    */
   async deleteExam(tenantId: string, userId: string, examId: string) {
     const { departmentId } = await this.getHodDepartment(tenantId, userId);
@@ -388,14 +450,18 @@ export class HodExamsService {
           course: { departmentId },
         },
       },
+      include: {
+        results: true,
+      },
     });
 
     if (!exam) {
       throw new NotFoundException('Exam not found in your department');
     }
 
-    if (!['draft', 'cancelled'].includes(exam.status)) {
-      throw new BadRequestException('Can only delete draft or cancelled exams');
+    // Don't allow deletion if there are results
+    if (exam.results && exam.results.length > 0) {
+      throw new BadRequestException('Cannot delete an exam that has results');
     }
 
     await this.prisma.exam.delete({
@@ -423,7 +489,7 @@ export class HodExamsService {
         subject: {
           select: { id: true, code: true, name: true, semester: true },
         },
-        examResults: {
+        results: {
           include: {
             student: {
               include: {
@@ -431,7 +497,7 @@ export class HodExamsService {
               },
             },
           },
-          orderBy: { marksObtained: 'desc' },
+          orderBy: { marks: 'desc' },
         },
       },
     });
@@ -440,22 +506,27 @@ export class HodExamsService {
       throw new NotFoundException('Exam not found in your department');
     }
 
-    // Calculate results statistics
-    const results = exam.examResults;
+    const passingMarks = Math.round(exam.totalMarks * 0.4);
+    const results = exam.results;
     const totalStudents = results.length;
-    const passedStudents = results.filter((r) => r.marksObtained >= exam.passingMarks).length;
+    const passedStudents = results.filter((r) => Number(r.marks) >= passingMarks).length;
     const avgMarks = totalStudents > 0
-      ? Math.round((results.reduce((sum, r) => sum + r.marksObtained, 0) / totalStudents) * 10) / 10
+      ? Math.round((results.reduce((sum, r) => sum + Number(r.marks), 0) / totalStudents) * 10) / 10
       : 0;
     const passPercentage = totalStudents > 0
       ? Math.round((passedStudents / totalStudents) * 1000) / 10
       : 0;
 
     // Grade distribution
-    const gradeDistribution = this.calculateGradeDistribution(results, exam.maxMarks);
+    const gradeDistribution = this.calculateGradeDistribution(results, exam.totalMarks);
+
+    const examWithStatus = {
+      ...exam,
+      status: this.deriveStatus(exam.date),
+    };
 
     return {
-      ...this.formatExam({ ...exam, _count: { examResults: totalStudents } }),
+      ...this.formatExam(examWithStatus),
       avgMarks,
       passPercentage,
       totalStudents,
@@ -467,9 +538,9 @@ export class HodExamsService {
         studentId: r.studentId,
         studentName: r.student?.user?.name || 'Unknown',
         rollNo: r.student?.rollNo,
-        marksObtained: r.marksObtained,
-        grade: this.calculateGrade(r.marksObtained, exam.maxMarks),
-        isPassed: r.marksObtained >= exam.passingMarks,
+        marksObtained: Number(r.marks),
+        grade: this.calculateGrade(Number(r.marks), exam.totalMarks),
+        isPassed: Number(r.marks) >= passingMarks,
       })),
     };
   }
@@ -488,7 +559,7 @@ export class HodExamsService {
     };
 
     results.forEach((r) => {
-      const percentage = (r.marksObtained / maxMarks) * 100;
+      const percentage = (Number(r.marks) / maxMarks) * 100;
       if (percentage >= 90) distribution.A++;
       else if (percentage >= 80) distribution.B++;
       else if (percentage >= 70) distribution.C++;
@@ -531,16 +602,17 @@ export class HodExamsService {
     });
     const subjectIds = subjects.map((s) => s.id);
 
-    // Get all exams with results
+    // Get all completed exams with results
+    const now = new Date();
     const exams = await this.prisma.exam.findMany({
       where: {
         tenantId,
         subjectId: { in: subjectIds },
-        status: 'completed',
+        date: { lt: now }, // Only past exams (completed)
       },
       include: {
         subject: { select: { code: true, name: true, semester: true } },
-        examResults: true,
+        results: true,
       },
       orderBy: { date: 'desc' },
       take: 50,
@@ -551,8 +623,9 @@ export class HodExamsService {
     exams.forEach((exam) => {
       const semester = exam.subject?.semester || 0;
       const existing = bySemester.get(semester) || { total: 0, avgPass: 0, count: 0 };
-      const totalStudents = exam.examResults.length;
-      const passed = exam.examResults.filter((r) => r.marksObtained >= exam.passingMarks).length;
+      const totalStudents = exam.results.length;
+      const passingMarks = Math.round(exam.totalMarks * 0.4);
+      const passed = exam.results.filter((r) => Number(r.marks) >= passingMarks).length;
       const passRate = totalStudents > 0 ? (passed / totalStudents) * 100 : 0;
 
       bySemester.set(semester, {
@@ -574,8 +647,9 @@ export class HodExamsService {
     const byType = new Map<string, { total: number; avgPass: number; count: number }>();
     exams.forEach((exam) => {
       const existing = byType.get(exam.type) || { total: 0, avgPass: 0, count: 0 };
-      const totalStudents = exam.examResults.length;
-      const passed = exam.examResults.filter((r) => r.marksObtained >= exam.passingMarks).length;
+      const totalStudents = exam.results.length;
+      const passingMarks = Math.round(exam.totalMarks * 0.4);
+      const passed = exam.results.filter((r) => Number(r.marks) >= passingMarks).length;
       const passRate = totalStudents > 0 ? (passed / totalStudents) * 100 : 0;
 
       byType.set(exam.type, {

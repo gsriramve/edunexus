@@ -32,8 +32,8 @@ export class TeacherMessagesService {
     return {
       staffId: staff.id,
       userId: staff.userId,
-      name: staff.user?.name || `${staff.firstName} ${staff.lastName}`,
-      email: staff.user?.email || staff.email,
+      name: staff.user?.name || 'Unknown',
+      email: staff.user?.email || '',
       departmentId: staff.departmentId,
       departmentName: staff.department?.name,
     };
@@ -310,29 +310,41 @@ export class TeacherMessagesService {
     let recipientIds: any = null;
 
     if (dto.recipientType === RecipientType.CLASS) {
-      // Get class students
+      // Get class students based on teacher's subject and section
       const teacherSubject = await this.prisma.teacherSubject.findFirst({
         where: { id: dto.recipientId, tenantId },
         include: {
-          subject: { select: { name: true, code: true } },
-          section: {
-            include: {
-              students: {
-                include: {
-                  user: { select: { id: true, name: true } },
-                },
-              },
-            },
+          subject: {
+            select: { name: true, code: true, courseId: true },
           },
         },
       });
 
-      if (teacherSubject?.section?.students) {
-        totalRecipients = teacherSubject.section.students.length;
-        recipientName = `${teacherSubject.subject?.code} - Section ${teacherSubject.section.name}`;
-        recipientIds = teacherSubject.section.students.map((s) => ({
+      if (teacherSubject) {
+        // Get course to find department
+        const course = teacherSubject.subject?.courseId
+          ? await this.prisma.course.findUnique({
+              where: { id: teacherSubject.subject.courseId },
+            })
+          : null;
+
+        // Get students in this section
+        const students = await this.prisma.student.findMany({
+          where: {
+            tenantId,
+            section: teacherSubject.section,
+            ...(course?.departmentId && { departmentId: course.departmentId }),
+          },
+          include: {
+            user: { select: { id: true, name: true } },
+          },
+        });
+
+        totalRecipients = students.length;
+        recipientName = `${teacherSubject.subject?.code || 'Class'}${teacherSubject.section ? ` - Section ${teacherSubject.section}` : ''}`;
+        recipientIds = students.map((s) => ({
           id: s.userId,
-          name: s.user?.name || `${s.firstName} ${s.lastName}`,
+          name: s.user?.name || 'Unknown',
           type: 'student',
         }));
       }
@@ -609,28 +621,45 @@ export class TeacherMessagesService {
       where: {
         tenantId,
         staff: { userId },
-        isActive: true,
       },
       include: {
-        subject: { select: { id: true, name: true, code: true } },
-        section: {
+        subject: {
           select: {
             id: true,
             name: true,
-            _count: { select: { students: true } },
+            code: true,
+            course: { select: { departmentId: true } },
           },
         },
       },
     });
 
-    return teacherSubjects.map((ts) => ({
-      id: ts.id,
-      name: `${ts.subject?.code} - Section ${ts.section?.name}`,
-      subjectName: ts.subject?.name,
-      subjectCode: ts.subject?.code,
-      sectionName: ts.section?.name,
-      studentCount: ts.section?._count?.students || 0,
-    }));
+    // Get student counts for each section
+    const results = await Promise.all(
+      teacherSubjects.map(async (ts) => {
+        const departmentId = ts.subject?.course?.departmentId;
+        const studentCount = departmentId
+          ? await this.prisma.student.count({
+              where: {
+                tenantId,
+                section: ts.section,
+                departmentId,
+              },
+            })
+          : 0;
+
+        return {
+          id: ts.id,
+          name: `${ts.subject?.code || 'Unknown'}${ts.section ? ` - Section ${ts.section}` : ''}`,
+          subjectName: ts.subject?.name || null,
+          subjectCode: ts.subject?.code || null,
+          sectionName: ts.section,
+          studentCount,
+        };
+      })
+    );
+
+    return results;
   }
 
   // =============================================================================
@@ -646,8 +675,6 @@ export class TeacherMessagesService {
         where: {
           tenantId,
           OR: [
-            { firstName: { contains: search, mode: 'insensitive' } },
-            { lastName: { contains: search, mode: 'insensitive' } },
             { rollNo: { contains: search, mode: 'insensitive' } },
             { user: { name: { contains: search, mode: 'insensitive' } } },
           ],
@@ -661,7 +688,7 @@ export class TeacherMessagesService {
       results.push(
         ...students.map((s) => ({
           id: s.userId,
-          name: s.user?.name || `${s.firstName} ${s.lastName}`,
+          name: s.user?.name || 'Unknown',
           type: 'student',
           subtitle: s.rollNo,
         }))
@@ -673,25 +700,25 @@ export class TeacherMessagesService {
       const parents = await this.prisma.parent.findMany({
         where: {
           tenantId,
-          OR: [
-            { fatherName: { contains: search, mode: 'insensitive' } },
-            { motherName: { contains: search, mode: 'insensitive' } },
-            { user: { name: { contains: search, mode: 'insensitive' } } },
-          ],
+          user: { name: { contains: search, mode: 'insensitive' } },
         },
         take: 10,
         include: {
           user: { select: { id: true, name: true } },
-          student: { select: { firstName: true, lastName: true } },
+          student: {
+            include: {
+              user: { select: { name: true } },
+            },
+          },
         },
       });
 
       results.push(
         ...parents.map((p) => ({
           id: p.userId,
-          name: p.user?.name || p.fatherName || p.motherName,
+          name: p.user?.name || 'Unknown',
           type: 'parent',
-          subtitle: `Parent of ${p.student?.firstName} ${p.student?.lastName}`,
+          subtitle: `Parent of ${p.student?.user?.name || 'Unknown'}`,
         }))
       );
     }
@@ -702,11 +729,7 @@ export class TeacherMessagesService {
         where: {
           tenantId,
           userId: { not: userId }, // Exclude self
-          OR: [
-            { firstName: { contains: search, mode: 'insensitive' } },
-            { lastName: { contains: search, mode: 'insensitive' } },
-            { user: { name: { contains: search, mode: 'insensitive' } } },
-          ],
+          user: { name: { contains: search, mode: 'insensitive' } },
         },
         take: 10,
         include: {
@@ -717,7 +740,7 @@ export class TeacherMessagesService {
       results.push(
         ...staff.map((s) => ({
           id: s.userId,
-          name: s.user?.name || `${s.firstName} ${s.lastName}`,
+          name: s.user?.name || 'Unknown',
           type: 'staff',
           subtitle: s.designation,
         }))

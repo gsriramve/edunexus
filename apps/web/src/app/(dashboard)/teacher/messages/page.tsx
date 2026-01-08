@@ -632,7 +632,7 @@ export default function TeacherMessagesPage() {
                   {new Date(selectedMessage.createdAt).toLocaleString()}
                 </p>
                 <p className="text-sm whitespace-pre-wrap">
-                  {"content" in selectedMessage ? selectedMessage.content : selectedMessage.preview}
+                  {selectedMessage.content}
                 </p>
               </div>
               <DialogFooter>
