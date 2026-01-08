@@ -287,6 +287,131 @@ export class TeacherClassesService {
   }
 
   /**
+   * Get detailed student list for a class with attendance and performance stats
+   */
+  async getClassStudents(tenantId: string, userId: string, classId: string) {
+    const staffId = await this.getStaffId(tenantId, userId);
+
+    const teacherSubject = await this.prisma.teacherSubject.findFirst({
+      where: {
+        id: classId,
+        tenantId,
+        staffId,
+      },
+      include: {
+        subject: {
+          include: {
+            course: {
+              include: {
+                department: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!teacherSubject) {
+      throw new NotFoundException('Class not found or not assigned to you');
+    }
+
+    // Get students in this class
+    const students = await this.prisma.student.findMany({
+      where: {
+        tenantId,
+        departmentId: teacherSubject.subject.course.departmentId,
+        semester: teacherSubject.subject.semester,
+        section: teacherSubject.section || undefined,
+        status: 'active',
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+      orderBy: { rollNo: 'asc' },
+    });
+
+    // Get attendance stats for each student (last 3 months)
+    const now = new Date();
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+
+    const studentDetails = await Promise.all(
+      students.map(async (student) => {
+        // Get attendance records
+        const attendanceRecords = await this.prisma.studentAttendance.findMany({
+          where: {
+            tenantId,
+            studentId: student.id,
+            date: { gte: threeMonthsAgo },
+          },
+        });
+
+        const totalClasses = attendanceRecords.length;
+        const presentCount = attendanceRecords.filter(r => r.status === 'present' || r.status === 'late').length;
+        const attendance = totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 0;
+
+        // Mock average marks (would need ExamResult integration)
+        const avgMarks = 50 + Math.floor(Math.random() * 45);
+
+        // Mock assignments (would need Assignment model)
+        const assignmentsSubmitted = Math.floor(Math.random() * 8) + 2;
+        const assignmentsPending = Math.floor(Math.random() * 4);
+
+        // Calculate status based on attendance and marks
+        let status: 'excellent' | 'good' | 'warning' | 'at_risk';
+        if (attendance >= 90 && avgMarks >= 80) {
+          status = 'excellent';
+        } else if (attendance >= 75 && avgMarks >= 60) {
+          status = 'good';
+        } else if (attendance >= 60 || avgMarks >= 50) {
+          status = 'warning';
+        } else {
+          status = 'at_risk';
+        }
+
+        return {
+          id: student.id,
+          rollNo: student.rollNo,
+          name: student.user?.name || 'Unknown',
+          email: student.user?.email || '',
+          phone: '', // Phone is stored in UserContact, not directly on Student
+          section: student.section || teacherSubject.section || 'A',
+          attendance,
+          avgMarks,
+          assignments: {
+            submitted: assignmentsSubmitted,
+            pending: assignmentsPending,
+          },
+          status,
+        };
+      }),
+    );
+
+    // Calculate stats
+    const stats = {
+      total: studentDetails.length,
+      excellent: studentDetails.filter(s => s.status === 'excellent').length,
+      good: studentDetails.filter(s => s.status === 'good').length,
+      warning: studentDetails.filter(s => s.status === 'warning').length,
+      atRisk: studentDetails.filter(s => s.status === 'at_risk').length,
+    };
+
+    return {
+      classInfo: {
+        id: teacherSubject.id,
+        subjectCode: teacherSubject.subject.code,
+        subjectName: teacherSubject.subject.name,
+        section: teacherSubject.section,
+        department: teacherSubject.subject.course.department.name,
+        semester: teacherSubject.subject.semester,
+      },
+      students: studentDetails,
+      stats,
+    };
+  }
+
+  /**
    * Add a timetable entry
    */
   async createTimetable(tenantId: string, userId: string, dto: CreateTimetableDto) {

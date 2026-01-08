@@ -53,6 +53,19 @@ export class TeacherClassesController {
   }
 
   /**
+   * Get detailed student list for a class with attendance and performance stats
+   * GET /api/teacher-classes/:id/students
+   */
+  @Get(':id/students')
+  getClassStudents(
+    @Headers('x-tenant-id') tenantId: string,
+    @Headers('x-user-id') userId: string,
+    @Param('id') classId: string,
+  ) {
+    return this.teacherClassesService.getClassStudents(tenantId, userId, classId);
+  }
+
+  /**
    * Add a timetable entry for a class
    * POST /api/teacher-classes/timetable
    */

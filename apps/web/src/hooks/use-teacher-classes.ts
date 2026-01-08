@@ -71,6 +71,41 @@ export interface ClassDetails extends Omit<TeacherClass, 'schedule'> {
   schedule: ClassDetailSchedule[];
 }
 
+export interface StudentDetail {
+  id: string;
+  rollNo: string;
+  name: string;
+  email: string;
+  phone: string;
+  section: string;
+  attendance: number;
+  avgMarks: number;
+  assignments: {
+    submitted: number;
+    pending: number;
+  };
+  status: 'excellent' | 'good' | 'warning' | 'at_risk';
+}
+
+export interface ClassStudentsResponse {
+  classInfo: {
+    id: string;
+    subjectCode: string;
+    subjectName: string;
+    section: string | null;
+    department: string;
+    semester: number;
+  };
+  students: StudentDetail[];
+  stats: {
+    total: number;
+    excellent: number;
+    good: number;
+    warning: number;
+    atRisk: number;
+  };
+}
+
 export interface CreateTimetableInput {
   teacherSubjectId: string;
   dayOfWeek: number;
@@ -145,6 +180,8 @@ export const teacherClassesKeys = {
     [...teacherClassesKeys.all, 'list', tenantId, params] as const,
   detail: (tenantId: string, classId: string) =>
     [...teacherClassesKeys.all, 'detail', tenantId, classId] as const,
+  students: (tenantId: string, classId: string) =>
+    [...teacherClassesKeys.all, 'students', tenantId, classId] as const,
   timetables: () => [...teacherClassesKeys.all, 'timetables'] as const,
 };
 
@@ -180,6 +217,17 @@ export function useTeacherClassDetails(tenantId: string, classId: string) {
   return useQuery({
     queryKey: teacherClassesKeys.detail(tenantId, classId),
     queryFn: () => teacherClassesApi<ClassDetails>(`/${classId}`, tenantId),
+    enabled: !!tenantId && !!classId,
+  });
+}
+
+/**
+ * Get detailed students list for a class with stats
+ */
+export function useClassStudents(tenantId: string, classId: string) {
+  return useQuery({
+    queryKey: teacherClassesKeys.students(tenantId, classId),
+    queryFn: () => teacherClassesApi<ClassStudentsResponse>(`/${classId}/students`, tenantId),
     enabled: !!tenantId && !!classId,
   });
 }
