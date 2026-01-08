@@ -28,56 +28,22 @@ import {
   AlertTriangle,
   CheckCircle2,
   ArrowRight,
-  Lightbulb,
   GraduationCap,
   DollarSign,
+  RefreshCw,
 } from "lucide-react";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useStudentByUserId, useStudentCri, useCalculateCri } from "@/hooks/use-api";
 import { useUser } from "@clerk/nextjs";
-
-// Salary band display mapping
-const salaryBandLabels: Record<string, string> = {
-  LPA_0_3: "< 3 LPA",
-  LPA_3_5: "3-5 LPA",
-  LPA_5_8: "5-8 LPA",
-  LPA_8_12: "8-12 LPA",
-  LPA_12_PLUS: "12+ LPA",
-};
-
-const getSalaryBandColor = (band: string) => {
-  switch (band) {
-    case "LPA_12_PLUS":
-      return "bg-green-100 text-green-800";
-    case "LPA_8_12":
-      return "bg-blue-100 text-blue-800";
-    case "LPA_5_8":
-      return "bg-yellow-100 text-yellow-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
-
-const getScoreColor = (score: number) => {
-  if (score >= 80) return "text-green-600";
-  if (score >= 60) return "text-blue-600";
-  if (score >= 40) return "text-yellow-600";
-  return "text-red-600";
-};
-
-const getProgressColor = (score: number) => {
-  if (score >= 80) return "bg-green-500";
-  if (score >= 60) return "bg-blue-500";
-  if (score >= 40) return "bg-yellow-500";
-  return "bg-red-500";
-};
-
-const getProbabilityColor = (probability: number) => {
-  if (probability >= 0.8) return "text-green-600";
-  if (probability >= 0.6) return "text-blue-600";
-  if (probability >= 0.4) return "text-yellow-600";
-  return "text-red-600";
-};
+import { CRICard, CRIRadarChart, CRISkillGapChart, CRIActionPlan } from "@/components/career";
+import {
+  CriData,
+  getSalaryBandLabel,
+  getSalaryBandColor,
+  getScoreColor,
+  getProbabilityColor,
+  formatAssessmentDate,
+} from "@/hooks/use-career-readiness";
 
 export default function CareerReadinessPage() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -89,7 +55,7 @@ export default function CareerReadinessPage() {
     user?.id || ""
   );
 
-  const { data: criData, isLoading: criLoading } = useStudentCri(
+  const { data: criData, isLoading: criLoading, refetch: refetchCri } = useStudentCri(
     tenantId || "",
     student?.id || ""
   );
@@ -99,11 +65,16 @@ export default function CareerReadinessPage() {
   const isLoading = studentLoading || criLoading;
 
   // Get the latest CRI data
-  const cri = criData && "latest" in criData ? criData.latest : criData;
+  const cri: CriData | null = criData && "latest" in criData ? criData.latest : (criData as CriData | null);
+  const criHistory = criData && "history" in criData ? criData.history : [];
 
   const handleRecalculate = () => {
     if (student?.id) {
-      calculateCri.mutate(student.id);
+      calculateCri.mutate(student.id, {
+        onSuccess: () => {
+          refetchCri();
+        },
+      });
     }
   };
 
@@ -140,7 +111,7 @@ export default function CareerReadinessPage() {
             <Target className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">No CRI Data Available</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Your Career Readiness Index hasn't been calculated yet. <br />
+              Your Career Readiness Index hasn&apos;t been calculated yet. <br />
               Complete more activities and assessments to generate your CRI.
             </p>
             <Button onClick={handleRecalculate} disabled={calculateCri.isPending}>
@@ -164,7 +135,7 @@ export default function CareerReadinessPage() {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-sm">
-            Last assessed: {new Date(cri.assessmentDate).toLocaleDateString()}
+            Last assessed: {formatAssessmentDate(cri.assessmentDate)}
           </Badge>
           <Button
             variant="outline"
@@ -172,6 +143,7 @@ export default function CareerReadinessPage() {
             onClick={handleRecalculate}
             disabled={calculateCri.isPending}
           >
+            <RefreshCw className={`h-4 w-4 mr-2 ${calculateCri.isPending ? 'animate-spin' : ''}`} />
             {calculateCri.isPending ? "Recalculating..." : "Recalculate"}
           </Button>
         </div>
@@ -224,7 +196,7 @@ export default function CareerReadinessPage() {
                   Expected Package
                 </div>
                 <Badge className={getSalaryBandColor(cri.salaryBand)}>
-                  {salaryBandLabels[cri.salaryBand] || cri.salaryBand}
+                  {getSalaryBandLabel(cri.salaryBand)}
                 </Badge>
               </div>
 
@@ -245,158 +217,74 @@ export default function CareerReadinessPage() {
 
       {/* Tabs for Different Views */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview">Score Breakdown</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="skills">Skill Gaps</TabsTrigger>
-          <TabsTrigger value="roles">Target Roles</TabsTrigger>
+          <TabsTrigger value="roles">Roles & Companies</TabsTrigger>
           <TabsTrigger value="action">Action Plan</TabsTrigger>
         </TabsList>
 
-        {/* Score Breakdown */}
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {/* Resume Score */}
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-blue-500" />
-                  <CardTitle className="text-sm">Resume Score</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <span className={`text-2xl font-bold ${getScoreColor(cri.resumeScore)}`}>
-                    {Math.round(cri.resumeScore)}
-                  </span>
-                  <Progress value={cri.resumeScore} className="h-2" />
-                  <p className="text-xs text-muted-foreground">
-                    Format, content quality, keywords
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Radar Chart */}
+            <CRIRadarChart data={cri} />
 
-            {/* Interview Score */}
+            {/* Component Score Cards */}
             <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-green-500" />
-                  <CardTitle className="text-sm">Interview Score</CardTitle>
-                </div>
+              <CardHeader>
+                <CardTitle>Component Scores</CardTitle>
+                <CardDescription>Detailed breakdown of your CRI components</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <span className={`text-2xl font-bold ${getScoreColor(cri.interviewScore)}`}>
-                    {Math.round(cri.interviewScore)}
-                  </span>
-                  <Progress value={cri.interviewScore} className="h-2" />
-                  <p className="text-xs text-muted-foreground">
-                    Mock interviews, communication
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+              <CardContent className="space-y-4">
+                {/* Resume Score */}
+                <ComponentScoreRow
+                  icon={FileText}
+                  label="Resume Score"
+                  score={cri.resumeScore}
+                  description="Resume quality, skills listed, experience"
+                  color="blue"
+                />
 
-            {/* Skill-Role Fit */}
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5 text-purple-500" />
-                  <CardTitle className="text-sm">Skill-Role Fit</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <span className={`text-2xl font-bold ${getScoreColor(cri.skillRoleFitScore)}`}>
-                    {Math.round(cri.skillRoleFitScore)}
-                  </span>
-                  <Progress value={cri.skillRoleFitScore} className="h-2" />
-                  <p className="text-xs text-muted-foreground">
-                    Skills matching target roles
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                {/* Interview Score */}
+                <ComponentScoreRow
+                  icon={Users}
+                  label="Interview Score"
+                  score={cri.interviewScore}
+                  description="Mock interviews, communication skills"
+                  color="green"
+                />
 
-            {/* Industry Exposure */}
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-orange-500" />
-                  <CardTitle className="text-sm">Industry Exposure</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <span className={`text-2xl font-bold ${getScoreColor(cri.industryExposureScore)}`}>
-                    {Math.round(cri.industryExposureScore)}
-                  </span>
-                  <Progress value={cri.industryExposureScore} className="h-2" />
-                  <p className="text-xs text-muted-foreground">
-                    Internships, projects, certifications
-                  </p>
-                </div>
+                {/* Skill-Role Fit */}
+                <ComponentScoreRow
+                  icon={GraduationCap}
+                  label="Skill-Role Fit"
+                  score={cri.skillRoleFitScore}
+                  description="Skills matching target roles"
+                  color="purple"
+                />
+
+                {/* Industry Exposure */}
+                <ComponentScoreRow
+                  icon={Building2}
+                  label="Industry Exposure"
+                  score={cri.industryExposureScore}
+                  description="Internships, projects, certifications"
+                  color="orange"
+                />
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        {/* Skill Gaps */}
-        <TabsContent value="skills" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                Skill Gaps to Address
-              </CardTitle>
-              <CardDescription>
-                These are the skills you need to develop based on your target roles
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {cri.skillGaps && cri.skillGaps.length > 0 ? (
-                <div className="space-y-4">
-                  {cri.skillGaps.map((gap: any, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 rounded-lg border bg-card"
-                    >
-                      <div className="flex-1">
-                        <h4 className="font-medium">{gap.skill || gap.name || gap}</h4>
-                        {gap.description && (
-                          <p className="text-sm text-muted-foreground">{gap.description}</p>
-                        )}
-                        {gap.importance && (
-                          <Badge variant="outline" className="mt-1">
-                            {gap.importance} priority
-                          </Badge>
-                        )}
-                      </div>
-                      {gap.currentLevel !== undefined && gap.requiredLevel !== undefined && (
-                        <div className="text-right">
-                          <div className="text-sm text-muted-foreground">Current vs Required</div>
-                          <div className="font-medium">
-                            {gap.currentLevel} / {gap.requiredLevel}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-green-500" />
-                  <p>No significant skill gaps identified!</p>
-                  <p className="text-sm">Keep building your skills to maintain your edge.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* Skills Tab */}
+        <TabsContent value="skills" className="space-y-6">
+          <CRISkillGapChart skillGaps={cri.skillGaps} />
         </TabsContent>
 
-        {/* Target Roles */}
-        <TabsContent value="roles" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+        {/* Roles & Companies Tab */}
+        <TabsContent value="roles" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
             {/* Target Roles */}
             <Card>
               <CardHeader>
@@ -414,29 +302,36 @@ export default function CareerReadinessPage() {
                     {cri.targetRoles.map((role: any, index: number) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 rounded-lg border"
+                        className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                       >
                         <div>
-                          <h4 className="font-medium">{role.title || role.name || role}</h4>
-                          {role.fitScore && (
-                            <p className="text-sm text-muted-foreground">
-                              {Math.round(role.fitScore * 100)}% match
+                          <h4 className="font-medium">{role.role || role.title || role}</h4>
+                          {role.requirements && role.requirements.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Requires: {role.requirements.slice(0, 3).join(", ")}
                             </p>
                           )}
                         </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        <div className="text-right">
+                          {role.fitScore !== undefined && (
+                            <Badge variant="secondary" className={getScoreColor(role.fitScore)}>
+                              {Math.round(role.fitScore)}% match
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-center py-4 text-muted-foreground">
-                    Complete more assessments to identify target roles.
-                  </p>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Complete assessments to identify target roles.</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Top Matching Companies */}
+            {/* Matching Companies */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -453,86 +348,118 @@ export default function CareerReadinessPage() {
                     {cri.topMatchingCompanies.map((company: any, index: number) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 rounded-lg border"
+                        className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                       >
-                        <div>
-                          <h4 className="font-medium">{company.name || company}</h4>
-                          {company.industry && (
-                            <p className="text-sm text-muted-foreground">
-                              {company.industry}
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                            <Building2 className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium">{company.company || company.name || company}</h4>
+                            {company.industry && (
+                              <p className="text-xs text-muted-foreground">{company.industry}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {company.fitScore !== undefined && (
+                            <Badge variant="outline" className={getScoreColor(company.fitScore)}>
+                              {Math.round(company.fitScore)}%
+                            </Badge>
+                          )}
+                          {company.openings !== undefined && company.openings > 0 && (
+                            <p className="text-xs text-green-600 mt-1">
+                              {company.openings} openings
                             </p>
                           )}
                         </div>
-                        {company.matchScore && (
-                          <Badge variant="secondary">
-                            {Math.round(company.matchScore * 100)}%
-                          </Badge>
-                        )}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-center py-4 text-muted-foreground">
-                    Complete more assessments to identify matching companies.
-                  </p>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Complete assessments to identify matching companies.</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        {/* Action Plan */}
-        <TabsContent value="action" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5 text-yellow-500" />
-                Personalized Action Plan
-              </CardTitle>
-              <CardDescription>
-                Follow these steps to improve your career readiness
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {cri.actionPlan && cri.actionPlan.length > 0 ? (
-                <div className="space-y-4">
-                  {cri.actionPlan.map((action: any, index: number) => (
-                    <div
-                      key={index}
-                      className="flex gap-4 p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium">{action.title || action.action || action}</h4>
-                        {action.description && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {action.description}
-                          </p>
-                        )}
-                        {action.deadline && (
-                          <Badge variant="outline" className="mt-2">
-                            Due: {new Date(action.deadline).toLocaleDateString()}
-                          </Badge>
-                        )}
-                      </div>
-                      <Button variant="outline" size="sm">
-                        Start
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No specific action items at this time.</p>
-                  <p className="text-sm">Your action plan will be generated based on your CRI analysis.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* Action Plan Tab */}
+        <TabsContent value="action" className="space-y-6">
+          <CRIActionPlan actionPlan={cri.actionPlan} />
         </TabsContent>
       </Tabs>
+
+      {/* CRI History */}
+      {criHistory && criHistory.length > 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Assessment History</CardTitle>
+            <CardDescription>Your CRI progress over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {criHistory.slice(0, 6).map((item: CriData, index: number) => (
+                <div
+                  key={item.id}
+                  className={`flex-shrink-0 p-4 rounded-lg border min-w-[140px] ${
+                    index === 0 ? "bg-primary/5 border-primary" : "bg-card"
+                  }`}
+                >
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(item.assessmentDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                  </p>
+                  <p className={`text-2xl font-bold ${getScoreColor(item.criScore)}`}>
+                    {Math.round(item.criScore)}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className={`text-xs ${getProbabilityColor(item.placementProbability)}`}>
+                      {Math.round(item.placementProbability * 100)}% probability
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// Component Score Row
+interface ComponentScoreRowProps {
+  icon: React.ElementType;
+  label: string;
+  score: number;
+  description: string;
+  color: 'blue' | 'green' | 'purple' | 'orange';
+}
+
+function ComponentScoreRow({ icon: Icon, label, score, description, color }: ComponentScoreRowProps) {
+  const colorClasses = {
+    blue: 'text-blue-500',
+    green: 'text-green-500',
+    purple: 'text-purple-500',
+    orange: 'text-orange-500',
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Icon className={`h-5 w-5 ${colorClasses[color]}`} />
+          <span className="font-medium">{label}</span>
+        </div>
+        <span className={`text-lg font-bold ${getScoreColor(score)}`}>
+          {Math.round(score)}
+        </span>
+      </div>
+      <Progress value={score} className="h-2" />
+      <p className="text-xs text-muted-foreground">{description}</p>
     </div>
   );
 }

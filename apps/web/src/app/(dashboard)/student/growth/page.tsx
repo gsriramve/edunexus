@@ -440,7 +440,7 @@ export default function StudentGrowthPage() {
             skillsBreakdown: item.skillsBreakdown || null,
             behavioralBreakdown: item.behavioralBreakdown || null,
             recommendations: item.recommendations || null,
-            calculatedAt: typeof item.calculatedAt === 'string' ? item.calculatedAt : item.calculatedAt?.toISOString() || new Date().toISOString(),
+            calculatedAt: String(item.calculatedAt || new Date().toISOString()),
           }))}
         />
       )}
