@@ -356,6 +356,7 @@ export class StudentsService {
       pendingFeesResult,
       upcomingExamsCount,
       notificationCount,
+      recentNotifications,
       examResults,
       todayTimetable,
     ] = await Promise.all([
@@ -383,19 +384,27 @@ export class StudentsService {
           },
         },
       }),
-      // Get unread notifications
+      // Get unread notifications count
       this.prisma.notification.count({
         where: {
           userId: student.userId,
           readAt: null,
         },
       }),
+      // Get recent notifications
+      this.prisma.notification.findMany({
+        where: {
+          userId: student.userId,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
       // Get exam results for CGPA calculation
       this.prisma.examResult.findMany({
         where: { studentId, tenantId },
         include: {
           exam: {
-            select: { totalMarks: true },
+            select: { totalMarks: true, type: true, subject: { select: { name: true } } },
           },
         },
       }),
@@ -452,6 +461,25 @@ export class StudentsService {
       teacher: slot.teacherSubject.staff?.user?.name || 'TBA',
     }));
 
+    // Format recent notifications
+    const formattedNotifications = recentNotifications.map((n: any) => ({
+      id: n.id,
+      title: n.title,
+      message: n.message,
+      type: n.type || 'info',
+      time: this.formatRelativeTime(n.createdAt),
+      createdAt: n.createdAt,
+      read: !!n.readAt,
+    }));
+
+    // Generate AI insights based on student data
+    const aiInsights = this.generateAIInsights(
+      examResults,
+      attendancePercentage,
+      cgpa,
+      Number(pendingFeesResult._sum.amount || 0),
+    );
+
     return {
       studentId: student.id,
       name: student.user.name,
@@ -467,7 +495,116 @@ export class StudentsService {
       notifications: notificationCount,
       email: student.user.email,
       todaySchedule,
+      recentNotifications: formattedNotifications,
+      aiInsights,
     };
+  }
+
+  private formatRelativeTime(date: Date): string {
+    const now = new Date();
+    const diff = now.getTime() - new Date(date).getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 60) return `${minutes} minutes ago`;
+    if (hours < 24) return `${hours} hours ago`;
+    if (days < 7) return `${days} days ago`;
+    return new Date(date).toLocaleDateString();
+  }
+
+  private generateAIInsights(
+    examResults: any[],
+    attendancePercentage: number,
+    cgpa: number,
+    pendingFees: number,
+  ): Array<{ type: string; text: string; positive: boolean }> {
+    const insights: Array<{ type: string; text: string; positive: boolean }> = [];
+
+    // Analyze exam performance
+    if (examResults.length > 0) {
+      // Group results by subject
+      const subjectResults = new Map<string, number[]>();
+      for (const result of examResults) {
+        const subjectName = result.exam?.subject?.name || 'Unknown';
+        const percentage = (Number(result.marks) / result.exam.totalMarks) * 100;
+        if (!subjectResults.has(subjectName)) {
+          subjectResults.set(subjectName, []);
+        }
+        subjectResults.get(subjectName)?.push(percentage);
+      }
+
+      // Find best and weakest subjects
+      let bestSubject = { name: '', avg: 0 };
+      let weakestSubject = { name: '', avg: 100 };
+
+      for (const [name, scores] of subjectResults) {
+        const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+        if (avg > bestSubject.avg) bestSubject = { name, avg };
+        if (avg < weakestSubject.avg) weakestSubject = { name, avg };
+      }
+
+      if (bestSubject.name && bestSubject.avg >= 70) {
+        insights.push({
+          type: 'performance',
+          text: `Strong performance in ${bestSubject.name} (${Math.round(bestSubject.avg)}% avg)`,
+          positive: true,
+        });
+      }
+
+      if (weakestSubject.name && weakestSubject.avg < 60) {
+        insights.push({
+          type: 'focus',
+          text: `Focus on ${weakestSubject.name} - identified as area needing improvement`,
+          positive: false,
+        });
+      }
+    }
+
+    // Attendance insight
+    if (attendancePercentage >= 85) {
+      insights.push({
+        type: 'attendance',
+        text: `Excellent attendance record at ${attendancePercentage}%`,
+        positive: true,
+      });
+    } else if (attendancePercentage < 75) {
+      insights.push({
+        type: 'attendance',
+        text: `Attendance at ${attendancePercentage}% - aim for 75% minimum`,
+        positive: false,
+      });
+    }
+
+    // CGPA-based placement probability
+    if (cgpa > 0) {
+      const placementProbability = Math.min(95, Math.max(50, 50 + (cgpa - 6) * 10));
+      insights.push({
+        type: 'placement',
+        text: `${Math.round(placementProbability)}% placement probability based on current CGPA`,
+        positive: placementProbability >= 70,
+      });
+    }
+
+    // Fee reminder
+    if (pendingFees > 0) {
+      insights.push({
+        type: 'fees',
+        text: `Pending fees: ₹${(pendingFees / 1000).toFixed(0)}K - clear before deadline`,
+        positive: false,
+      });
+    }
+
+    // Return top 3 insights or default insights if none generated
+    if (insights.length === 0) {
+      return [
+        { type: 'welcome', text: 'Welcome! Complete your profile to get personalized insights', positive: true },
+        { type: 'tip', text: 'Attend classes regularly to maintain good standing', positive: true },
+        { type: 'tip', text: 'Check the career hub for placement opportunities', positive: true },
+      ];
+    }
+
+    return insights.slice(0, 3);
   }
 
   async getStats(tenantId: string) {

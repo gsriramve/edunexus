@@ -722,6 +722,22 @@ export interface StudentScheduleItem {
   teacher: string;
 }
 
+export interface StudentNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  time: string;
+  createdAt: string;
+  read: boolean;
+}
+
+export interface AIInsight {
+  type: string;
+  text: string;
+  positive: boolean;
+}
+
 export interface StudentDashboard {
   studentId: string;
   name: string;
@@ -737,6 +753,8 @@ export interface StudentDashboard {
   notifications: number;
   email: string;
   todaySchedule: StudentScheduleItem[];
+  recentNotifications: StudentNotification[];
+  aiInsights: AIInsight[];
 }
 
 export interface StudentAcademics {

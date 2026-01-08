@@ -25,20 +25,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useStudentByUserId, useStudentDashboard, useStudentAcademics } from "@/hooks/use-api";
 import { useStudentCGPA } from "@/hooks/use-exams";
-import { type StudentScheduleItem } from "@/lib/api";
+import { type StudentScheduleItem, type StudentNotification, type AIInsight } from "@/lib/api";
 
-// TODO: Replace with real notifications API when available
-const recentNotifications = [
-  { id: 1, title: "Assignment Due", message: "DSA Assignment 3 due tomorrow", time: "2 hours ago", type: "warning" },
-  { id: 2, title: "Exam Schedule", message: "Mid-semester exams from Nov 15", time: "1 day ago", type: "info" },
-  { id: 3, title: "Fee Reminder", message: "Last date for fee payment: Dec 15", time: "2 days ago", type: "error" },
+// Fallback data when API returns empty
+const defaultNotifications: StudentNotification[] = [
+  { id: '1', title: "Welcome", message: "Welcome to your student dashboard", time: "Just now", type: "info", createdAt: new Date().toISOString(), read: false },
 ];
 
-// TODO: Replace with real AI insights API when available
-const aiInsights = [
-  { icon: TrendingUp, text: "Your Math scores improved by 15% this semester", positive: true },
-  { icon: Target, text: "Focus on Physics Ch.5 - Identified as weak area", positive: false },
-  { icon: Sparkles, text: "85% placement probability based on current performance", positive: true },
+const defaultAiInsights: AIInsight[] = [
+  { type: 'welcome', text: "Welcome! Complete your profile to get personalized insights", positive: true },
+  { type: 'tip', text: "Attend classes regularly to maintain good standing", positive: true },
+  { type: 'tip', text: "Check the career hub for placement opportunities", positive: true },
 ];
 
 const quickActions = [
@@ -124,6 +121,16 @@ export default function StudentDashboard() {
   const pendingFees = dashboardData?.pendingFees ?? 0;
   const upcomingExams = dashboardData?.upcomingExams ?? 0;
   const notificationCount = dashboardData?.notifications ?? 0;
+
+  // Get real notifications and AI insights from API
+  const recentNotifications: StudentNotification[] =
+    (dashboardData?.recentNotifications && dashboardData.recentNotifications.length > 0)
+      ? dashboardData.recentNotifications
+      : defaultNotifications;
+  const aiInsights: AIInsight[] =
+    (dashboardData?.aiInsights && dashboardData.aiInsights.length > 0)
+      ? dashboardData.aiInsights
+      : defaultAiInsights;
 
   const quickStats = [
     { title: "Attendance", value: `${attendancePercentage}%`, icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
@@ -251,21 +258,30 @@ export default function StudentDashboard() {
             <CardDescription>Personalized recommendations</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {aiInsights.map((insight, index) => (
-              <div
-                key={index}
-                className={`flex items-start gap-3 p-3 rounded-lg ${
-                  insight.positive ? "bg-green-50" : "bg-amber-50"
-                }`}
-              >
-                <insight.icon
-                  className={`h-5 w-5 mt-0.5 ${
-                    insight.positive ? "text-green-600" : "text-amber-600"
+            {aiInsights.map((insight, index) => {
+              const IconComponent = insight.type === 'performance' ? TrendingUp
+                : insight.type === 'focus' ? Target
+                : insight.type === 'attendance' ? Calendar
+                : insight.type === 'placement' ? Sparkles
+                : insight.type === 'fees' ? CreditCard
+                : Sparkles;
+
+              return (
+                <div
+                  key={index}
+                  className={`flex items-start gap-3 p-3 rounded-lg ${
+                    insight.positive ? "bg-green-50" : "bg-amber-50"
                   }`}
-                />
-                <p className="text-sm">{insight.text}</p>
-              </div>
-            ))}
+                >
+                  <IconComponent
+                    className={`h-5 w-5 mt-0.5 ${
+                      insight.positive ? "text-green-600" : "text-amber-600"
+                    }`}
+                  />
+                  <p className="text-sm">{insight.text}</p>
+                </div>
+              );
+            })}
             <Button variant="outline" className="w-full" asChild>
               <Link href="/student/insights">
                 View All Insights
