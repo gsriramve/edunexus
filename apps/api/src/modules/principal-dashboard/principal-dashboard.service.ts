@@ -21,6 +21,11 @@ import {
   RecentTransactionDto,
   MonthlyCollectionDto,
   PaymentMethodStatsDto,
+  PrincipalAcademicsOverviewDto,
+  PrincipalAcademicStatsDto,
+  DepartmentCurriculumDto,
+  RecentCurriculumUpdateDto,
+  SemesterProgressDto,
 } from './dto/principal-dashboard.dto';
 
 // Thresholds
@@ -911,5 +916,255 @@ export class PrincipalDashboardService {
       cheque: 'Cheque',
     };
     return methodMap[method.toLowerCase()] || method;
+  }
+
+  /**
+   * Get comprehensive academics overview for principal
+   */
+  async getAcademicsOverview(tenantId: string): Promise<PrincipalAcademicsOverviewDto> {
+    // Fetch all required data in parallel
+    const [
+      courses,
+      subjects,
+      departments,
+      students,
+      examResults,
+    ] = await Promise.all([
+      // All courses with department info
+      this.prisma.course.findMany({
+        where: { tenantId },
+        include: {
+          department: { select: { id: true, name: true } },
+          subjects: { select: { id: true, credits: true, syllabus: true, semester: true } },
+        },
+      }),
+      // All subjects with course info
+      this.prisma.subject.findMany({
+        where: { tenantId },
+        include: {
+          course: {
+            include: { department: { select: { id: true, name: true } } },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
+      // All departments
+      this.prisma.department.findMany({
+        where: { tenantId },
+        select: { id: true, name: true },
+      }),
+      // All active students
+      this.prisma.student.findMany({
+        where: { tenantId, status: 'active' },
+        select: { id: true },
+      }),
+      // Exam results for pass rate calculation
+      this.prisma.examResult.findMany({
+        where: { tenantId },
+        include: {
+          exam: {
+            include: {
+              subject: {
+                include: {
+                  course: { include: { department: true } },
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Calculate academic stats
+    const totalCourses = courses.length;
+    const activeCourses = courses.filter((c) => c.subjects.length > 0).length;
+    const totalSubjects = subjects.length;
+    const totalCredits = subjects.reduce((sum, s) => sum + s.credits, 0);
+    const studentsEnrolled = students.length;
+
+    // Calculate average pass rate from exam results
+    let totalPassed = 0;
+    let totalResults = examResults.length;
+    examResults.forEach((result) => {
+      const passingMarks = Number(result.exam.totalMarks) * 0.4;
+      if (Number(result.marks) >= passingMarks) {
+        totalPassed++;
+      }
+    });
+    const averagePassRate = totalResults > 0
+      ? Math.round((totalPassed / totalResults) * 100 * 10) / 10
+      : 0;
+
+    const stats: PrincipalAcademicStatsDto = {
+      totalCourses,
+      activeCourses,
+      totalSubjects,
+      totalCredits,
+      averagePassRate,
+      studentsEnrolled,
+    };
+
+    // Build department curriculum status
+    const deptCurriculumMap = new Map<string, {
+      courses: Set<string>;
+      subjects: number;
+      credits: number;
+      withSyllabus: number;
+      totalResults: number;
+      passed: number;
+    }>();
+
+    // Initialize departments
+    departments.forEach((dept) => {
+      deptCurriculumMap.set(dept.id, {
+        courses: new Set(),
+        subjects: 0,
+        credits: 0,
+        withSyllabus: 0,
+        totalResults: 0,
+        passed: 0,
+      });
+    });
+
+    // Process subjects
+    subjects.forEach((subject) => {
+      const deptId = subject.course.department?.id;
+      if (!deptId) return;
+
+      let deptData = deptCurriculumMap.get(deptId);
+      if (!deptData) {
+        deptData = { courses: new Set(), subjects: 0, credits: 0, withSyllabus: 0, totalResults: 0, passed: 0 };
+        deptCurriculumMap.set(deptId, deptData);
+      }
+
+      deptData.courses.add(subject.courseId);
+      deptData.subjects++;
+      deptData.credits += subject.credits;
+      if (subject.syllabus && subject.syllabus.trim().length > 0) {
+        deptData.withSyllabus++;
+      }
+    });
+
+    // Process exam results for department pass rates
+    examResults.forEach((result) => {
+      const deptId = result.exam.subject.course?.department?.id;
+      if (!deptId) return;
+
+      const deptData = deptCurriculumMap.get(deptId);
+      if (!deptData) return;
+
+      deptData.totalResults++;
+      const passingMarks = Number(result.exam.totalMarks) * 0.4;
+      if (Number(result.marks) >= passingMarks) {
+        deptData.passed++;
+      }
+    });
+
+    const departmentCurriculum: DepartmentCurriculumDto[] = departments.map((dept) => {
+      const data = deptCurriculumMap.get(dept.id) || {
+        courses: new Set(),
+        subjects: 0,
+        credits: 0,
+        withSyllabus: 0,
+        totalResults: 0,
+        passed: 0,
+      };
+
+      const syllabusCompletionRate = data.subjects > 0
+        ? Math.round((data.withSyllabus / data.subjects) * 100)
+        : 0;
+
+      let syllabusStatus: 'completed' | 'in_progress' | 'pending' = 'pending';
+      if (syllabusCompletionRate >= 90) syllabusStatus = 'completed';
+      else if (syllabusCompletionRate > 0) syllabusStatus = 'in_progress';
+
+      const passRate = data.totalResults > 0
+        ? Math.round((data.passed / data.totalResults) * 100)
+        : 0;
+
+      return {
+        departmentId: dept.id,
+        department: dept.name,
+        courses: data.courses.size,
+        subjects: data.subjects,
+        credits: data.credits,
+        syllabusStatus,
+        syllabusCompletionRate,
+        passRate,
+      };
+    }).filter((d) => d.courses > 0 || d.subjects > 0);
+
+    // Build recent curriculum updates (based on recently updated subjects)
+    const recentUpdates: RecentCurriculumUpdateDto[] = subjects
+      .slice(0, 10)
+      .map((subject) => {
+        const daysSinceUpdate = Math.floor(
+          (Date.now() - new Date(subject.updatedAt).getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        let action = 'Updated';
+        const daysSinceCreate = Math.floor(
+          (Date.now() - new Date(subject.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        if (daysSinceCreate <= 7) {
+          action = 'New Subject Added';
+        } else if (subject.syllabus && subject.syllabus.length > 0) {
+          action = 'Syllabus Updated';
+        }
+
+        let dateStr: string;
+        if (daysSinceUpdate === 0) dateStr = 'Today';
+        else if (daysSinceUpdate === 1) dateStr = 'Yesterday';
+        else if (daysSinceUpdate < 7) dateStr = `${daysSinceUpdate} days ago`;
+        else if (daysSinceUpdate < 14) dateStr = '1 week ago';
+        else dateStr = `${Math.floor(daysSinceUpdate / 7)} weeks ago`;
+
+        return {
+          id: subject.id,
+          courseName: subject.course.name,
+          subjectName: subject.name,
+          department: subject.course.department?.name || 'Unknown',
+          departmentId: subject.course.department?.id || '',
+          action,
+          date: dateStr,
+        };
+      });
+
+    // Build semester progress
+    const semesterMap = new Map<number, { total: number; withSyllabus: number }>();
+
+    // Initialize semesters 1-8
+    for (let i = 1; i <= 8; i++) {
+      semesterMap.set(i, { total: 0, withSyllabus: 0 });
+    }
+
+    subjects.forEach((subject) => {
+      const sem = subject.semester;
+      if (sem < 1 || sem > 8) return;
+
+      const data = semesterMap.get(sem)!;
+      data.total++;
+      if (subject.syllabus && subject.syllabus.trim().length > 0) {
+        data.withSyllabus++;
+      }
+    });
+
+    const semesterProgress: SemesterProgressDto[] = Array.from(semesterMap.entries())
+      .filter(([_, data]) => data.total > 0)
+      .map(([semester, data]) => ({
+        semester,
+        totalSubjects: data.total,
+        withSyllabus: data.withSyllabus,
+        completionPercentage: data.total > 0
+          ? Math.round((data.withSyllabus / data.total) * 100)
+          : 0,
+      }));
+
+    return {
+      stats,
+      departmentCurriculum,
+      recentUpdates,
+      semesterProgress,
+    };
   }
 }

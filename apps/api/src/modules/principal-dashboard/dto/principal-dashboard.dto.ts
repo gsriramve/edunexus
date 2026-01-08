@@ -215,3 +215,54 @@ export class PrincipalFeeOverviewDto {
   monthlyTrend: MonthlyCollectionDto[];
   paymentMethods: PaymentMethodStatsDto[];
 }
+
+// ============ Academics Overview DTOs ============
+
+// Academic stats
+export class PrincipalAcademicStatsDto {
+  totalCourses: number;
+  activeCourses: number;
+  totalSubjects: number;
+  totalCredits: number;
+  averagePassRate: number;
+  studentsEnrolled: number;
+}
+
+// Department curriculum status
+export class DepartmentCurriculumDto {
+  departmentId: string;
+  department: string;
+  courses: number;
+  subjects: number;
+  credits: number;
+  syllabusStatus: 'completed' | 'in_progress' | 'pending';
+  syllabusCompletionRate: number;
+  passRate: number;
+}
+
+// Recent curriculum update
+export class RecentCurriculumUpdateDto {
+  id: string;
+  courseName: string;
+  subjectName: string;
+  department: string;
+  departmentId: string;
+  action: string;
+  date: string;
+}
+
+// Semester syllabus progress
+export class SemesterProgressDto {
+  semester: number;
+  totalSubjects: number;
+  withSyllabus: number;
+  completionPercentage: number;
+}
+
+// Full academics overview response
+export class PrincipalAcademicsOverviewDto {
+  stats: PrincipalAcademicStatsDto;
+  departmentCurriculum: DepartmentCurriculumDto[];
+  recentUpdates: RecentCurriculumUpdateDto[];
+  semesterProgress: SemesterProgressDto[];
+}

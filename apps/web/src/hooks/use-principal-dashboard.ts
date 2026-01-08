@@ -207,6 +207,52 @@ export interface PrincipalFeeOverviewResponse {
   paymentMethods: PaymentMethodStatsDto[];
 }
 
+// ============ Academics Overview Types ============
+
+export interface PrincipalAcademicStatsDto {
+  totalCourses: number;
+  activeCourses: number;
+  totalSubjects: number;
+  totalCredits: number;
+  averagePassRate: number;
+  studentsEnrolled: number;
+}
+
+export interface DepartmentCurriculumDto {
+  departmentId: string;
+  department: string;
+  courses: number;
+  subjects: number;
+  credits: number;
+  syllabusStatus: 'completed' | 'in_progress' | 'pending';
+  syllabusCompletionRate: number;
+  passRate: number;
+}
+
+export interface RecentCurriculumUpdateDto {
+  id: string;
+  courseName: string;
+  subjectName: string;
+  department: string;
+  departmentId: string;
+  action: string;
+  date: string;
+}
+
+export interface SemesterProgressDto {
+  semester: number;
+  totalSubjects: number;
+  withSyllabus: number;
+  completionPercentage: number;
+}
+
+export interface PrincipalAcademicsOverviewResponse {
+  stats: PrincipalAcademicStatsDto;
+  departmentCurriculum: DepartmentCurriculumDto[];
+  recentUpdates: RecentCurriculumUpdateDto[];
+  semesterProgress: SemesterProgressDto[];
+}
+
 // ============ API Client ============
 
 async function principalDashboardApi<T>(
@@ -257,6 +303,8 @@ export const principalDashboardKeys = {
     [...principalDashboardKeys.all, 'fee-overview', tenantId] as const,
   exams: (tenantId: string) =>
     [...principalDashboardKeys.all, 'exams', tenantId] as const,
+  academics: (tenantId: string) =>
+    [...principalDashboardKeys.all, 'academics', tenantId] as const,
 };
 
 // ============ Query Hooks ============
@@ -334,6 +382,17 @@ export function usePrincipalFeeOverview(tenantId: string) {
   return useQuery({
     queryKey: principalDashboardKeys.feeOverview(tenantId),
     queryFn: () => principalDashboardApi<PrincipalFeeOverviewResponse>('/fees/overview', tenantId),
+    enabled: !!tenantId,
+  });
+}
+
+/**
+ * Get comprehensive academics overview for principal
+ */
+export function usePrincipalAcademicsOverview(tenantId: string) {
+  return useQuery({
+    queryKey: principalDashboardKeys.academics(tenantId),
+    queryFn: () => principalDashboardApi<PrincipalAcademicsOverviewResponse>('/academics', tenantId),
     enabled: !!tenantId,
   });
 }
