@@ -49,6 +49,8 @@ import { TeacherAssignmentsModule } from './modules/teacher-assignments/teacher-
 import { TeacherMaterialsModule } from './modules/teacher-materials/teacher-materials.module';
 import { PrincipalDashboardModule } from './modules/principal-dashboard/principal-dashboard.module';
 import { LabAssistantModule } from './modules/lab-assistant/lab-assistant.module';
+import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
+import { ParentDashboardModule } from './modules/parent-dashboard/parent-dashboard.module';
 
 @Module({
   imports: [
@@ -116,6 +118,8 @@ import { LabAssistantModule } from './modules/lab-assistant/lab-assistant.module
     TeacherMaterialsModule,
     PrincipalDashboardModule,
     LabAssistantModule,
+    AdminDashboardModule,
+    ParentDashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

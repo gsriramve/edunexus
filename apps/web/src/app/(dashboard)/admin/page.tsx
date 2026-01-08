@@ -1,25 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import {
   IndianRupee,
   Users,
   GraduationCap,
   FileText,
-  Calendar,
   Clock,
   AlertTriangle,
-  CheckCircle2,
-  TrendingUp,
-  TrendingDown,
   UserPlus,
   Receipt,
   Send,
   ClipboardList,
-  ChevronRight,
   Bell,
-  CreditCard,
-  Building2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,79 +21,28 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useUser } from "@clerk/nextjs";
-
-// TODO: Replace mock data with API calls when backend endpoints are implemented
-// Required endpoints:
-// - GET /admin/dashboard/stats - Overall admin statistics
-// - GET /admin/dashboard/collections - Recent fee collections
-// - GET /admin/dashboard/applications - Pending admission applications
-// - GET /admin/dashboard/certificates - Pending certificate requests
-// - GET /admin/dashboard/tasks - Upcoming admin tasks
-// - GET /admin/dashboard/announcements - Recent announcements
-
-// Mock admin staff data
-const adminInfo = {
-  name: "Mrs. Lakshmi Devi",
-  employeeId: "ADM-001",
-  department: "Administrative Office",
-  role: "Senior Administrative Officer",
-};
-
-const dashboardStats = {
-  totalStudents: 4850,
-  newAdmissions: 128,
-  pendingApplications: 45,
-  todayCollections: 285000,
-  monthlyTarget: 5000000,
-  monthlyCollected: 3850000,
-  pendingFees: 1250000,
-  certificatesRequested: 23,
-  pendingVerifications: 18,
-};
-
-const recentCollections = [
-  { id: 1, studentName: "Rahul Sharma", rollNo: "21CS101", amount: 45000, type: "Tuition Fee", time: "10:30 AM", mode: "UPI" },
-  { id: 2, studentName: "Priya Patel", rollNo: "21EC045", amount: 25000, type: "Hostel Fee", time: "10:15 AM", mode: "Card" },
-  { id: 3, studentName: "Amit Kumar", rollNo: "22ME032", amount: 15000, type: "Exam Fee", time: "09:45 AM", mode: "Cash" },
-  { id: 4, studentName: "Sneha Reddy", rollNo: "21CE078", amount: 35000, type: "Tuition Fee", time: "09:30 AM", mode: "Net Banking" },
-  { id: 5, studentName: "Vikram Singh", rollNo: "22CS089", amount: 20000, type: "Transport Fee", time: "09:15 AM", mode: "UPI" },
-];
-
-const pendingApplications = [
-  { id: 1, name: "Arjun Verma", type: "New Admission", branch: "CSE", submitted: "Jan 5, 2026", status: "document_review", priority: "high" },
-  { id: 2, name: "Neha Gupta", type: "Branch Transfer", from: "IT", to: "CSE", submitted: "Jan 4, 2026", status: "pending", priority: "medium" },
-  { id: 3, name: "Kiran Rao", type: "New Admission", branch: "ECE", submitted: "Jan 4, 2026", status: "verification", priority: "high" },
-  { id: 4, name: "Ravi Prasad", type: "Lateral Entry", branch: "ME", submitted: "Jan 3, 2026", status: "pending", priority: "medium" },
-];
-
-const certificateRequests = [
-  { id: 1, studentName: "Anjali Singh", rollNo: "20CS045", type: "Bonafide Certificate", requestDate: "Jan 5, 2026", status: "processing" },
-  { id: 2, studentName: "Mahesh Kumar", rollNo: "19ME023", type: "TC (Transfer Certificate)", requestDate: "Jan 4, 2026", status: "pending" },
-  { id: 3, studentName: "Pooja Sharma", rollNo: "21EC067", type: "Study Certificate", requestDate: "Jan 4, 2026", status: "processing" },
-  { id: 4, studentName: "Suresh Reddy", rollNo: "20CE089", type: "Character Certificate", requestDate: "Jan 3, 2026", status: "ready" },
-];
-
-const upcomingTasks = [
-  { id: 1, title: "Fee reminder SMS - Semester 4", dueDate: "Jan 7, 2026", priority: "high", type: "communication" },
-  { id: 2, title: "Process pending TC requests", dueDate: "Jan 7, 2026", priority: "high", type: "certificate" },
-  { id: 3, title: "Update student records - Batch 2023", dueDate: "Jan 8, 2026", priority: "medium", type: "records" },
-  { id: 4, title: "Prepare admission report", dueDate: "Jan 10, 2026", priority: "medium", type: "report" },
-  { id: 5, title: "Scholarship verification - 15 students", dueDate: "Jan 10, 2026", priority: "high", type: "verification" },
-];
-
-const recentAnnouncements = [
-  { id: 1, title: "Last date for fee payment - Semester 4", date: "Jan 15, 2026", audience: "Students", status: "active" },
-  { id: 2, title: "Document submission for scholarship", date: "Jan 20, 2026", audience: "Eligible Students", status: "scheduled" },
-  { id: 3, title: "Admission open for 2026-27 batch", date: "Feb 1, 2026", audience: "Public", status: "draft" },
-];
+import { useAdminDashboard } from "@/hooks/use-admin-dashboard";
 
 export default function AdminStaffDashboard() {
   const tenantId = useTenantId() || '';
   const { user, isLoaded: userLoaded } = useUser();
-  const collectionProgress = (dashboardStats.monthlyCollected / dashboardStats.monthlyTarget) * 100;
+
+  // Fetch admin dashboard data
+  const { data: dashboardData, isLoading, error } = useAdminDashboard(tenantId);
+
+  // Extract data from API response
+  const adminInfo = dashboardData?.adminInfo;
+  const stats = dashboardData?.stats;
+  const recentCollections = dashboardData?.recentCollections || [];
+  const pendingApplications = dashboardData?.pendingApplications || [];
+  const certificateRequests = dashboardData?.certificateRequests || [];
+  const upcomingTasks = dashboardData?.upcomingTasks || [];
+  const recentAnnouncements = dashboardData?.recentAnnouncements || [];
+
+  const collectionProgress = stats ? (stats.monthlyCollected / stats.monthlyTarget) * 100 : 0;
 
   // Loading state
-  if (!tenantId || !userLoaded) {
+  if (!tenantId || !userLoaded || isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -128,8 +69,21 @@ export default function AdminStaffDashboard() {
     );
   }
 
+  // Error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Error Loading Dashboard</h2>
+          <p className="text-muted-foreground">{error.message || 'Failed to load dashboard data'}</p>
+        </div>
+      </div>
+    );
+  }
+
   // Get user display name
-  const displayName = user?.fullName || user?.firstName || adminInfo.name;
+  const displayName = user?.fullName || user?.firstName || adminInfo?.name || 'Admin';
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -174,7 +128,7 @@ export default function AdminStaffDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
           <p className="text-muted-foreground">
-            {displayName} • {adminInfo.role}
+            {displayName} • {adminInfo?.role || 'Administrative Officer'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -199,7 +153,7 @@ export default function AdminStaffDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Students</p>
-                <p className="text-2xl font-bold">{dashboardStats.totalStudents.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{(stats?.totalStudents || 0).toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -212,7 +166,7 @@ export default function AdminStaffDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">New Admissions</p>
-                <p className="text-2xl font-bold text-green-600">+{dashboardStats.newAdmissions}</p>
+                <p className="text-2xl font-bold text-green-600">+{stats?.newAdmissions || 0}</p>
               </div>
             </div>
           </CardContent>
@@ -225,7 +179,7 @@ export default function AdminStaffDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pending Apps</p>
-                <p className="text-2xl font-bold text-orange-600">{dashboardStats.pendingApplications}</p>
+                <p className="text-2xl font-bold text-orange-600">{stats?.pendingApplications || 0}</p>
               </div>
             </div>
           </CardContent>
@@ -238,7 +192,7 @@ export default function AdminStaffDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Today's Collection</p>
-                <p className="text-2xl font-bold">{formatCurrency(dashboardStats.todayCollections)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(stats?.todayCollections || 0)}</p>
               </div>
             </div>
           </CardContent>
@@ -251,7 +205,7 @@ export default function AdminStaffDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pending Fees</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(dashboardStats.pendingFees)}</p>
+                <p className="text-2xl font-bold text-red-600">{formatCurrency(stats?.pendingFees || 0)}</p>
               </div>
             </div>
           </CardContent>
@@ -264,7 +218,7 @@ export default function AdminStaffDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Certificates</p>
-                <p className="text-2xl font-bold">{dashboardStats.certificatesRequested}</p>
+                <p className="text-2xl font-bold">{stats?.certificatesRequested || 0}</p>
               </div>
             </div>
           </CardContent>
@@ -287,22 +241,22 @@ export default function AdminStaffDashboard() {
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Collected: {formatCurrency(dashboardStats.monthlyCollected)}</span>
-              <span className="text-muted-foreground">Target: {formatCurrency(dashboardStats.monthlyTarget)}</span>
+              <span className="text-muted-foreground">Collected: {formatCurrency(stats?.monthlyCollected || 0)}</span>
+              <span className="text-muted-foreground">Target: {formatCurrency(stats?.monthlyTarget || 0)}</span>
             </div>
             <Progress value={collectionProgress} className="h-3" />
             <div className="grid grid-cols-3 gap-4 pt-2">
               <div className="text-center p-3 rounded-lg bg-muted">
                 <p className="text-sm text-muted-foreground">Remaining</p>
-                <p className="font-semibold">{formatCurrency(dashboardStats.monthlyTarget - dashboardStats.monthlyCollected)}</p>
+                <p className="font-semibold">{formatCurrency((stats?.monthlyTarget || 0) - (stats?.monthlyCollected || 0))}</p>
               </div>
               <div className="text-center p-3 rounded-lg bg-muted">
                 <p className="text-sm text-muted-foreground">Daily Average</p>
-                <p className="font-semibold">{formatCurrency(dashboardStats.monthlyCollected / 6)}</p>
+                <p className="font-semibold">{formatCurrency((stats?.monthlyCollected || 0) / 6)}</p>
               </div>
               <div className="text-center p-3 rounded-lg bg-muted">
                 <p className="text-sm text-muted-foreground">Pending Dues</p>
-                <p className="font-semibold text-red-600">{formatCurrency(dashboardStats.pendingFees)}</p>
+                <p className="font-semibold text-red-600">{formatCurrency(stats?.pendingFees || 0)}</p>
               </div>
             </div>
           </div>
@@ -327,25 +281,29 @@ export default function AdminStaffDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentCollections.map((collection) => (
-                <div key={collection.id} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
-                      <AvatarFallback>{collection.studentName.split(" ").map((n) => n[0]).join("")}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-sm">{collection.studentName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {collection.rollNo} • {collection.type}
-                      </p>
+              {recentCollections.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">No recent collections</p>
+              ) : (
+                recentCollections.map((collection) => (
+                  <div key={collection.id} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9">
+                        <AvatarFallback>{collection.studentName.split(" ").map((n) => n[0]).join("")}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-sm">{collection.studentName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {collection.rollNo} • {collection.type}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-green-600">{formatCurrency(collection.amount)}</p>
+                      <p className="text-xs text-muted-foreground">{collection.time} • {collection.mode}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-green-600">{formatCurrency(collection.amount)}</p>
-                    <p className="text-xs text-muted-foreground">{collection.time} • {collection.mode}</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -366,23 +324,27 @@ export default function AdminStaffDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {pendingApplications.map((app) => (
-                <div key={app.id} className="p-3 rounded-lg border">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-medium">{app.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {app.type} {app.type === "Branch Transfer" ? `(${app.from} → ${app.to})` : `- ${app.branch}`}
-                      </p>
+              {pendingApplications.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">No pending applications</p>
+              ) : (
+                pendingApplications.map((app) => (
+                  <div key={app.id} className="p-3 rounded-lg border">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-medium">{app.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {app.type} {app.type === "Branch Transfer" ? `(${app.from} → ${app.to})` : app.branch ? `- ${app.branch}` : ''}
+                        </p>
+                      </div>
+                      {getPriorityBadge(app.priority)}
                     </div>
-                    {getPriorityBadge(app.priority)}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Submitted: {app.submitted}</span>
+                      {getStatusBadge(app.status)}
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Submitted: {app.submitted}</span>
-                    {getStatusBadge(app.status)}
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -406,20 +368,24 @@ export default function AdminStaffDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {certificateRequests.map((cert) => (
-                <div key={cert.id} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium text-sm">{cert.studentName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {cert.rollNo} • {cert.type}
-                    </p>
+              {certificateRequests.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">No pending certificate requests</p>
+              ) : (
+                certificateRequests.map((cert) => (
+                  <div key={cert.id} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div>
+                      <p className="font-medium text-sm">{cert.studentName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {cert.rollNo} • {cert.type}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      {getStatusBadge(cert.status)}
+                      <p className="text-xs text-muted-foreground mt-1">{cert.requestDate}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    {getStatusBadge(cert.status)}
-                    <p className="text-xs text-muted-foreground mt-1">{cert.requestDate}</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -440,18 +406,22 @@ export default function AdminStaffDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {upcomingTasks.map((task) => (
-                <div key={task.id} className="p-3 rounded-lg border">
-                  <div className="flex items-start justify-between mb-1">
-                    <span className="font-medium text-sm">{task.title}</span>
-                    {getPriorityBadge(task.priority)}
+              {upcomingTasks.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">No upcoming tasks</p>
+              ) : (
+                upcomingTasks.map((task) => (
+                  <div key={task.id} className="p-3 rounded-lg border">
+                    <div className="flex items-start justify-between mb-1">
+                      <span className="font-medium text-sm">{task.title}</span>
+                      {getPriorityBadge(task.priority)}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Badge variant="outline" className="text-xs">{task.type}</Badge>
+                      <span>Due: {task.dueDate}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant="outline" className="text-xs">{task.type}</Badge>
-                    <span>Due: {task.dueDate}</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -475,30 +445,34 @@ export default function AdminStaffDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            {recentAnnouncements.map((announcement) => (
-              <Card key={announcement.id}>
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between mb-2">
-                    <Badge variant="outline">{announcement.audience}</Badge>
-                    <Badge
-                      className={
-                        announcement.status === "active"
-                          ? "bg-green-500"
-                          : announcement.status === "scheduled"
-                          ? "bg-blue-500"
-                          : "bg-gray-500"
-                      }
-                    >
-                      {announcement.status}
-                    </Badge>
-                  </div>
-                  <h4 className="font-medium">{announcement.title}</h4>
-                  <p className="text-sm text-muted-foreground mt-2">{announcement.date}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {recentAnnouncements.length === 0 ? (
+            <p className="text-center text-muted-foreground py-4">No recent announcements</p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3">
+              {recentAnnouncements.map((announcement) => (
+                <Card key={announcement.id}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between mb-2">
+                      <Badge variant="outline">{announcement.audience}</Badge>
+                      <Badge
+                        className={
+                          announcement.status === "active"
+                            ? "bg-green-500"
+                            : announcement.status === "scheduled"
+                            ? "bg-blue-500"
+                            : "bg-gray-500"
+                        }
+                      >
+                        {announcement.status}
+                      </Badge>
+                    </div>
+                    <h4 className="font-medium">{announcement.title}</h4>
+                    <p className="text-sm text-muted-foreground mt-2">{announcement.date}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
