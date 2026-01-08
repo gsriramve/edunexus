@@ -54,7 +54,7 @@ import {
   useDeleteEmployment,
   type CurrentStatus,
   type CreateEmploymentInput,
-} from "@/hooks/use-api";
+} from "@/hooks/use-alumni";
 import { useUser } from "@clerk/nextjs";
 
 const currentStatusOptions: { value: CurrentStatus; label: string }[] = [

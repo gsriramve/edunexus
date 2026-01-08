@@ -48,7 +48,7 @@ import {
   useMyMentorStats,
   type Mentorship,
   type MentorshipStatus,
-} from "@/hooks/use-api";
+} from "@/hooks/use-alumni";
 
 const focusAreaLabels: Record<string, string> = {
   career_guidance: "Career Guidance",
