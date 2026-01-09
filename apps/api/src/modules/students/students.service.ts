@@ -194,9 +194,19 @@ export class StudentsService {
     return student;
   }
 
-  async findByUserId(tenantId: string, userId: string) {
+  async findByUserId(tenantId: string, clerkUserId: string) {
+    // First, find the user by Clerk user ID
+    const user = await this.prisma.user.findFirst({
+      where: { clerkUserId, tenantId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Then find the student by the database user ID
     const student = await this.prisma.student.findFirst({
-      where: { userId, tenantId },
+      where: { userId: user.id, tenantId },
       include: {
         user: {
           select: {
