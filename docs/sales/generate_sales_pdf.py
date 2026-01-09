@@ -18,6 +18,18 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus.flowables import Flowable
 import os
 
+# Screenshot paths
+SCREENSHOTS_DIR = "/Users/sriramvenkatg/edunexus/e2e-tests/screenshots"
+SCREENSHOTS = {
+    'principal': os.path.join(SCREENSHOTS_DIR, 'principal_nexus-ec_dashboard.png'),
+    'hod': os.path.join(SCREENSHOTS_DIR, 'hod_nexus-ec_dashboard.png'),
+    'admin': os.path.join(SCREENSHOTS_DIR, 'admin_nexus-ec_dashboard.png'),
+    'teacher': os.path.join(SCREENSHOTS_DIR, 'teacher_nexus-ec_dashboard.png'),
+    'student': os.path.join(SCREENSHOTS_DIR, 'student_nexus-ec_dashboard.png'),
+    'parent': os.path.join(SCREENSHOTS_DIR, 'parent_nexus-ec_dashboard.png'),
+    'lab': os.path.join(SCREENSHOTS_DIR, 'lab_nexus-ec_dashboard.png'),
+}
+
 # Brand Colors
 PRIMARY_BLUE = HexColor('#1e40af')  # Deep blue
 ACCENT_TEAL = HexColor('#0d9488')   # Teal accent
@@ -174,6 +186,21 @@ def add_page_number(canvas, doc):
     canvas.drawRightString(A4[0] - 0.5*inch, 0.5*inch, text)
     canvas.drawString(0.5*inch, 0.5*inch, "EduNexus - Confidential")
     canvas.restoreState()
+
+def add_screenshot_section(story, styles, title, subtitle, screenshot_path, features):
+    """Add a screenshot section with title, image, and features"""
+    story.append(Paragraph(title, styles['SubsectionHeader']))
+    story.append(Paragraph(f"<i>{subtitle}</i>", styles['BodyText']))
+    story.append(Spacer(1, 0.15*inch))
+
+    if os.path.exists(screenshot_path):
+        # Add screenshot - scale to fit page width while maintaining aspect ratio
+        img = Image(screenshot_path, width=6.8*inch, height=3.5*inch)
+        story.append(img)
+
+    story.append(Spacer(1, 0.1*inch))
+    story.append(Paragraph("<b>Key Features:</b> " + features, styles['BodyText']))
+    story.append(Spacer(1, 0.2*inch))
 
 def build_pdf():
     """Build the complete PDF document"""
@@ -393,6 +420,68 @@ def build_pdf():
     admin_detail_table = Table(admin_detail, colWidths=[2.2*inch, 1.2*inch, 1.2*inch, 1.5*inch])
     admin_detail_table.setStyle(create_table_style(SUCCESS_GREEN))
     story.append(admin_detail_table)
+    story.append(PageBreak())
+
+    # ==================== DASHBOARD SCREENSHOTS ====================
+    story.append(Paragraph("Platform Screenshots", styles['SectionHeader']))
+    story.append(Paragraph("See the actual dashboards your team will use", styles['SubsectionHeader']))
+    story.append(Spacer(1, 0.2*inch))
+
+    # Principal Dashboard
+    add_screenshot_section(
+        story, styles,
+        "Principal Dashboard",
+        "Complete college overview at a glance - departments, students, staff, fees, analytics",
+        SCREENSHOTS['principal'],
+        "Executive Analytics • Department Overview • Staff Management • Financial Summary • AICTE Reports"
+    )
+
+    # HOD Dashboard
+    add_screenshot_section(
+        story, styles,
+        "HOD Dashboard",
+        "Department-level management and real-time analytics",
+        SCREENSHOTS['hod'],
+        "Faculty Management • Student Performance • Curriculum Planning • Batch Analytics • At-Risk Alerts"
+    )
+    story.append(PageBreak())
+
+    # Admin Dashboard
+    add_screenshot_section(
+        story, styles,
+        "Admin Staff Dashboard",
+        "Streamlined operations - 120+ hours saved monthly",
+        SCREENSHOTS['admin'],
+        "Admissions • Fee Collection • Online Payments • Document Processing • Library • Transport"
+    )
+
+    # Teacher Dashboard
+    add_screenshot_section(
+        story, styles,
+        "Teacher Dashboard",
+        "Focus on teaching, not paperwork",
+        SCREENSHOTS['teacher'],
+        "Quick Attendance • Digital Gradebook • Assignment Manager • Class Analytics • Student Progress"
+    )
+    story.append(PageBreak())
+
+    # Student Dashboard
+    add_screenshot_section(
+        story, styles,
+        "Student Dashboard",
+        "Self-service portal with AI-powered insights",
+        SCREENSHOTS['student'],
+        "AI Score Prediction • Career Hub • Placement Prep • Practice Zone • 24/7 Chatbot Support"
+    )
+
+    # Parent Dashboard
+    add_screenshot_section(
+        story, styles,
+        "Parent Dashboard",
+        "Stay connected with your child's progress",
+        SCREENSHOTS['parent'],
+        "Attendance Tracking • Fee Payments • Academic Progress • Direct Communication • Notifications"
+    )
     story.append(PageBreak())
 
     # ==================== QUALITY & RELIABILITY ====================
