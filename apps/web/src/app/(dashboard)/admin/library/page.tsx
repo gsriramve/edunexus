@@ -108,18 +108,18 @@ export default function AdminLibraryPage() {
   const issues = issuesData?.data || [];
   const eResources = eResourcesData?.data || [];
   const settings = settingsData || defaultSettings;
-  const stats = statsData || {
-    totalBooks: 0,
-    availableBooks: 0,
-    issuedBooks: 0,
-    overdueBooks: 0,
-    totalCards: 0,
-    activeCards: 0,
-    totalReservations: 0,
-    pendingReservations: 0,
-    totalEResources: 0,
-    totalFinesDue: 0,
-    totalFinesCollected: 0,
+  const stats = {
+    totalBooks: statsData?.totalBooks ?? 0,
+    availableBooks: statsData?.availableBooks ?? 0,
+    issuedBooks: statsData?.issuedBooks ?? 0,
+    overdueBooks: statsData?.overdueBooks ?? 0,
+    totalCards: statsData?.totalCards ?? 0,
+    activeCards: statsData?.activeCards ?? 0,
+    totalReservations: statsData?.totalReservations ?? 0,
+    pendingReservations: statsData?.pendingReservations ?? 0,
+    totalEResources: statsData?.totalEResources ?? 0,
+    totalFinesDue: statsData?.totalFinesDue ?? 0,
+    totalFinesCollected: statsData?.totalFinesCollected ?? 0,
   };
 
   // Local state for settings form
