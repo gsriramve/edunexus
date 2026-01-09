@@ -1,0 +1,66 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+.next
+.turbo
+**/dist
+**/.next
+**/.turbo
+
+# Environment files
+.env
+.env.*
+**/.env
+**/.env.*
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+
+# Testing
+coverage
+**/__tests__
+**/*.test.*
+**/*.spec.*
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Local files
+*.local
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+venv
+.venv
+.pytest_cache
+
+# ML Service specific
+apps/ml-service/venv
+apps/ml-service/.venv
+apps/ml-service/__pycache__
+
+# Misc
+*.tar.gz
+*.zip

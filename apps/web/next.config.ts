@@ -99,6 +99,8 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Enable standalone output for Docker
+  output: "standalone",
   // Empty turbopack config to silence the warning
   turbopack: {},
   // Optimize images
