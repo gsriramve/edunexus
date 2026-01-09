@@ -57,6 +57,7 @@ import { StudentNotificationsModule } from './modules/student-notifications/stud
 import { HodSkillGapsModule } from './modules/hod-skill-gaps/hod-skill-gaps.module';
 import { StudentAcademicsModule } from './modules/student-academics/student-academics.module';
 import { AdminRecordsModule } from './modules/admin-records/admin-records.module';
+import { ParentsModule } from './modules/parents/parents.module';
 
 @Module({
   imports: [
@@ -132,6 +133,7 @@ import { AdminRecordsModule } from './modules/admin-records/admin-records.module
     HodSkillGapsModule,
     StudentAcademicsModule,
     AdminRecordsModule,
+    ParentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

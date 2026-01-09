@@ -122,18 +122,29 @@ async function createClerkUser(
   const existing = await findClerkUser(email);
   if (existing) {
     console.log(`  [EXISTS] ${email} (${existing.id})`);
-    // Update metadata
-    await fetch(`https://api.clerk.com/v1/users/${existing.id}`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${CLERK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        public_metadata: { role, tenantId },
-        bypass_client_trust: true,
-      }),
-    });
+    // Update metadata with proper error handling
+    try {
+      const updateResponse = await fetch(`https://api.clerk.com/v1/users/${existing.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${CLERK_SECRET_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          public_metadata: { role, tenantId },
+          bypass_client_trust: true,
+        }),
+      });
+
+      if (!updateResponse.ok) {
+        const error = await updateResponse.json();
+        console.log(`  [WARN] Failed to update metadata for ${email}: ${JSON.stringify(error)}`);
+      } else {
+        console.log(`  [UPDATED] ${email} role=${role}`);
+      }
+    } catch (err) {
+      console.log(`  [WARN] Error updating metadata for ${email}: ${err}`);
+    }
     return existing;
   }
 
