@@ -18,11 +18,11 @@ if (!CLERK_SECRET_KEY) {
   process.exit(1);
 }
 
-// Tenant IDs (must match your database)
-const TENANTS = {
-  'nexus-ec': 'nexus-ec', // Update with actual tenant IDs if different
-  'quantum-it': 'quantum-it',
-  'careerfied': 'careerfied',
+// Tenant IDs (database tenant ID for each domain)
+const TENANTS: Record<string, string> = {
+  'nexus-ec': 'cmk4wcffw0000vi1ypnqxhkfh',
+  'quantum-it': 'cmk4wcl0q0083vi1yymij0yib',
+  'careerfied': 'cmk4wcpx100g6vi1yan1iwvxq',
 };
 
 // Role mappings by email prefix

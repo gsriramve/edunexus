@@ -507,15 +507,16 @@ async function seedUsersForTenant(
       }
     } else if (userDef.role === 'alumni') {
       // Create alumni profile for the alumni persona
+      // Use clerkUserId for lookup since the frontend sends Clerk user ID
       const alumniExists = await prisma.alumniProfile.findFirst({
         where: { tenantId, email: userDef.email },
       });
 
-      if (!alumniExists) {
+      if (!alumniExists && user.clerkUserId) {
         const alumni = await prisma.alumniProfile.create({
           data: {
             tenantId,
-            userId: user.id,
+            userId: user.clerkUserId, // Use Clerk user ID, not database user ID
             firstName: userDef.firstName,
             lastName: userDef.lastName,
             email: userDef.email,
