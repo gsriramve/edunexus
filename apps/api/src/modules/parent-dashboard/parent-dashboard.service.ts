@@ -733,7 +733,7 @@ export class ParentDashboardService {
       name: ts.staff.user?.name || 'Unknown Teacher',
       subject: ts.subject?.name || 'Unknown Subject',
       email: ts.staff.user?.email || 'N/A',
-      phone: ts.staff.phone || 'N/A',
+      phone: 'N/A', // Phone is in user profile contacts
     }));
 
     // Deduplicate by staff id (a teacher may teach multiple subjects)

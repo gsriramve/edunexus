@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bell, Info, AlertTriangle, CheckCircle, MessageSquare, Calendar, FileText, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthStore } from "@/stores/auth-store";
+import { useTenantId } from "@/hooks/use-tenant";
+import { useStudentByUserId } from "@/hooks/use-api";
 import {
   useStudentNotifications,
   useMarkNotificationRead,
@@ -160,17 +162,22 @@ function NotificationsList({
 }
 
 export default function NotificationsPage() {
-  const { studentId } = useAuthStore();
+  const { user, isLoaded: userLoaded } = useUser();
+  const tenantId = useTenantId() || '';
   const [activeCategory, setActiveCategory] = useState("all");
   const [markingReadId, setMarkingReadId] = useState<string | null>(null);
 
-  const { data, isLoading, error } = useStudentNotifications(studentId || "", {
+  // Fetch student data
+  const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
+  const studentId = studentData?.id || '';
+
+  const { data, isLoading, error } = useStudentNotifications(studentId, {
     category: activeCategory === "all" ? undefined : activeCategory,
   });
 
-  const { data: preferences } = useNotificationPreferences(studentId || "");
-  const markRead = useMarkNotificationRead(studentId || "");
-  const markAllRead = useMarkAllNotificationsRead(studentId || "");
+  const { data: preferences } = useNotificationPreferences(studentId);
+  const markRead = useMarkNotificationRead(studentId);
+  const markAllRead = useMarkAllNotificationsRead(studentId);
 
   const handleMarkRead = async (notificationId: string) => {
     setMarkingReadId(notificationId);
@@ -191,6 +198,14 @@ export default function NotificationsPage() {
   }) || [];
 
   const unreadCount = data?.unreadCount || 0;
+
+  if (!userLoaded || studentLoading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!studentId) {
     return (

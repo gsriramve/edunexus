@@ -130,7 +130,7 @@ export default function StudentFeedbackPage() {
           </p>
         </div>
         <Badge variant="outline" className="text-sm">
-          {data.currentCycle.name} Cycle
+          {data.currentCycle?.name || 'Current'} Cycle
         </Badge>
       </div>
 
@@ -148,8 +148,8 @@ export default function StudentFeedbackPage() {
             <div className="relative">
               <div className="w-32 h-32 rounded-full border-8 border-primary/20 flex items-center justify-center">
                 <div className="text-center">
-                  <span className={`text-4xl font-bold ${getScoreColor(data.summary.overallScore)}`}>
-                    {data.summary.overallScore.toFixed(1)}
+                  <span className={`text-4xl font-bold ${getScoreColor(data.summary.overallScore ?? 0)}`}>
+                    {(data.summary.overallScore ?? 0).toFixed(1)}
                   </span>
                   <span className="text-muted-foreground text-sm block">/5.0</span>
                 </div>
@@ -162,7 +162,7 @@ export default function StudentFeedbackPage() {
                 {getTrendIcon(data.summary.trend)}
                 <span className="text-sm font-medium">
                   {data.summary.trend === "improving" ? "+" : "-"}
-                  {Math.abs(data.summary.overallScore - data.summary.previousScore).toFixed(1)} from last cycle
+                  {Math.abs((data.summary.overallScore ?? 0) - (data.summary.previousScore ?? 0)).toFixed(1)} from last cycle
                 </span>
               </div>
 

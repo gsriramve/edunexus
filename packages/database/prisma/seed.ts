@@ -1,186 +1,311 @@
 /**
- * EduNexus Database Seed
+ * EduNexus Master Database Seeder
  *
- * Creates minimal required data for a fresh deployment:
- * - Platform super admin account
- * - Demo tenant for testing
- * - Principal user for demo tenant
+ * Orchestrates all seeders in the correct dependency order.
+ * Run this to seed all data for testing with 3 colleges and 8 personas each.
+ *
+ * Usage:
+ *   npm run db:seed                    # Run all seeders
+ *   npm run db:seed -- --only=test     # Run only test data seeder
+ *   npm run db:seed -- --skip=enhanced # Skip enhanced data seeder
  *
  * Run: npm run db:seed (from packages/database)
  * Or:  npx tsx prisma/seed.ts
  */
 
-import { PrismaClient, UserRole } from '@prisma/client';
+import { execSync } from 'child_process';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Seed data configuration
-const SEED_CONFIG = {
-  platformAdmin: {
-    email: 'admin@edunexus.io',
-    name: 'Platform Admin',
-    role: 'super_admin',
+// =============================================================================
+// CONFIGURATION
+// =============================================================================
+
+interface SeedStep {
+  name: string;
+  file: string;
+  description: string;
+  required: boolean;
+}
+
+const SEED_STEPS: SeedStep[] = [
+  {
+    name: 'superadmin',
+    file: 'seed-superadmin.ts',
+    description: 'Platform super admin',
+    required: true,
   },
-  demoTenant: {
-    name: 'demo-college',
-    domain: 'demo',
-    displayName: 'Demo Engineering College',
-    studentCount: 1000,
-    subscriptionAmount: 500000, // ₹5,00,000
+  {
+    name: 'test-data',
+    file: 'seed-test-data.ts',
+    description: 'Tenants + 8 personas + base academic data',
+    required: true,
   },
-  demoPrincipal: {
-    email: 'principal@demo.edunexus.io',
-    name: 'Dr. Demo Principal',
+  {
+    name: 'enhanced',
+    file: 'seed-enhanced-data.ts',
+    description: 'More students, library books, departments',
+    required: false,
   },
-};
+  {
+    name: 'alumni',
+    file: 'seed-alumni.ts',
+    description: 'Alumni profiles, employment, mentorships',
+    required: false,
+  },
+  {
+    name: 'activities',
+    file: 'seed-activities.ts',
+    description: 'Clubs, sports teams, achievements',
+    required: false,
+  },
+  {
+    name: 'services',
+    file: 'seed-services.ts',
+    description: 'Library issues, certificates, hostel fees',
+    required: false,
+  },
+  {
+    name: 'student-growth',
+    file: 'seed-student-growth.ts',
+    description: 'SGI/CRI, goals, guidance, journey',
+    required: false,
+  },
+  {
+    name: 'feedback',
+    file: 'seed-feedback.ts',
+    description: 'Feedback cycles and entries',
+    required: false,
+  },
+  {
+    name: 'communications',
+    file: 'seed-communications.ts',
+    description: 'Message templates, bulk communications',
+    required: false,
+  },
+];
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+function parseArgs(): { only?: string[]; skip?: string[] } {
+  const args = process.argv.slice(2);
+  const result: { only?: string[]; skip?: string[] } = {};
+
+  for (const arg of args) {
+    if (arg.startsWith('--only=')) {
+      result.only = arg.replace('--only=', '').split(',');
+    }
+    if (arg.startsWith('--skip=')) {
+      result.skip = arg.replace('--skip=', '').split(',');
+    }
+  }
+
+  return result;
+}
+
+function runSeeder(file: string): boolean {
+  try {
+    console.log(`\n${'─'.repeat(60)}`);
+    console.log(`Running: ${file}`);
+    console.log('─'.repeat(60));
+
+    execSync(`npx tsx prisma/${file}`, {
+      stdio: 'inherit',
+      cwd: process.cwd(),
+      env: { ...process.env },
+    });
+
+    return true;
+  } catch (error) {
+    console.error(`\n❌ Seeder failed: ${file}`);
+    return false;
+  }
+}
+
+// =============================================================================
+// VERIFICATION QUERIES
+// =============================================================================
+
+async function verifySeeding(): Promise<void> {
+  console.log('\n╔════════════════════════════════════════════════════════════════╗');
+  console.log('║                    SEEDING VERIFICATION                        ║');
+  console.log('╚════════════════════════════════════════════════════════════════╝\n');
+
+  const counts = await Promise.all([
+    prisma.tenant.count(),
+    prisma.user.count(),
+    prisma.student.count(),
+    prisma.staff.count(),
+    prisma.department.count(),
+    prisma.course.count(),
+    prisma.subject.count(),
+    prisma.alumniProfile.count(),
+    prisma.alumniMentorship.count(),
+    prisma.studentGrowthIndex.count(),
+    prisma.careerReadinessIndex.count(),
+    prisma.feedbackCycle.count(),
+    prisma.feedbackEntry.count(),
+    prisma.club.count(),
+    prisma.sportsTeam.count(),
+    prisma.achievement.count(),
+    prisma.certificateRequest.count(),
+    prisma.bookIssue.count(),
+    prisma.messageTemplate.count(),
+  ]);
+
+  const labels = [
+    'Tenants',
+    'Users',
+    'Students',
+    'Staff',
+    'Departments',
+    'Courses',
+    'Subjects',
+    'Alumni Profiles',
+    'Mentorships',
+    'SGI Records',
+    'CRI Records',
+    'Feedback Cycles',
+    'Feedback Entries',
+    'Clubs',
+    'Sports Teams',
+    'Achievements',
+    'Certificate Requests',
+    'Book Issues',
+    'Message Templates',
+  ];
+
+  console.log('Data counts per model:');
+  console.log('─'.repeat(40));
+
+  for (let i = 0; i < labels.length; i++) {
+    console.log(`  ${labels[i].padEnd(25)} ${counts[i]}`);
+  }
+
+  console.log('─'.repeat(40));
+
+  // Per-tenant breakdown
+  const tenants = await prisma.tenant.findMany({
+    select: { id: true, displayName: true },
+    orderBy: { displayName: 'asc' },
+  });
+
+  console.log('\nPer-tenant breakdown:');
+  console.log('─'.repeat(60));
+
+  for (const tenant of tenants) {
+    const [users, students, staff, alumni] = await Promise.all([
+      prisma.user.count({ where: { tenantId: tenant.id } }),
+      prisma.student.count({ where: { tenantId: tenant.id } }),
+      prisma.staff.count({ where: { tenantId: tenant.id } }),
+      prisma.alumniProfile.count({ where: { tenantId: tenant.id } }),
+    ]);
+
+    console.log(`  ${tenant.displayName}`);
+    console.log(`    Users: ${users}, Students: ${students}, Staff: ${staff}, Alumni: ${alumni}`);
+  }
+}
+
+// =============================================================================
+// MAIN EXECUTION
+// =============================================================================
 
 async function main() {
-  console.log('🌱 Starting database seed...\n');
+  console.log('╔════════════════════════════════════════════════════════════════╗');
+  console.log('║           EDUNEXUS MASTER DATABASE SEEDER                      ║');
+  console.log('╚════════════════════════════════════════════════════════════════╝');
+  console.log('');
+  console.log('This seeder orchestrates all seed scripts in dependency order.');
+  console.log('');
 
-  // 1. Create Platform Admin
-  console.log('📌 Creating platform admin...');
-  const platformAdmin = await prisma.platformAdmin.upsert({
-    where: { email: SEED_CONFIG.platformAdmin.email },
-    update: {},
-    create: {
-      email: SEED_CONFIG.platformAdmin.email,
-      name: SEED_CONFIG.platformAdmin.name,
-      role: SEED_CONFIG.platformAdmin.role,
-      permissions: {
-        tenants: ['create', 'read', 'update', 'delete'],
-        billing: ['create', 'read', 'update'],
-        support: ['read', 'update', 'assign'],
-        reports: ['read', 'export'],
-        settings: ['read', 'update'],
-      },
-    },
-  });
-  console.log(`   ✅ Platform admin created: ${platformAdmin.email}\n`);
+  const { only, skip } = parseArgs();
 
-  // 2. Create Demo Tenant
-  console.log('🏫 Creating demo tenant...');
-  const tenant = await prisma.tenant.upsert({
-    where: { domain: SEED_CONFIG.demoTenant.domain },
-    update: {},
-    create: {
-      name: SEED_CONFIG.demoTenant.name,
-      domain: SEED_CONFIG.demoTenant.domain,
-      displayName: SEED_CONFIG.demoTenant.displayName,
-      status: 'active',
-      theme: {
-        primaryColor: '#2563eb',
-        secondaryColor: '#3b82f6',
-        fontFamily: 'Inter',
-      },
-      config: {
-        features: {
-          payments: true,
-          sms: true,
-          email: true,
-          pushNotifications: true,
-        },
-        branding: {
-          showPoweredBy: true,
-        },
-      },
-    },
-  });
-  console.log(`   ✅ Demo tenant created: ${tenant.displayName} (${tenant.domain})\n`);
+  if (only) {
+    console.log(`Running only: ${only.join(', ')}`);
+  }
+  if (skip) {
+    console.log(`Skipping: ${skip.join(', ')}`);
+  }
 
-  // 3. Create Tenant Subscription
-  console.log('💳 Creating tenant subscription...');
-  const startDate = new Date();
-  const endDate = new Date();
-  endDate.setFullYear(endDate.getFullYear() + 1); // 1 year subscription
+  const failedSteps: string[] = [];
+  let completedSteps = 0;
 
-  const subscription = await prisma.tenantSubscription.upsert({
-    where: { tenantId: tenant.id },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      plan: 'standard',
-      studentCount: SEED_CONFIG.demoTenant.studentCount,
-      amount: SEED_CONFIG.demoTenant.subscriptionAmount,
-      currency: 'INR',
-      startDate,
-      endDate,
-      status: 'active',
-    },
-  });
-  console.log(`   ✅ Subscription created: ${subscription.plan} plan until ${endDate.toDateString()}\n`);
+  for (const step of SEED_STEPS) {
+    // Skip if using --only and this step is not included
+    if (only && !only.includes(step.name)) {
+      console.log(`\n⏭️  Skipping ${step.name} (not in --only list)`);
+      continue;
+    }
 
-  // 4. Create Demo Principal User
-  console.log('👤 Creating demo principal user...');
-  const principalUser = await prisma.user.upsert({
-    where: {
-      tenantId_email: {
-        tenantId: tenant.id,
-        email: SEED_CONFIG.demoPrincipal.email,
-      },
-    },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      email: SEED_CONFIG.demoPrincipal.email,
-      name: SEED_CONFIG.demoPrincipal.name,
-      role: UserRole.principal,
-      status: 'active',
-    },
-  });
-  console.log(`   ✅ Principal user created: ${principalUser.name} (${principalUser.email})\n`);
+    // Skip if using --skip and this step is in the skip list
+    if (skip && skip.includes(step.name)) {
+      console.log(`\n⏭️  Skipping ${step.name} (in --skip list)`);
+      continue;
+    }
 
-  // 5. Create User Profile for Principal
-  console.log('📋 Creating principal profile...');
-  const profile = await prisma.userProfile.upsert({
-    where: { userId: principalUser.id },
-    update: {},
-    create: {
-      userId: principalUser.id,
-      gender: 'Male',
-      nationality: 'Indian',
-    },
-  });
-  console.log(`   ✅ Profile created for principal\n`);
+    console.log(`\n📌 Step ${completedSteps + 1}: ${step.name}`);
+    console.log(`   ${step.description}`);
 
-  // 6. Create a sample department
-  console.log('🏢 Creating sample department...');
-  const department = await prisma.department.upsert({
-    where: {
-      tenantId_code: {
-        tenantId: tenant.id,
-        code: 'CSE',
-      },
-    },
-    update: {},
-    create: {
-      tenantId: tenant.id,
-      name: 'Computer Science & Engineering',
-      code: 'CSE',
-    },
-  });
-  console.log(`   ✅ Department created: ${department.name} (${department.code})\n`);
+    const success = runSeeder(step.file);
+
+    if (success) {
+      console.log(`\n✅ ${step.name} completed`);
+      completedSteps++;
+    } else {
+      failedSteps.push(step.name);
+      if (step.required) {
+        console.error(`\n❌ Required seeder ${step.name} failed. Stopping.`);
+        break;
+      } else {
+        console.log(`\n⚠️  Optional seeder ${step.name} failed, continuing...`);
+      }
+    }
+  }
+
+  // Run verification
+  await verifySeeding();
 
   // Summary
-  console.log('═══════════════════════════════════════════════════════════');
-  console.log('🎉 Seed completed successfully!\n');
-  console.log('Summary:');
-  console.log(`  • Platform Admin: ${platformAdmin.email}`);
-  console.log(`  • Demo Tenant: ${tenant.displayName}`);
-  console.log(`  • Principal: ${principalUser.email}`);
-  console.log(`  • Department: ${department.name}`);
-  console.log('\nNext Steps:');
-  console.log('  1. Configure authentication provider (Clerk)');
-  console.log('  2. Map Clerk users to database users');
-  console.log('  3. Access demo tenant at: /demo');
-  console.log('═══════════════════════════════════════════════════════════');
+  console.log('\n╔════════════════════════════════════════════════════════════════╗');
+  console.log('║                    SEEDING SUMMARY                             ║');
+  console.log('╠════════════════════════════════════════════════════════════════╣');
+  console.log(`║ Completed: ${completedSteps}/${SEED_STEPS.length} steps`.padEnd(65) + '║');
+
+  if (failedSteps.length > 0) {
+    console.log(`║ Failed: ${failedSteps.join(', ')}`.padEnd(65) + '║');
+  }
+
+  console.log('╠════════════════════════════════════════════════════════════════╣');
+  console.log('║ Test Credentials:                                              ║');
+  console.log('║ Password: Nexus@1104 (all accounts)                            ║');
+  console.log('║                                                                 ║');
+  console.log('║ Colleges:                                                       ║');
+  console.log('║   - nexus-ec: Nexus Engineering College                         ║');
+  console.log('║   - quantum-it: Quantum Institute of Technology                 ║');
+  console.log('║   - careerfied: Careerfied Academy                              ║');
+  console.log('║                                                                 ║');
+  console.log('║ Personas per college:                                           ║');
+  console.log('║   principal@<domain>.edu, hod.cse@<domain>.edu,                 ║');
+  console.log('║   admin@<domain>.edu, teacher@<domain>.edu,                     ║');
+  console.log('║   lab@<domain>.edu, student@<domain>.edu,                       ║');
+  console.log('║   parent@<domain>.edu, alumni@<domain>.edu                      ║');
+  console.log('╚════════════════════════════════════════════════════════════════╝');
+
+  if (failedSteps.length > 0) {
+    process.exit(1);
+  }
 }
 
 main()
   .then(async () => {
     await prisma.$disconnect();
+    process.exit(0);
   })
   .catch(async (e) => {
-    console.error('❌ Seed failed:', e);
+    console.error('❌ Master seeder failed:', e);
     await prisma.$disconnect();
     process.exit(1);
   });

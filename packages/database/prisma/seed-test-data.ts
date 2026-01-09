@@ -75,6 +75,7 @@ function getUsersForTenant(domain: string): UserDefinition[] {
     { email: `lab@${domain}.edu`, name: 'Lab Asst Patel', role: 'lab_assistant' as UserRole, firstName: 'Lab', lastName: 'Patel' },
     { email: `student@${domain}.edu`, name: 'Student Rahul', role: 'student' as UserRole, firstName: 'Rahul', lastName: 'Student' },
     { email: `parent@${domain}.edu`, name: 'Parent Gupta', role: 'parent' as UserRole, firstName: 'Parent', lastName: 'Gupta' },
+    { email: `alumni@${domain}.edu`, name: 'Alumni Rajan', role: 'alumni' as UserRole, firstName: 'Rajan', lastName: 'Alumni' },
   ];
 }
 
@@ -493,6 +494,74 @@ async function seedUsersForTenant(
           },
         });
       }
+    } else if (userDef.role === 'alumni') {
+      // Create alumni profile for the alumni persona
+      const alumniExists = await prisma.alumniProfile.findFirst({
+        where: { tenantId, email: userDef.email },
+      });
+
+      if (!alumniExists) {
+        const alumni = await prisma.alumniProfile.create({
+          data: {
+            tenantId,
+            userId: user.id,
+            firstName: userDef.firstName,
+            lastName: userDef.lastName,
+            email: userDef.email,
+            graduationYear: 2022,
+            batch: '2018-2022',
+            departmentId,
+            degree: 'B.Tech Computer Science & Engineering',
+            finalCgpa: 8.5,
+            registrationStatus: 'approved',
+            registrationDate: new Date('2022-06-15'),
+            currentStatus: 'employed',
+            visibleInDirectory: true,
+            openToMentoring: true,
+            mentorshipAreas: ['career_guidance', 'technical_mentoring', 'interview_prep'],
+            bio: 'Passionate software engineer with experience in building scalable applications. Always eager to give back to the college community.',
+          },
+        });
+
+        // Add employment history for alumni
+        await prisma.alumniEmployment.create({
+          data: {
+            tenantId,
+            alumniId: alumni.id,
+            companyName: 'Google',
+            role: 'Senior Software Engineer',
+            location: 'Bangalore',
+            startDate: new Date('2022-07-01'),
+            isCurrent: true,
+            salaryBand: 'LPA_20_PLUS',
+            industry: 'Technology',
+            companySize: 'enterprise',
+            description: 'Working on Google Cloud Platform services, focusing on distributed systems and infrastructure.',
+            isVerified: true,
+            verifiedAt: new Date(),
+          },
+        });
+
+        // Add previous employment
+        await prisma.alumniEmployment.create({
+          data: {
+            tenantId,
+            alumniId: alumni.id,
+            companyName: 'Infosys',
+            role: 'Software Engineer',
+            location: 'Pune',
+            startDate: new Date('2020-01-15'),
+            endDate: new Date('2022-06-30'),
+            isCurrent: false,
+            salaryBand: 'LPA_5_8',
+            industry: 'IT Services',
+            companySize: 'enterprise',
+            description: 'Worked on enterprise Java applications and microservices architecture.',
+            isVerified: true,
+            verifiedAt: new Date(),
+          },
+        });
+      }
     }
   }
 
@@ -905,7 +974,7 @@ async function main() {
     console.log('╔════════════════════════════════════════════════════════════════╗');
     console.log('║                    TEST ACCOUNT CREDENTIALS                    ║');
     console.log('╠════════════════════════════════════════════════════════════════╣');
-    console.log('║ All accounts use password: Test@123!                           ║');
+    console.log('║ All accounts use password: Nexus@1104                           ║');
     console.log('╠════════════════════════════════════════════════════════════════╣');
     console.log('║ PLATFORM OWNER                                                 ║');
     console.log('║   admin@edunexus.io                                            ║');

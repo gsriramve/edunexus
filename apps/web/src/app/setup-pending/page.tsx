@@ -15,6 +15,7 @@ const ROLE_DASHBOARDS: Record<string, string> = {
   lab_assistant: '/lab-assistant',
   student: '/student',
   parent: '/parent',
+  alumni: '/alumni',
 };
 
 export default function SetupPendingPage() {

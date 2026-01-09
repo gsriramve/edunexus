@@ -4,12 +4,9 @@ import { useState } from "react";
 import {
   Users,
   Search,
-  Filter,
   Download,
   Upload,
   FileText,
-  CheckCircle2,
-  Clock,
   AlertTriangle,
   Eye,
   Edit,
@@ -17,15 +14,12 @@ import {
   GraduationCap,
   UserCheck,
   FileCheck,
-  Award,
   IdCard,
   Phone,
   Mail,
-  MapPin,
-  Calendar,
   MoreHorizontal,
-  Plus,
   X,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,211 +57,67 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useRecordsStats,
+  useStudentRecords,
+  useStudentDetails,
+  useCertificateTypes,
+  useCertificateRequests,
+  useCreateCertificateRequest,
+  useUpdateCertificateStatus,
+  type StudentRecord,
+} from "@/hooks/use-admin-records";
 
-// Mock data
-const recordStats = {
-  totalStudents: 4850,
-  activeStudents: 4720,
-  graduatedStudents: 98,
-  droppedOut: 32,
-  pendingCertificates: 45,
-  pendingTCs: 12,
-  profilesIncomplete: 156,
+// Sample data for fallback when database is empty
+const sampleStats = {
+  totalStudents: 0,
+  activeStudents: 0,
+  graduatedStudents: 0,
+  droppedOut: 0,
+  pendingCertificates: 0,
+  pendingTCs: 0,
+  profilesIncomplete: 0,
 };
 
-const students = [
-  {
-    id: "STU-001",
-    rollNo: "21CS101",
-    name: "Rahul Sharma",
-    email: "rahul.s@college.edu",
-    phone: "9876543210",
-    branch: "CSE",
-    semester: 6,
-    section: "A",
-    batch: "2021-25",
-    status: "active",
-    cgpa: 8.5,
-    attendance: 87,
-    feeStatus: "paid",
-    profileComplete: 100,
-    photo: "/avatars/student1.jpg",
-    address: "123 Main Street, Hyderabad",
-    parentName: "Mr. Suresh Sharma",
-    parentPhone: "9876543200",
-  },
-  {
-    id: "STU-002",
-    rollNo: "21EC045",
-    name: "Priya Patel",
-    email: "priya.p@college.edu",
-    phone: "9876543211",
-    branch: "ECE",
-    semester: 6,
-    section: "B",
-    batch: "2021-25",
-    status: "active",
-    cgpa: 9.1,
-    attendance: 92,
-    feeStatus: "paid",
-    profileComplete: 95,
-    photo: "",
-    address: "456 Park Avenue, Secunderabad",
-    parentName: "Mrs. Meena Patel",
-    parentPhone: "9876543201",
-  },
-  {
-    id: "STU-003",
-    rollNo: "22ME032",
-    name: "Amit Kumar",
-    email: "amit.k@college.edu",
-    phone: "9876543212",
-    branch: "ME",
-    semester: 4,
-    section: "A",
-    batch: "2022-26",
-    status: "active",
-    cgpa: 7.8,
-    attendance: 78,
-    feeStatus: "pending",
-    profileComplete: 85,
-    photo: "",
-    address: "789 Gandhi Nagar, Hyderabad",
-    parentName: "Mr. Ramesh Kumar",
-    parentPhone: "9876543202",
-  },
-  {
-    id: "STU-004",
-    rollNo: "21CE078",
-    name: "Sneha Reddy",
-    email: "sneha.r@college.edu",
-    phone: "9876543213",
-    branch: "CE",
-    semester: 6,
-    section: "A",
-    batch: "2021-25",
-    status: "active",
-    cgpa: 8.9,
-    attendance: 95,
-    feeStatus: "paid",
-    profileComplete: 100,
-    photo: "/avatars/student4.jpg",
-    address: "321 Lake View, Hyderabad",
-    parentName: "Dr. Suresh Reddy",
-    parentPhone: "9876543203",
-  },
-  {
-    id: "STU-005",
-    rollNo: "20CS089",
-    name: "Vikram Singh",
-    email: "vikram.s@college.edu",
-    phone: "9876543214",
-    branch: "CSE",
-    semester: 8,
-    section: "B",
-    batch: "2020-24",
-    status: "graduated",
-    cgpa: 8.2,
-    attendance: 85,
-    feeStatus: "paid",
-    profileComplete: 100,
-    photo: "",
-    address: "567 Tech Park, Hyderabad",
-    parentName: "Mr. Anil Singh",
-    parentPhone: "9876543204",
-  },
-  {
-    id: "STU-006",
-    rollNo: "21IT056",
-    name: "Neha Gupta",
-    email: "neha.g@college.edu",
-    phone: "9876543215",
-    branch: "IT",
-    semester: 6,
-    section: "A",
-    batch: "2021-25",
-    status: "active",
-    cgpa: 7.5,
-    attendance: 72,
-    feeStatus: "overdue",
-    profileComplete: 75,
-    photo: "",
-    address: "890 Hill Road, Secunderabad",
-    parentName: "Mrs. Kavita Gupta",
-    parentPhone: "9876543205",
-  },
-  {
-    id: "STU-007",
-    rollNo: "22EE012",
-    name: "Kiran Rao",
-    email: "kiran.r@college.edu",
-    phone: "9876543216",
-    branch: "EE",
-    semester: 4,
-    section: "A",
-    batch: "2022-26",
-    status: "dropped",
-    cgpa: 6.2,
-    attendance: 45,
-    feeStatus: "pending",
-    profileComplete: 60,
-    photo: "",
-    address: "234 Station Road, Hyderabad",
-    parentName: "Mr. Venkat Rao",
-    parentPhone: "9876543206",
-  },
-  {
-    id: "STU-008",
-    rollNo: "23CS034",
-    name: "Ravi Prasad",
-    email: "ravi.p@college.edu",
-    phone: "9876543217",
-    branch: "CSE",
-    semester: 2,
-    section: "B",
-    batch: "2023-27",
-    status: "active",
-    cgpa: 8.7,
-    attendance: 90,
-    feeStatus: "paid",
-    profileComplete: 90,
-    photo: "",
-    address: "456 University Road, Hyderabad",
-    parentName: "Mr. Srinivas Prasad",
-    parentPhone: "9876543207",
-  },
-];
-
-const certificateRequests = [
-  { id: "CERT-001", studentId: "STU-001", rollNo: "21CS101", name: "Rahul Sharma", type: "Bonafide", purpose: "Bank Loan", requestDate: "Jan 5, 2026", status: "processing" },
-  { id: "CERT-002", studentId: "STU-004", rollNo: "21CE078", name: "Sneha Reddy", type: "Study Certificate", purpose: "Visa Application", requestDate: "Jan 4, 2026", status: "ready" },
-  { id: "CERT-003", studentId: "STU-002", rollNo: "21EC045", name: "Priya Patel", type: "Character Certificate", purpose: "Higher Studies", requestDate: "Jan 4, 2026", status: "pending" },
-  { id: "CERT-004", studentId: "STU-005", rollNo: "20CS089", name: "Vikram Singh", type: "TC", purpose: "Course Completion", requestDate: "Jan 3, 2026", status: "processing" },
-  { id: "CERT-005", studentId: "STU-003", rollNo: "22ME032", name: "Amit Kumar", type: "Bonafide", purpose: "Scholarship", requestDate: "Jan 3, 2026", status: "pending" },
-];
-
-const certificateTypes = [
-  { id: "bonafide", name: "Bonafide Certificate", fee: 100 },
-  { id: "study", name: "Study Certificate", fee: 100 },
-  { id: "character", name: "Character Certificate", fee: 100 },
-  { id: "tc", name: "Transfer Certificate", fee: 500 },
-  { id: "migration", name: "Migration Certificate", fee: 300 },
-  { id: "conduct", name: "Conduct Certificate", fee: 100 },
-  { id: "medium", name: "Medium of Instruction", fee: 150 },
-  { id: "provisional", name: "Provisional Certificate", fee: 200 },
-];
-
 export default function StudentRecordsPage() {
+  const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("students");
   const [searchQuery, setSearchQuery] = useState("");
   const [branchFilter, setBranchFilter] = useState("all");
   const [semesterFilter, setSemesterFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<typeof students[0] | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<StudentRecord | null>(null);
   const [certificateDialogOpen, setCertificateDialogOpen] = useState(false);
   const [selectedCertType, setSelectedCertType] = useState("");
   const [certificatePurpose, setCertificatePurpose] = useState("");
+  const [certStatusFilter, setCertStatusFilter] = useState("all");
+
+  // Data hooks
+  const { data: statsData, isLoading: statsLoading } = useRecordsStats();
+  const { data: studentsData, isLoading: studentsLoading } = useStudentRecords({
+    search: searchQuery || undefined,
+    branch: branchFilter !== "all" ? branchFilter : undefined,
+    semester: semesterFilter !== "all" ? parseInt(semesterFilter, 10) : undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+  });
+  const { data: studentDetails, isLoading: detailsLoading } = useStudentDetails(selectedStudentId);
+  const { data: certificateTypes = [], isLoading: typesLoading } = useCertificateTypes();
+  const { data: certificateRequestsData, isLoading: requestsLoading } = useCertificateRequests({
+    status: certStatusFilter !== "all" ? certStatusFilter : undefined,
+  });
+
+  // Mutations
+  const createRequest = useCreateCertificateRequest();
+  const updateStatus = useUpdateCertificateStatus();
+
+  // Use fetched data or fallback
+  const recordStats = statsData || sampleStats;
+  const students = studentsData?.data || [];
+  const certificateRequests = certificateRequestsData?.data || [];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -312,27 +162,58 @@ export default function StudentRecordsPage() {
     }
   };
 
-  const filteredStudents = students.filter((student) => {
-    const matchesSearch =
-      student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.rollNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesBranch = branchFilter === "all" || student.branch === branchFilter;
-    const matchesSemester = semesterFilter === "all" || student.semester.toString() === semesterFilter;
-    const matchesStatus = statusFilter === "all" || student.status === statusFilter;
-    return matchesSearch && matchesBranch && matchesSemester && matchesStatus;
-  });
-
-  const handleViewStudent = (student: typeof students[0]) => {
+  const handleViewStudent = (student: StudentRecord) => {
     setSelectedStudent(student);
+    setSelectedStudentId(student.id);
     setViewDialogOpen(true);
   };
 
-  const handleIssueCertificate = (student: typeof students[0]) => {
+  const handleIssueCertificate = (student: StudentRecord) => {
     setSelectedStudent(student);
     setSelectedCertType("");
     setCertificatePurpose("");
     setCertificateDialogOpen(true);
+  };
+
+  const handleCreateCertificateRequest = async () => {
+    if (!selectedStudent || !selectedCertType || !certificatePurpose) return;
+
+    try {
+      await createRequest.mutateAsync({
+        studentId: selectedStudent.id,
+        certificateTypeId: selectedCertType,
+        purpose: certificatePurpose,
+      });
+      toast({
+        title: "Request Created",
+        description: "Certificate request has been created successfully.",
+      });
+      setCertificateDialogOpen(false);
+      setSelectedCertType("");
+      setCertificatePurpose("");
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to create certificate request.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateCertificateStatus = async (requestId: string, newStatus: string) => {
+    try {
+      await updateStatus.mutateAsync({ requestId, status: newStatus });
+      toast({
+        title: "Status Updated",
+        description: `Certificate request status updated to ${newStatus}.`,
+      });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to update certificate status.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -357,97 +238,115 @@ export default function StudentRecordsPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-7">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-blue-50">
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Students</p>
-                <p className="text-2xl font-bold">{recordStats.totalStudents.toLocaleString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-green-50">
-                <UserCheck className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold text-green-600">{recordStats.activeStudents.toLocaleString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-purple-50">
-                <GraduationCap className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Graduated</p>
-                <p className="text-2xl font-bold text-purple-600">{recordStats.graduatedStudents}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-red-50">
-                <X className="h-6 w-6 text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Dropped</p>
-                <p className="text-2xl font-bold text-red-600">{recordStats.droppedOut}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-orange-50">
-                <FileText className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Certificates</p>
-                <p className="text-2xl font-bold text-orange-600">{recordStats.pendingCertificates}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-yellow-50">
-                <FileCheck className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">TC Requests</p>
-                <p className="text-2xl font-bold text-yellow-600">{recordStats.pendingTCs}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-gray-50">
-                <AlertTriangle className="h-6 w-6 text-gray-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Incomplete</p>
-                <p className="text-2xl font-bold text-gray-600">{recordStats.profilesIncomplete}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {statsLoading ? (
+          Array.from({ length: 7 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-12 w-12 rounded-lg" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-6 w-12" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-blue-50">
+                    <Users className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Students</p>
+                    <p className="text-2xl font-bold">{recordStats.totalStudents.toLocaleString()}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-green-50">
+                    <UserCheck className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Active</p>
+                    <p className="text-2xl font-bold text-green-600">{recordStats.activeStudents.toLocaleString()}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-purple-50">
+                    <GraduationCap className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Graduated</p>
+                    <p className="text-2xl font-bold text-purple-600">{recordStats.graduatedStudents}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-red-50">
+                    <X className="h-6 w-6 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Dropped</p>
+                    <p className="text-2xl font-bold text-red-600">{recordStats.droppedOut}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-orange-50">
+                    <FileText className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Certificates</p>
+                    <p className="text-2xl font-bold text-orange-600">{recordStats.pendingCertificates}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-yellow-50">
+                    <FileCheck className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">TC Requests</p>
+                    <p className="text-2xl font-bold text-yellow-600">{recordStats.pendingTCs}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-gray-50">
+                    <AlertTriangle className="h-6 w-6 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Incomplete</p>
+                    <p className="text-2xl font-bold text-gray-600">{recordStats.profilesIncomplete}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Main Content Tabs */}
@@ -524,85 +423,114 @@ export default function StudentRecordsPage() {
               </div>
 
               {/* Students Table */}
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Roll No</TableHead>
-                    <TableHead>Branch</TableHead>
-                    <TableHead>Semester</TableHead>
-                    <TableHead>CGPA</TableHead>
-                    <TableHead>Attendance</TableHead>
-                    <TableHead>Fee Status</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStudents.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarImage src={student.photo} />
-                            <AvatarFallback>{student.name.split(" ").map((n) => n[0]).join("")}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{student.name}</p>
-                            <p className="text-sm text-muted-foreground">{student.email}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono">{student.rollNo}</TableCell>
-                      <TableCell>{student.branch}</TableCell>
-                      <TableCell>Sem {student.semester}</TableCell>
-                      <TableCell>
-                        <span className={student.cgpa >= 8 ? "text-green-600 font-medium" : ""}>
-                          {student.cgpa}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={student.attendance < 75 ? "text-red-600 font-medium" : ""}>
-                          {student.attendance}%
-                        </span>
-                      </TableCell>
-                      <TableCell>{getFeeStatusBadge(student.feeStatus)}</TableCell>
-                      <TableCell>{getStatusBadge(student.status)}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewStudent(student)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Profile
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit Record
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleIssueCertificate(student)}>
-                              <FileText className="mr-2 h-4 w-4" />
-                              Issue Certificate
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <IdCard className="mr-2 h-4 w-4" />
-                              Print ID Card
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Download className="mr-2 h-4 w-4" />
-                              Export Data
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+              {studentsLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-4 p-4">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="space-y-2 flex-1">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-4 w-12" />
+                      <Skeleton className="h-4 w-12" />
+                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-6 w-16" />
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              ) : students.length === 0 ? (
+                <div className="text-center py-12">
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No students found</h3>
+                  <p className="text-muted-foreground">
+                    {searchQuery || branchFilter !== "all" || statusFilter !== "all"
+                      ? "Try adjusting your filters"
+                      : "No student records available"}
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Roll No</TableHead>
+                      <TableHead>Branch</TableHead>
+                      <TableHead>Semester</TableHead>
+                      <TableHead>CGPA</TableHead>
+                      <TableHead>Attendance</TableHead>
+                      <TableHead>Fee Status</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {students.map((student) => (
+                      <TableRow key={student.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                              <AvatarImage src={student.photo} />
+                              <AvatarFallback>{student.name.split(" ").map((n) => n[0]).join("")}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{student.name}</p>
+                              <p className="text-sm text-muted-foreground">{student.email}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono">{student.rollNo}</TableCell>
+                        <TableCell>{student.branch}</TableCell>
+                        <TableCell>Sem {student.semester}</TableCell>
+                        <TableCell>
+                          <span className={student.cgpa >= 8 ? "text-green-600 font-medium" : ""}>
+                            {student.cgpa}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={student.attendance < 75 ? "text-red-600 font-medium" : ""}>
+                            {student.attendance}%
+                          </span>
+                        </TableCell>
+                        <TableCell>{getFeeStatusBadge(student.feeStatus)}</TableCell>
+                        <TableCell>{getStatusBadge(student.status)}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewStudent(student)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Profile
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Record
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleIssueCertificate(student)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                Issue Certificate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <IdCard className="mr-2 h-4 w-4" />
+                                Print ID Card
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Download className="mr-2 h-4 w-4" />
+                                Export Data
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -616,68 +544,133 @@ export default function StudentRecordsPage() {
                   <CardTitle>Certificate Requests</CardTitle>
                   <CardDescription>Process student certificate requests</CardDescription>
                 </div>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Request
-                </Button>
+                <div className="flex items-center gap-4">
+                  <Select value={certStatusFilter} onValueChange={setCertStatusFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="ready">Ready</SelectItem>
+                      <SelectItem value="issued">Issued</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Request ID</TableHead>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Certificate Type</TableHead>
-                    <TableHead>Purpose</TableHead>
-                    <TableHead>Request Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {certificateRequests.map((cert) => (
-                    <TableRow key={cert.id}>
-                      <TableCell className="font-mono text-sm">{cert.id}</TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{cert.name}</p>
-                          <p className="text-sm text-muted-foreground">{cert.rollNo}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>{cert.type}</TableCell>
-                      <TableCell>{cert.purpose}</TableCell>
-                      <TableCell>{cert.requestDate}</TableCell>
-                      <TableCell>{getCertStatusBadge(cert.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {cert.status === "pending" && (
-                            <Button size="sm" className="bg-blue-500 hover:bg-blue-600">
-                              Process
-                            </Button>
-                          )}
-                          {cert.status === "processing" && (
-                            <Button size="sm" className="bg-green-500 hover:bg-green-600">
-                              Mark Ready
-                            </Button>
-                          )}
-                          {cert.status === "ready" && (
-                            <>
-                              <Button size="sm" variant="outline">
-                                <Printer className="mr-1 h-4 w-4" />
-                                Print
-                              </Button>
-                              <Button size="sm">
-                                Issue
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
+              {requestsLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-4 p-4">
+                      <Skeleton className="h-4 w-20" />
+                      <div className="space-y-2 flex-1">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-6 w-20" />
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              ) : certificateRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No certificate requests</h3>
+                  <p className="text-muted-foreground">
+                    {certStatusFilter !== "all"
+                      ? "No requests with this status"
+                      : "No certificate requests have been made yet"}
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Request ID</TableHead>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Certificate Type</TableHead>
+                      <TableHead>Purpose</TableHead>
+                      <TableHead>Request Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {certificateRequests.map((cert) => (
+                      <TableRow key={cert.id}>
+                        <TableCell className="font-mono text-sm">
+                          {cert.certificateNumber || cert.id.slice(0, 12)}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{cert.name}</p>
+                            <p className="text-sm text-muted-foreground">{cert.rollNo}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{cert.type}</TableCell>
+                        <TableCell>{cert.purpose}</TableCell>
+                        <TableCell>{cert.requestDate}</TableCell>
+                        <TableCell>{getCertStatusBadge(cert.status)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            {cert.status === "pending" && (
+                              <Button
+                                size="sm"
+                                className="bg-blue-500 hover:bg-blue-600"
+                                onClick={() => handleUpdateCertificateStatus(cert.id, "processing")}
+                                disabled={updateStatus.isPending}
+                              >
+                                {updateStatus.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  "Process"
+                                )}
+                              </Button>
+                            )}
+                            {cert.status === "processing" && (
+                              <Button
+                                size="sm"
+                                className="bg-green-500 hover:bg-green-600"
+                                onClick={() => handleUpdateCertificateStatus(cert.id, "ready")}
+                                disabled={updateStatus.isPending}
+                              >
+                                {updateStatus.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  "Mark Ready"
+                                )}
+                              </Button>
+                            )}
+                            {cert.status === "ready" && (
+                              <>
+                                <Button size="sm" variant="outline">
+                                  <Printer className="mr-1 h-4 w-4" />
+                                  Print
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleUpdateCertificateStatus(cert.id, "issued")}
+                                  disabled={updateStatus.isPending}
+                                >
+                                  {updateStatus.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    "Issue"
+                                  )}
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -690,30 +683,58 @@ export default function StudentRecordsPage() {
               <CardDescription>Manage certificate types and templates</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {certificateTypes.map((cert) => (
-                  <Card key={cert.id}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="p-3 rounded-lg bg-muted">
-                          <FileText className="h-6 w-6" />
+              {typesLoading ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <Card key={i}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <Skeleton className="h-12 w-12 rounded-lg" />
+                          <Skeleton className="h-6 w-20" />
                         </div>
-                        <Badge variant="outline">Fee: Rs.{cert.fee}</Badge>
-                      </div>
-                      <h4 className="font-semibold mb-2">{cert.name}</h4>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="flex-1">
-                          <Eye className="mr-1 h-4 w-4" />
-                          Preview
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                        <Skeleton className="h-5 w-32 mb-4" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-8 flex-1" />
+                          <Skeleton className="h-8 w-8" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : certificateTypes.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No certificate types</h3>
+                  <p className="text-muted-foreground">
+                    No certificate types have been configured yet
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  {certificateTypes.map((cert) => (
+                    <Card key={cert.id}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="p-3 rounded-lg bg-muted">
+                            <FileText className="h-6 w-6" />
+                          </div>
+                          <Badge variant="outline">Fee: Rs.{cert.fee}</Badge>
+                        </div>
+                        <h4 className="font-semibold mb-2">{cert.name}</h4>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1">
+                            <Eye className="mr-1 h-4 w-4" />
+                            Preview
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -744,15 +765,17 @@ export default function StudentRecordsPage() {
                     {getStatusBadge(selectedStudent.status)}
                   </div>
                   <p className="text-muted-foreground">{selectedStudent.rollNo} • {selectedStudent.branch} • Batch {selectedStudent.batch}</p>
-                  <div className="flex items-center gap-4 mt-2 text-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-sm">
                     <span className="flex items-center gap-1">
                       <Mail className="h-4 w-4 text-muted-foreground" />
                       {selectedStudent.email}
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      {selectedStudent.phone}
-                    </span>
+                    {selectedStudent.phone && (
+                      <span className="flex items-center gap-1">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        {selectedStudent.phone}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -779,22 +802,16 @@ export default function StudentRecordsPage() {
                 </div>
               </div>
 
-              {/* Contact & Address */}
+              {/* Department Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">Address</Label>
-                  <p className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 mt-1 text-muted-foreground" />
-                    {selectedStudent.address}
-                  </p>
+                  <Label className="text-muted-foreground">Department</Label>
+                  <p className="font-medium">{selectedStudent.branchName}</p>
+                  <p className="text-sm text-muted-foreground">Code: {selectedStudent.branch}</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground">Parent/Guardian</Label>
-                  <p className="font-medium">{selectedStudent.parentName}</p>
-                  <p className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    {selectedStudent.parentPhone}
-                  </p>
+                  <Label className="text-muted-foreground">Batch</Label>
+                  <p className="font-medium">{selectedStudent.batch}</p>
                 </div>
               </div>
 
@@ -875,8 +892,15 @@ export default function StudentRecordsPage() {
             <Button variant="outline" onClick={() => setCertificateDialogOpen(false)}>
               Cancel
             </Button>
-            <Button disabled={!selectedCertType || !certificatePurpose}>
-              <FileText className="mr-2 h-4 w-4" />
+            <Button
+              disabled={!selectedCertType || !certificatePurpose || createRequest.isPending}
+              onClick={handleCreateCertificateRequest}
+            >
+              {createRequest.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="mr-2 h-4 w-4" />
+              )}
               Create Request
             </Button>
           </DialogFooter>

@@ -363,9 +363,10 @@ model Student {
   hostelAllocations   HostelAllocation[]
   hostelFees          HostelFee[]
   hostelComplaints    HostelComplaint[]
-  libraryCard         LibraryCard?
-  teamMemberships     TeamMember[]
-  clubMemberships     ClubMember[]
+  libraryCard             LibraryCard?
+  certificateRequests     CertificateRequest[]
+  teamMemberships         TeamMember[]
+  clubMemberships         ClubMember[]
   eventRegistrations  EventRegistration[]
   achievements        Achievement[]
   activityCredits     ActivityCredit[]
@@ -830,6 +831,59 @@ model StudentFee {
   @@index([tenantId])
   @@index([razorpayOrderId])
   @@map("student_fees")
+}
+
+// =============================================================================
+// CERTIFICATE MANAGEMENT
+// =============================================================================
+
+/// Certificate types that can be issued to students
+model CertificateType {
+  id          String  @id @default(cuid())
+  tenantId    String
+  code        String // bonafide, study, character, tc, migration, etc.
+  name        String // "Bonafide Certificate", "Transfer Certificate"
+  description String?
+  fee         Decimal @db.Decimal(10, 2)
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requests CertificateRequest[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("certificate_types")
+}
+
+/// Certificate requests from students
+model CertificateRequest {
+  id                String   @id @default(cuid())
+  tenantId          String
+  studentId         String
+  certificateTypeId String
+  purpose           String // Bank Loan, Visa Application, Higher Studies, etc.
+  status            String   @default("pending") // pending, processing, ready, issued, rejected
+  requestDate       DateTime @default(now())
+  processedDate     DateTime?
+  issuedDate        DateTime?
+  processedBy       String? // Staff ID who processed
+  issuedBy          String? // Staff ID who issued
+  remarks           String?
+  certificateNumber String? // Generated certificate number
+  pdfS3Key          String? // S3 key for generated PDF
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student         Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  certificateType CertificateType @relation(fields: [certificateTypeId], references: [id])
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@index([status])
+  @@map("certificate_requests")
 }
 
 /// Payment transactions for tracking payment history

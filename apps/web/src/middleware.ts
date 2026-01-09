@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher, clerkClient } from "@clerk/nextjs/server";
 
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
@@ -25,15 +25,6 @@ const isStudentRoute = createRouteMatcher(["/student(.*)"]);
 const isParentRoute = createRouteMatcher(["/parent(.*)"]);
 const isAlumniRoute = createRouteMatcher(["/alumni(.*)"]);
 
-// Type for session claims with metadata
-interface SessionClaimsWithMetadata {
-  metadata?: {
-    role?: string;
-    tenantId?: string;
-    departmentId?: string;
-  };
-}
-
 export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth();
 
@@ -48,12 +39,17 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // Protect all other routes - require authentication
-  const { sessionClaims } = await auth.protect();
+  await auth.protect();
 
-  // Get user role from session claims (set via Clerk metadata)
-  // Role is ONLY set through Clerk metadata by administrators - no self-selection
-  const claims = sessionClaims as SessionClaimsWithMetadata | undefined;
-  const userRole = claims?.metadata?.role;
+  // If no userId after protection, something is wrong
+  if (!userId) {
+    return Response.redirect(new URL("/sign-in", req.url));
+  }
+
+  // Get user from Clerk to read publicMetadata (role is stored there)
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+  const userRole = (user.publicMetadata as { role?: string })?.role;
 
   // If no role is set in Clerk metadata, redirect to setup-pending
   // Users cannot self-assign roles - they must wait for admin to assign

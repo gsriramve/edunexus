@@ -65,14 +65,21 @@ import type { LibraryBook, BookCategory, LibraryCard, BookIssue, EResource, Libr
 
 // Default settings for fallback
 const defaultSettings: LibrarySettings = {
+  id: '',
+  tenantId: '',
+  maxBooksPerCard: 5,
+  defaultLoanDays: 14,
+  maxRenewals: 2,
+  renewalDays: 7,
   finePerDay: 5,
   maxFineAmount: 500,
-  loanPeriodDays: 14,
-  renewalPeriodDays: 7,
-  maxRenewals: 2,
-  reservationDays: 3,
-  gracePeriodDays: 1,
-  lostBookMultiplier: 2,
+  reservationExpiryDays: 3,
+  allowOnlineRenewal: true,
+  allowOnlineReservation: true,
+  sendDueReminders: true,
+  reminderDaysBefore: 3,
+  createdAt: '',
+  updatedAt: '',
 };
 
 export default function AdminLibraryPage() {
@@ -96,20 +103,23 @@ export default function AdminLibraryPage() {
 
   // Use API data with fallbacks
   const books = booksData?.data || [];
-  const categories = categoriesData?.data || [];
+  const categories = categoriesData || [];
   const cards = cardsData?.data || [];
   const issues = issuesData?.data || [];
   const eResources = eResourcesData?.data || [];
   const settings = settingsData || defaultSettings;
   const stats = statsData || {
     totalBooks: 0,
-    totalCopies: 0,
-    availableCopies: 0,
-    activeCards: 0,
-    currentIssues: 0,
+    availableBooks: 0,
+    issuedBooks: 0,
     overdueBooks: 0,
-    totalEResources: 0,
+    totalCards: 0,
+    activeCards: 0,
+    totalReservations: 0,
     pendingReservations: 0,
+    totalEResources: 0,
+    totalFinesDue: 0,
+    totalFinesCollected: 0,
   };
 
   // Local state for settings form
@@ -168,7 +178,7 @@ export default function AdminLibraryPage() {
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats.totalBooks.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">{stats.availableCopies.toLocaleString()} available</p>
+                <p className="text-xs text-muted-foreground">{stats.availableBooks.toLocaleString()} available</p>
               </>
             )}
           </CardContent>
@@ -197,7 +207,7 @@ export default function AdminLibraryPage() {
               <Skeleton className="h-8 w-20" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{stats.currentIssues}</div>
+                <div className="text-2xl font-bold">{stats.issuedBooks}</div>
                 <p className="text-xs text-destructive">{stats.overdueBooks} overdue</p>
               </>
             )}
@@ -367,14 +377,16 @@ export default function AdminLibraryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {books.map((book) => (
+                  {books.map((book) => {
+                    const bookStatus = !book.isActive ? 'unavailable' : book.availableCopies === 0 ? 'limited' : 'available';
+                    return (
                     <TableRow key={book.id}>
                       <TableCell className="font-mono text-sm">{book.isbn}</TableCell>
                       <TableCell className="font-medium">{book.title}</TableCell>
-                      <TableCell>{book.author}</TableCell>
-                      <TableCell>{book.category}</TableCell>
+                      <TableCell>{book.authors?.join(', ') || '-'}</TableCell>
+                      <TableCell>{book.category?.name || '-'}</TableCell>
                       <TableCell className="text-center">{book.availableCopies}/{book.totalCopies}</TableCell>
-                      <TableCell>{getStatusBadge(book.status)}</TableCell>
+                      <TableCell>{getStatusBadge(bookStatus)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
@@ -383,7 +395,7 @@ export default function AdminLibraryPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  );})}
                 </TableBody>
               </Table>
             </CardContent>
@@ -457,7 +469,7 @@ export default function AdminLibraryPage() {
                     <TableRow key={category.id}>
                       <TableCell className="font-mono">{category.code}</TableCell>
                       <TableCell className="font-medium">{category.name}</TableCell>
-                      <TableCell className="text-center">{category.bookCount}</TableCell>
+                      <TableCell className="text-center">{category._count?.books ?? 0}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
@@ -516,10 +528,10 @@ export default function AdminLibraryPage() {
                   {cards.map((card) => (
                     <TableRow key={card.id}>
                       <TableCell className="font-mono">{card.cardNumber}</TableCell>
-                      <TableCell className="font-medium">{card.studentName}</TableCell>
-                      <TableCell>{card.rollNo}</TableCell>
-                      <TableCell className="text-center">{card.currentBooks}/{card.maxBooks}</TableCell>
-                      <TableCell>{card.expiryDate}</TableCell>
+                      <TableCell className="font-medium">{card.student ? `${card.student.user.firstName} ${card.student.user.lastName}` : '-'}</TableCell>
+                      <TableCell>{card.student?.rollNo || '-'}</TableCell>
+                      <TableCell className="text-center">{card.currentIssued}/{card.maxBooks}</TableCell>
+                      <TableCell>{new Date(card.expiryDate).toLocaleDateString()}</TableCell>
                       <TableCell>{getStatusBadge(card.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
@@ -571,7 +583,7 @@ export default function AdminLibraryPage() {
                           <SelectTrigger><SelectValue placeholder="Select card" /></SelectTrigger>
                           <SelectContent>
                             {cards.filter(c => c.status === 'active').map(card => (
-                              <SelectItem key={card.id} value={card.id}>{card.cardNumber} - {card.studentName}</SelectItem>
+                              <SelectItem key={card.id} value={card.id}>{card.cardNumber} - {card.student ? `${card.student.user.firstName} ${card.student.user.lastName}` : 'Unknown'}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -624,11 +636,11 @@ export default function AdminLibraryPage() {
                 <TableBody>
                   {issues.map((issue) => (
                     <TableRow key={issue.id}>
-                      <TableCell className="font-medium">{issue.bookTitle}</TableCell>
-                      <TableCell>{issue.studentName}</TableCell>
-                      <TableCell className="font-mono">{issue.cardNumber}</TableCell>
-                      <TableCell>{issue.issueDate}</TableCell>
-                      <TableCell>{issue.dueDate}</TableCell>
+                      <TableCell className="font-medium">{issue.book?.title || '-'}</TableCell>
+                      <TableCell>{issue.card?.student ? `${issue.card.student.user.firstName} ${issue.card.student.user.lastName}` : '-'}</TableCell>
+                      <TableCell className="font-mono">{issue.card?.cardNumber || '-'}</TableCell>
+                      <TableCell>{new Date(issue.issueDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(issue.dueDate).toLocaleDateString()}</TableCell>
                       <TableCell>{getStatusBadge(issue.status)}</TableCell>
                       <TableCell className="text-right">
                         {issue.status !== 'returned' && (
@@ -765,12 +777,12 @@ export default function AdminLibraryPage() {
                   {eResources.map((resource) => (
                     <TableRow key={resource.id}>
                       <TableCell className="font-medium">{resource.title}</TableCell>
-                      <TableCell>{resource.author}</TableCell>
+                      <TableCell>{resource.authors?.join(', ') || '-'}</TableCell>
                       <TableCell className="capitalize">{resource.type}</TableCell>
-                      <TableCell>{resource.category}</TableCell>
-                      <TableCell className="text-center">{resource.views}</TableCell>
-                      <TableCell className="text-center">{resource.downloads}</TableCell>
-                      <TableCell>{getStatusBadge(resource.accessType)}</TableCell>
+                      <TableCell>{resource.category?.name || '-'}</TableCell>
+                      <TableCell className="text-center">{resource.viewCount}</TableCell>
+                      <TableCell className="text-center">{resource.downloadCount}</TableCell>
+                      <TableCell>{getStatusBadge(resource.accessLevel)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
@@ -801,6 +813,7 @@ export default function AdminLibraryPage() {
                   ))}
                 </div>
               ) : (
+                <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <h3 className="font-semibold">Loan Settings</h3>
@@ -808,8 +821,8 @@ export default function AdminLibraryPage() {
                     <Label>Loan Period (days)</Label>
                     <Input
                       type="number"
-                      value={localSettings.loanPeriodDays}
-                      onChange={(e) => setLocalSettings({ ...localSettings, loanPeriodDays: parseInt(e.target.value) })}
+                      value={localSettings.defaultLoanDays}
+                      onChange={(e) => setLocalSettings({ ...localSettings, defaultLoanDays: parseInt(e.target.value) })}
                     />
                     <p className="text-xs text-muted-foreground">Default number of days a book can be borrowed</p>
                   </div>
@@ -817,8 +830,8 @@ export default function AdminLibraryPage() {
                     <Label>Renewal Period (days)</Label>
                     <Input
                       type="number"
-                      value={localSettings.renewalPeriodDays}
-                      onChange={(e) => setLocalSettings({ ...localSettings, renewalPeriodDays: parseInt(e.target.value) })}
+                      value={localSettings.renewalDays}
+                      onChange={(e) => setLocalSettings({ ...localSettings, renewalDays: parseInt(e.target.value) })}
                     />
                     <p className="text-xs text-muted-foreground">Days added when renewing a book</p>
                   </div>
@@ -835,10 +848,19 @@ export default function AdminLibraryPage() {
                     <Label>Reservation Period (days)</Label>
                     <Input
                       type="number"
-                      value={localSettings.reservationDays}
-                      onChange={(e) => setLocalSettings({ ...localSettings, reservationDays: parseInt(e.target.value) })}
+                      value={localSettings.reservationExpiryDays}
+                      onChange={(e) => setLocalSettings({ ...localSettings, reservationExpiryDays: parseInt(e.target.value) })}
                     />
                     <p className="text-xs text-muted-foreground">Days to collect a reserved book</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Max Books Per Card</Label>
+                    <Input
+                      type="number"
+                      value={localSettings.maxBooksPerCard}
+                      onChange={(e) => setLocalSettings({ ...localSettings, maxBooksPerCard: parseInt(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">Maximum books a member can borrow at once</p>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -862,23 +884,13 @@ export default function AdminLibraryPage() {
                     <p className="text-xs text-muted-foreground">Cap on total fine per book</p>
                   </div>
                   <div className="space-y-2">
-                    <Label>Grace Period (days)</Label>
+                    <Label>Reminder Days Before Due</Label>
                     <Input
                       type="number"
-                      value={localSettings.gracePeriodDays}
-                      onChange={(e) => setLocalSettings({ ...localSettings, gracePeriodDays: parseInt(e.target.value) })}
+                      value={localSettings.reminderDaysBefore}
+                      onChange={(e) => setLocalSettings({ ...localSettings, reminderDaysBefore: parseInt(e.target.value) })}
                     />
-                    <p className="text-xs text-muted-foreground">Days after due date before fines apply</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Lost Book Multiplier</Label>
-                    <Input
-                      type="number"
-                      step="0.5"
-                      value={localSettings.lostBookMultiplier}
-                      onChange={(e) => setLocalSettings({ ...localSettings, lostBookMultiplier: parseFloat(e.target.value) })}
-                    />
-                    <p className="text-xs text-muted-foreground">Multiplier applied to book price for lost books</p>
+                    <p className="text-xs text-muted-foreground">Days before due date to send reminder</p>
                   </div>
                 </div>
               </div>
@@ -887,6 +899,7 @@ export default function AdminLibraryPage() {
                   {updateSettingsMutation.isPending ? 'Saving...' : 'Save Settings'}
                 </Button>
               </div>
+                </>
               )}
             </CardContent>
           </Card>
