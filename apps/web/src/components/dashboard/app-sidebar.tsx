@@ -143,13 +143,40 @@ const alumniNav = [
   { title: "Testimonials", href: "/alumni/testimonials", icon: Star },
 ];
 
+// Admin Staff navigation - dedicated admin routes (matches actual pages)
+const adminStaffNav = [
+  { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { title: "Admissions", href: "/admin/admissions", icon: UserCheck },
+  { title: "Students", href: "/admin/records", icon: GraduationCap },
+  { title: "Fees", href: "/admin/fees", icon: Wallet },
+  { title: "ID Cards", href: "/admin/id-cards", icon: CreditCard },
+  { title: "Library", href: "/admin/library", icon: Library },
+  { title: "Transport", href: "/admin/transport", icon: Bus },
+  { title: "Hostel", href: "/admin/hostel", icon: Home },
+  { title: "Communication", href: "/admin/communication", icon: MessageSquare },
+  { title: "Documents", href: "/admin/documents", icon: FileText },
+  { title: "Placements", href: "/admin/placements", icon: Briefcase },
+  { title: "Sports", href: "/admin/sports", icon: Trophy },
+  { title: "Reports", href: "/admin/reports", icon: BarChart3 },
+  { title: "Import/Export", href: "/admin/import-export", icon: FileText },
+  { title: "Audit Logs", href: "/admin/audit-logs", icon: Shield },
+];
+
+// Lab Assistant navigation - lab-specific routes
+const labAssistantNav = [
+  { title: "Dashboard", href: "/lab-assistant", icon: LayoutDashboard },
+  { title: "Lab Attendance", href: "/lab-assistant/attendance", icon: CalendarDays },
+  { title: "Practical Marks", href: "/lab-assistant/marks", icon: BarChart3 },
+  { title: "Equipment", href: "/lab-assistant/equipment", icon: Settings },
+];
+
 const NAV_BY_ROLE: Record<string, typeof platformOwnerNav> = {
   [UserRole.PLATFORM_OWNER]: platformOwnerNav,
   [UserRole.PRINCIPAL]: principalNav,
   [UserRole.HOD]: hodNav,
-  [UserRole.ADMIN_STAFF]: principalNav, // Similar to principal with some restrictions
+  [UserRole.ADMIN_STAFF]: adminStaffNav,
   [UserRole.TEACHER]: teacherNav,
-  [UserRole.LAB_ASSISTANT]: teacherNav.slice(0, 4), // Subset of teacher nav
+  [UserRole.LAB_ASSISTANT]: labAssistantNav,
   [UserRole.STUDENT]: studentNav,
   [UserRole.PARENT]: parentNav,
   [UserRole.ALUMNI]: alumniNav,
