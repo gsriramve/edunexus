@@ -70,6 +70,18 @@ variable "allowed_ssh_cidr" {
   default     = "0.0.0.0/0" # Change to your IP for security
 }
 
+# Budget & Alerts
+variable "alert_email" {
+  description = "Email address for billing alerts"
+  type        = string
+}
+
+variable "monthly_budget" {
+  description = "Monthly budget limit in USD"
+  type        = number
+  default     = 25
+}
+
 # Tags
 variable "tags" {
   description = "Common tags for all resources"

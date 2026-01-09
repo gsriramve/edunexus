@@ -35,7 +35,7 @@ resource "aws_db_instance" "main" {
 
   # Engine
   engine               = "postgres"
-  engine_version       = "16.3"
+  engine_version       = "16.6"
   instance_class       = var.db_instance_class
   allocated_storage    = var.db_allocated_storage
   storage_type         = "gp2"
@@ -51,8 +51,8 @@ resource "aws_db_instance" "main" {
   vpc_security_group_ids = [aws_security_group.rds.id]
   publicly_accessible    = true # Enable for initial setup, disable later for security
 
-  # Backup & Maintenance
-  backup_retention_period = 7
+  # Backup & Maintenance (Free Tier: 0 days retention)
+  backup_retention_period = 0
   backup_window          = "03:00-04:00"
   maintenance_window     = "Mon:04:00-Mon:05:00"
 

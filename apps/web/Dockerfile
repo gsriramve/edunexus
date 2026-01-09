@@ -70,9 +70,10 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Copy necessary files from builder
-COPY --from=builder /app/apps/web/public ./public
+# Standalone includes the apps/web structure, so copy static to match
 COPY --from=builder /app/apps/web/.next/standalone ./
-COPY --from=builder /app/apps/web/.next/static ./.next/static
+COPY --from=builder /app/apps/web/public ./apps/web/public
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 
 # Change ownership
 RUN chown -R nextjs:nodejs /app
@@ -88,4 +89,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 # Start the application
-CMD ["node", "server.js"]
+CMD ["node", "apps/web/server.js"]

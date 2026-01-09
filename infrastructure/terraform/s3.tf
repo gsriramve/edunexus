@@ -52,6 +52,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "uploads" {
     id     = "cleanup-old-versions"
     status = "Enabled"
 
+    filter {}
+
     noncurrent_version_expiration {
       noncurrent_days = 30
     }
@@ -60,6 +62,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "uploads" {
   rule {
     id     = "cleanup-incomplete-uploads"
     status = "Enabled"
+
+    filter {}
 
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
@@ -104,6 +108,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "backups" {
   rule {
     id     = "expire-old-backups"
     status = "Enabled"
+
+    filter {}
 
     expiration {
       days = 30 # Keep backups for 30 days
