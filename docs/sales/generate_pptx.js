@@ -11,6 +11,18 @@ const WHITE = 'FFFFFF';
 const SUCCESS_GREEN = '059669';
 const WARNING_ORANGE = 'd97706';
 
+// Screenshot paths
+const SCREENSHOTS_DIR = '/Users/sriramvenkatg/edunexus/e2e-tests/screenshots';
+const screenshots = {
+    principal: path.join(SCREENSHOTS_DIR, 'principal_nexus-ec_dashboard.png'),
+    hod: path.join(SCREENSHOTS_DIR, 'hod_nexus-ec_dashboard.png'),
+    admin: path.join(SCREENSHOTS_DIR, 'admin_nexus-ec_dashboard.png'),
+    teacher: path.join(SCREENSHOTS_DIR, 'teacher_nexus-ec_dashboard.png'),
+    lab: path.join(SCREENSHOTS_DIR, 'lab_nexus-ec_dashboard.png'),
+    student: path.join(SCREENSHOTS_DIR, 'student_nexus-ec_dashboard.png'),
+    parent: path.join(SCREENSHOTS_DIR, 'parent_nexus-ec_dashboard.png')
+};
+
 async function createPresentation() {
     const pptx = new pptxgen();
 
@@ -175,7 +187,73 @@ async function createPresentation() {
         ['Parent', 'Progress Tracking, Fee Payment', '5 hrs/mo', 'Peace of mind']
     ], { x: 0.3, y: 1.5, w: 9.4, h: 3.5, fontSize: 11, border: { pt: 0.5, color: 'CCCCCC' }, align: 'center', valign: 'middle', colW: [1.3, 3.3, 1.5, 1.5] });
 
-    // ==================== SLIDE 8: ADMIN STAFF SAVINGS ====================
+    // ==================== SLIDE 8: PRINCIPAL DASHBOARD SCREENSHOT ====================
+    slide = pptx.addSlide();
+    slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: '100%', h: 0.8, fill: { color: PRIMARY_BLUE } });
+    slide.addText('Principal Dashboard', { x: 0.5, y: 0.2, w: 6, h: 0.4, fontSize: 24, bold: true, color: WHITE, fontFace: 'Arial' });
+    slide.addText('Complete college overview at a glance', { x: 6.5, y: 0.2, w: 3, h: 0.4, fontSize: 12, color: ACCENT_TEAL, fontFace: 'Arial', align: 'right' });
+    if (fs.existsSync(screenshots.principal)) {
+        slide.addImage({ path: screenshots.principal, x: 0.3, y: 0.9, w: 9.4, h: 4.2 });
+    }
+    slide.addText('Departments • Students • Staff • Fees • Analytics • Reports - All in one view',
+        { x: 0.3, y: 5.15, w: 9.4, h: 0.3, fontSize: 11, color: DARK_TEXT, fontFace: 'Arial', align: 'center' });
+
+    // ==================== SLIDE 9: HOD DASHBOARD SCREENSHOT ====================
+    slide = pptx.addSlide();
+    slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: '100%', h: 0.8, fill: { color: PRIMARY_BLUE } });
+    slide.addText('HOD Dashboard', { x: 0.5, y: 0.2, w: 6, h: 0.4, fontSize: 24, bold: true, color: WHITE, fontFace: 'Arial' });
+    slide.addText('Department-level management & analytics', { x: 5.5, y: 0.2, w: 4, h: 0.4, fontSize: 12, color: ACCENT_TEAL, fontFace: 'Arial', align: 'right' });
+    if (fs.existsSync(screenshots.hod)) {
+        slide.addImage({ path: screenshots.hod, x: 0.3, y: 0.9, w: 9.4, h: 4.2 });
+    }
+    slide.addText('Faculty Management • Student Performance • Curriculum • Batch Analytics',
+        { x: 0.3, y: 5.15, w: 9.4, h: 0.3, fontSize: 11, color: DARK_TEXT, fontFace: 'Arial', align: 'center' });
+
+    // ==================== SLIDE 10: ADMIN DASHBOARD SCREENSHOT ====================
+    slide = pptx.addSlide();
+    slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: '100%', h: 0.8, fill: { color: PRIMARY_BLUE } });
+    slide.addText('Admin Staff Dashboard', { x: 0.5, y: 0.2, w: 6, h: 0.4, fontSize: 24, bold: true, color: WHITE, fontFace: 'Arial' });
+    slide.addText('Streamlined operations & automation', { x: 5.5, y: 0.2, w: 4, h: 0.4, fontSize: 12, color: ACCENT_TEAL, fontFace: 'Arial', align: 'right' });
+    if (fs.existsSync(screenshots.admin)) {
+        slide.addImage({ path: screenshots.admin, x: 0.3, y: 0.9, w: 9.4, h: 4.2 });
+    }
+    slide.addText('Admissions • Fee Collection • Documents • Library • Transport - 120+ hours saved monthly',
+        { x: 0.3, y: 5.15, w: 9.4, h: 0.3, fontSize: 11, color: DARK_TEXT, fontFace: 'Arial', align: 'center' });
+
+    // ==================== SLIDE 11: TEACHER DASHBOARD SCREENSHOT ====================
+    slide = pptx.addSlide();
+    slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: '100%', h: 0.8, fill: { color: PRIMARY_BLUE } });
+    slide.addText('Teacher Dashboard', { x: 0.5, y: 0.2, w: 6, h: 0.4, fontSize: 24, bold: true, color: WHITE, fontFace: 'Arial' });
+    slide.addText('Focus on teaching, not paperwork', { x: 5.5, y: 0.2, w: 4, h: 0.4, fontSize: 12, color: ACCENT_TEAL, fontFace: 'Arial', align: 'right' });
+    if (fs.existsSync(screenshots.teacher)) {
+        slide.addImage({ path: screenshots.teacher, x: 0.3, y: 0.9, w: 9.4, h: 4.2 });
+    }
+    slide.addText('Quick Attendance • Gradebook • Assignments • Class Analytics - 10-15 hours saved monthly',
+        { x: 0.3, y: 5.15, w: 9.4, h: 0.3, fontSize: 11, color: DARK_TEXT, fontFace: 'Arial', align: 'center' });
+
+    // ==================== SLIDE 12: STUDENT DASHBOARD SCREENSHOT ====================
+    slide = pptx.addSlide();
+    slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: '100%', h: 0.8, fill: { color: PRIMARY_BLUE } });
+    slide.addText('Student Dashboard', { x: 0.5, y: 0.2, w: 6, h: 0.4, fontSize: 24, bold: true, color: WHITE, fontFace: 'Arial' });
+    slide.addText('Self-service portal with AI insights', { x: 5.5, y: 0.2, w: 4, h: 0.4, fontSize: 12, color: ACCENT_TEAL, fontFace: 'Arial', align: 'right' });
+    if (fs.existsSync(screenshots.student)) {
+        slide.addImage({ path: screenshots.student, x: 0.3, y: 0.9, w: 9.4, h: 4.2 });
+    }
+    slide.addText('AI Score Prediction • Career Hub • Placement Prep • 24/7 Chatbot Support',
+        { x: 0.3, y: 5.15, w: 9.4, h: 0.3, fontSize: 11, color: DARK_TEXT, fontFace: 'Arial', align: 'center' });
+
+    // ==================== SLIDE 13: PARENT DASHBOARD SCREENSHOT ====================
+    slide = pptx.addSlide();
+    slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: '100%', h: 0.8, fill: { color: PRIMARY_BLUE } });
+    slide.addText('Parent Dashboard', { x: 0.5, y: 0.2, w: 6, h: 0.4, fontSize: 24, bold: true, color: WHITE, fontFace: 'Arial' });
+    slide.addText('Stay connected with child\'s progress', { x: 5.5, y: 0.2, w: 4, h: 0.4, fontSize: 12, color: ACCENT_TEAL, fontFace: 'Arial', align: 'right' });
+    if (fs.existsSync(screenshots.parent)) {
+        slide.addImage({ path: screenshots.parent, x: 0.3, y: 0.9, w: 9.4, h: 4.2 });
+    }
+    slide.addText('Attendance Tracking • Fee Payments • Academic Progress • Direct Communication',
+        { x: 0.3, y: 5.15, w: 9.4, h: 0.3, fontSize: 11, color: DARK_TEXT, fontFace: 'Arial', align: 'center' });
+
+    // ==================== SLIDE 14: ADMIN STAFF SAVINGS ====================
     slide = pptx.addSlide();
     slide.addShape(pptx.shapes.RECTANGLE, { x: 0, y: 0, w: '100%', h: 1.2, fill: { color: PRIMARY_BLUE } });
     slide.addText('Admin Staff: Biggest Impact', { x: 0.5, y: 0.35, w: 9, h: 0.5, fontSize: 32, bold: true, color: WHITE, fontFace: 'Arial' });
