@@ -17,9 +17,9 @@ Comprehensive QA testing was performed for the EduNexus multi-tenant college man
 | Metric | Count |
 |--------|-------|
 | Total Personas Tested | 8 |
-| Total Pages Tested | 99+ |
-| Pages Passed | 99+ |
-| Critical Bugs Found | 2 (Both Fixed & Verified) |
+| Total Pages Tested | 92 |
+| Pages Passed | 92 |
+| Critical Bugs Found | 3 (All Fixed & Verified) |
 | Session/Auth Issues | 0 |
 
 **Overall Status: ALL PASSED - All Bugs Fixed & Verified**
@@ -184,15 +184,15 @@ Based on previous E2E testing and current session tests:
 
 | Page | Route | Status | Notes |
 |------|-------|--------|-------|
-| Dashboard | /alumni | PARTIAL | "Profile Not Found" - expected |
-| My Profile | /alumni/profile | PARTIAL | "Profile Not Found" - expected |
-| Mentorship | /alumni/mentorship | PARTIAL | Empty content area |
+| Dashboard | /alumni | PASS | Shows welcome, employment history, stats (BUG-003 FIXED) |
+| My Profile | /alumni/profile | PASS | Full profile with bio, employment, mentorship (BUG-003 FIXED) |
+| Mentorship | /alumni/mentorship | PASS | Mentorship settings and connections (BUG-003 FIXED) |
 | Events | /alumni/events | PASS | Full UI with tabs |
 | Directory | /alumni/directory | PASS | 25 alumni with filters |
 | Contribute | /alumni/contribute | PASS | Contribution options |
 | Testimonials | /alumni/testimonials | PASS | Success stories |
 
-**Result: 4/7 PASS, 3/7 PARTIAL (expected - no profile data seeded)**
+**Result: 7/7 PASS**
 
 ---
 
@@ -230,6 +230,25 @@ Based on previous E2E testing and current session tests:
 | **Fix Verification** | API restarted, page now shows "No children found linked" instead of error |
 | **Status** | ✅ VERIFIED FIXED |
 
+### BUG-003: Alumni Profile Not Found
+
+| Field | Value |
+|-------|-------|
+| **Bug ID** | BUG-003 |
+| **Severity** | HIGH |
+| **Persona** | Alumni |
+| **Routes** | /alumni, /alumni/profile, /alumni/mentorship |
+| **Issue** | Pages show "Profile Not Found" despite alumni profile data being seeded |
+| **Expected** | Should display alumni profile with name, employment history, and mentorship settings |
+| **Actual** | API returned 404 because userId and tenantId lookups failed |
+| **Root Cause 1** | `seed-test-data.ts` stored database `User.id` in `AlumniProfile.userId`, but frontend sends Clerk userId via `x-user-id` header |
+| **Root Cause 2** | `fix-clerk-roles.ts` stored domain strings (e.g., "nexus-ec") in Clerk metadata `tenantId` instead of actual database tenant IDs |
+| **Fix Applied** | 1. Updated `seed-test-data.ts` to use `user.clerkUserId` for AlumniProfile.userId 2. Updated `fix-clerk-roles.ts` TENANTS constant with actual database tenant IDs 3. Created `scripts/fix-alumni-profiles.ts` to fix existing records 4. Ran both fix scripts |
+| **Files Modified** | `packages/database/prisma/seed-test-data.ts`, `scripts/fix-clerk-roles.ts` |
+| **Files Created** | `scripts/fix-alumni-profiles.ts` |
+| **Fix Verification** | Logged in as alumni@nexus-ec.edu - Dashboard shows "Welcome back, Rajan!", employment at Google, profile fully loaded |
+| **Status** | ✅ VERIFIED FIXED |
+
 ---
 
 ## Summary by Persona
@@ -243,10 +262,8 @@ Based on previous E2E testing and current session tests:
 | Principal | 14 | 14 | 0 | 0 | 100% |
 | HOD | 11 | 11 | 0 | 0 | 100% |
 | Lab Assistant | 4 | 4 | 0 | 0 | 100% |
-| Alumni | 7 | 4 | 0 | 3 | 100%* |
-| **TOTAL** | **92** | **89** | **0** | **3** | **100%** |
-
-*Alumni partial pages are expected behavior (no profile data seeded)
+| Alumni | 7 | 7 | 0 | 0 | 100% |
+| **TOTAL** | **92** | **92** | **0** | **0** | **100%** |
 
 ---
 
@@ -265,9 +282,11 @@ Based on previous E2E testing and current session tests:
 
 ### Important
 
-3. **Seed Alumni Profile Data**
-   - Add alumni profile records to seed data
-   - This will enable Dashboard, Profile, and Mentorship pages
+3. **Seed Alumni Profile Data** ✅ DONE
+   - Fixed `seed-test-data.ts` to use Clerk user IDs
+   - Fixed `fix-clerk-roles.ts` to use database tenant IDs
+   - Created `fix-alumni-profiles.ts` utility script
+   - Alumni Dashboard, Profile, and Mentorship pages now work correctly
 
 4. **Add Server-Side Role Validation**
    - Teacher was able to access /admin page (potential security issue)
@@ -287,7 +306,7 @@ Based on previous E2E testing and current session tests:
 
 ## Conclusion
 
-The EduNexus platform demonstrates excellent functionality with **100% pass rate** across all tested pages. Two bugs were identified, fixed, and verified:
+The EduNexus platform demonstrates excellent functionality with **100% pass rate** across all tested pages. Three bugs were identified, fixed, and verified:
 
 1. **BUG-001: Admin Staff sidebar navigation** ✅ VERIFIED FIXED
    - Root cause: Clerk metadata not properly set by seed script
@@ -299,11 +318,17 @@ The EduNexus platform demonstrates excellent functionality with **100% pass rate
    - Fix: Created `ParentsModule` with controller, service, and module files
    - Verification: Parent fees page now shows "No children found linked" instead of error
 
+3. **BUG-003: Alumni profile not found** ✅ VERIFIED FIXED
+   - Root cause: userId mismatch (database ID vs Clerk ID) and tenantId mismatch (domain vs database ID)
+   - Fix: Updated seed script and fix-clerk-roles.ts, created fix-alumni-profiles.ts utility
+   - Verification: Alumni dashboard shows welcome message, profile displays employment history and bio
+
 ### Fixes Applied:
-- Ran `fix-clerk-roles.ts` script (24 users updated)
+- Ran `fix-clerk-roles.ts` script (24 users updated with correct tenant IDs)
+- Ran `fix-alumni-profiles.ts` script (3 alumni profiles updated with Clerk user IDs)
 - Restarted API server (port 3001)
 - Restarted Web server (port 3000)
-- Verified both fixes via browser testing
+- Verified all fixes via browser testing
 
 The platform's multi-tenant architecture, role-based access, and UI/UX are working correctly across all personas and use cases.
 
