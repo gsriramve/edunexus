@@ -250,12 +250,12 @@ export default function TeacherFaceAttendance() {
 
             <div>
               <label className="text-sm font-medium mb-2 block">Section (Optional)</label>
-              <Select value={selectedSection} onValueChange={setSelectedSection}>
+              <Select value={selectedSection || "__all__"} onValueChange={(val) => setSelectedSection(val === "__all__" ? "" : val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All sections" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Sections</SelectItem>
+                  <SelectItem value="__all__">All Sections</SelectItem>
                   <SelectItem value="A">Section A</SelectItem>
                   <SelectItem value="B">Section B</SelectItem>
                   <SelectItem value="C">Section C</SelectItem>
@@ -552,14 +552,14 @@ export default function TeacherFaceAttendance() {
                         </Badge>
                       )}
                       <Select
-                        value={face.matchedStudent?.id || ""}
-                        onValueChange={(value) => handleFaceOverride(face.id, value || undefined)}
+                        value={face.matchedStudent?.id || "__unassigned__"}
+                        onValueChange={(value) => handleFaceOverride(face.id, value === "__unassigned__" ? undefined : value)}
                       >
                         <SelectTrigger className="w-48">
                           <SelectValue placeholder="Assign student" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Unassigned</SelectItem>
+                          <SelectItem value="__unassigned__">Unassigned</SelectItem>
                           {sectionStudents?.map((student) => (
                             <SelectItem key={student.id} value={student.id}>
                               {student.user.name} ({student.rollNo})
