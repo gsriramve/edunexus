@@ -1,0 +1,70 @@
+{
+  "email": "student@quantum-it.edu",
+  "role": "student",
+  "college": "quantum-it",
+  "timestamp": "2026-01-09T22:11:59.097699",
+  "tests": [
+    {
+      "name": "Login",
+      "status": "FAIL",
+      "details": "Unexpected URL: https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-1137119831%3A1767976926067060&access_type=offline&client_id=787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com&o2v=1&prompt=consent&redirect_uri=https%3A%2F%2Fclerk.shared.lcl.dev%2Fv1%2Foauth_callback&response_type=code&scope=openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&service=lso&state=egnk1k475jiacecdvsv05l6035juowzvd44g4txh&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAMhX0IPr46GO_AQvUkIj8oGFAErhBGxEfObaqk5dvQiI5TRU6MiBc1vOrIvl8Y1qjH0AseTp6ylmMh9RO88uYqIir0WPa6ajHxPbR-5K_b7YFH4QdAtASnpkeNdoQD3xEjP-dOz0-_PX_6FgpanHvxEuuzqAhesl5RYgoZbSeANggE2CUeAX96Mm58FYCHs1mjRsRH-CmranfDnY_iDOqB-QAi-WT4cEfTHwz0ZQdAGeUBrX76Weu9Ul7uAj9RYwQiGtNWJ_ZmrXLcSH85JPsGifHWjhjd7YfwHI5yHXVTj0CjXqD0v44wewC2ZSIEtModY6reMUG0Wrxdp98SZ9qtcT1yIGnPoNKIy25cj31Vb67axDuPsXn0ehguTKgSV6PScLesbOr0vJ6I39CX5bmu8pvHqDGTJUKftNSDXELwafCP7cVBdRKqyGQV3lwkbZbMa0QS6Guzj_ZuzKOO4C6XnelDRkVInEMVc0qv91fGG5IffBw0%26flowName%3DGeneralOAuthFlow%26as%3DS-1137119831%253A1767976926067060%26client_id%3D787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com%23&app_domain=https%3A%2F%2Fclerk.shared.lcl.dev&rart=ANgoxcfIAUbSOue3utIlxPC1UGWTXhGmnjC7No7_agPx_m8k7KSpeHnSi3VdKlnLxOBECft19rvNzgx1qLykFQvAcOuEBvIiL5dTxh96OPa9HVuTeCvRF58"
+    },
+    {
+      "name": "No 404",
+      "status": "PASS",
+      "details": "No 404 errors"
+    },
+    {
+      "name": "No Access Denied",
+      "status": "PASS",
+      "details": "Dashboard accessible"
+    },
+    {
+      "name": "Sidebar Visible",
+      "status": "FAIL",
+      "details": "Sidebar not visible"
+    },
+    {
+      "name": "Navigation Links",
+      "status": "FAIL",
+      "details": "Error navigating: Locator.get_attribute: Timeout 30000ms exceeded.\nC"
+    },
+    {
+      "name": "UI Alignment",
+      "status": "PASS",
+      "details": "Viewport: 1920x1080"
+    },
+    {
+      "name": "Tenant Data",
+      "status": "WARN",
+      "details": "Could not verify tenant-specific data"
+    },
+    {
+      "name": "Console Errors",
+      "status": "PASS",
+      "details": "No JS errors"
+    },
+    {
+      "name": "Logout",
+      "status": "PASS",
+      "details": "Logout attempted"
+    }
+  ],
+  "performance": {
+    "login_page_load": 4.43
+  },
+  "errors": [
+    "Login redirect failed: https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-1137119831%3A1767976926067060&access_type=offline&client_id=787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com&o2v=1&prompt=consent&redirect_uri=https%3A%2F%2Fclerk.shared.lcl.dev%2Fv1%2Foauth_callback&response_type=code&scope=openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&service=lso&state=egnk1k475jiacecdvsv05l6035juowzvd44g4txh&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAMhX0IPr46GO_AQvUkIj8oGFAErhBGxEfObaqk5dvQiI5TRU6MiBc1vOrIvl8Y1qjH0AseTp6ylmMh9RO88uYqIir0WPa6ajHxPbR-5K_b7YFH4QdAtASnpkeNdoQD3xEjP-dOz0-_PX_6FgpanHvxEuuzqAhesl5RYgoZbSeANggE2CUeAX96Mm58FYCHs1mjRsRH-CmranfDnY_iDOqB-QAi-WT4cEfTHwz0ZQdAGeUBrX76Weu9Ul7uAj9RYwQiGtNWJ_ZmrXLcSH85JPsGifHWjhjd7YfwHI5yHXVTj0CjXqD0v44wewC2ZSIEtModY6reMUG0Wrxdp98SZ9qtcT1yIGnPoNKIy25cj31Vb67axDuPsXn0ehguTKgSV6PScLesbOr0vJ6I39CX5bmu8pvHqDGTJUKftNSDXELwafCP7cVBdRKqyGQV3lwkbZbMa0QS6Guzj_ZuzKOO4C6XnelDRkVInEMVc0qv91fGG5IffBw0%26flowName%3DGeneralOAuthFlow%26as%3DS-1137119831%253A1767976926067060%26client_id%3D787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com%23&app_domain=https%3A%2F%2Fclerk.shared.lcl.dev&rart=ANgoxcfIAUbSOue3utIlxPC1UGWTXhGmnjC7No7_agPx_m8k7KSpeHnSi3VdKlnLxOBECft19rvNzgx1qLykFQvAcOuEBvIiL5dTxh96OPa9HVuTeCvRF58"
+  ],
+  "screenshots": [
+    "/Users/sriramvenkatg/edunexus/e2e-tests/screenshots/student_quantum-it_dashboard.png",
+    "/Users/sriramvenkatg/edunexus/e2e-tests/screenshots/student_quantum-it_full.png"
+  ],
+  "summary": {
+    "total": 9,
+    "passed": 5,
+    "failed": 3,
+    "warnings": 1,
+    "status": "FAIL"
+  }
+}

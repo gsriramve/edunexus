@@ -1,0 +1,70 @@
+{
+  "email": "lab@nexus-ec.edu",
+  "role": "lab",
+  "college": "nexus-ec",
+  "timestamp": "2026-01-09T22:10:49.203630",
+  "tests": [
+    {
+      "name": "Login",
+      "status": "FAIL",
+      "details": "Unexpected URL: https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-1407942581%3A1767976865071473&access_type=offline&client_id=787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com&o2v=1&prompt=consent&redirect_uri=https%3A%2F%2Fclerk.shared.lcl.dev%2Fv1%2Foauth_callback&response_type=code&scope=openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&service=lso&state=w40n1fl1tnw82mw274f5esck1tvnwhd1u2xx3aok&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAOX56EQM3b3mdJ1CC6Or83ocQQJ71AWSu0wgzf9cFiFaQo3HWK9S1B8svDtsjyO0oWpbm7gncPrp9eEUeBZ5Vl3XrnZxKAOPini7NhqfMuAeCpBvQFMSUX49N8vp6ny6ousyiBl-cbOnooD--cMkw8R0O13tUc6pgGJWHj7qv1syRukhXTJBYUZEudcFI9GeTbPoVAL5GHHUGRUCBRW2mHtEtXGmyjayfphuCEJw-u2okqzpvPYi6NYuX_6bjOcj_WM25eylRDkNcXmSUj91pZ7m12ArgOUlxbY-tabjvNxs8rG80XuJVq0uC3uE8ciUt2rWC7fJqIGgrKGbnMl23r8xJrSKAut3HWGb9tJHL84wiUTq9_PVIoo-OzD-kpbIojq9K8GqPLJE8Z2IpMutn39CzaB736XEK8NiJlgq58VtgxAsJBswcYn5vhYDKXkhZcB3913U6eW89ou3rR4L_ljSgGgIvQ8GqIHu5740vHWiOmU0zc%26flowName%3DGeneralOAuthFlow%26as%3DS-1407942581%253A1767976865071473%26client_id%3D787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com%23&app_domain=https%3A%2F%2Fclerk.shared.lcl.dev&rart=ANgoxceAtIzT2n-F5h3rt0dFTYjjUQOBSRr5-JHXT1pp6IdgcSO66FVcCpWm5VjXDdYJ1u8Wk7QWee29YcNg_6b04jACD0tlgLXi2Q3CR2Am0bfaYBRvQco"
+    },
+    {
+      "name": "No 404",
+      "status": "PASS",
+      "details": "No 404 errors"
+    },
+    {
+      "name": "No Access Denied",
+      "status": "PASS",
+      "details": "Dashboard accessible"
+    },
+    {
+      "name": "Sidebar Visible",
+      "status": "FAIL",
+      "details": "Sidebar not visible"
+    },
+    {
+      "name": "Navigation Links",
+      "status": "FAIL",
+      "details": "Error navigating: Locator.get_attribute: Timeout 30000ms exceeded.\nC"
+    },
+    {
+      "name": "UI Alignment",
+      "status": "PASS",
+      "details": "Viewport: 1920x1080"
+    },
+    {
+      "name": "Tenant Data",
+      "status": "WARN",
+      "details": "Could not verify tenant-specific data"
+    },
+    {
+      "name": "Console Errors",
+      "status": "PASS",
+      "details": "No JS errors"
+    },
+    {
+      "name": "Logout",
+      "status": "PASS",
+      "details": "Logout attempted"
+    }
+  ],
+  "performance": {
+    "login_page_load": 12.48
+  },
+  "errors": [
+    "Login redirect failed: https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-1407942581%3A1767976865071473&access_type=offline&client_id=787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com&o2v=1&prompt=consent&redirect_uri=https%3A%2F%2Fclerk.shared.lcl.dev%2Fv1%2Foauth_callback&response_type=code&scope=openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&service=lso&state=w40n1fl1tnw82mw274f5esck1tvnwhd1u2xx3aok&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAOX56EQM3b3mdJ1CC6Or83ocQQJ71AWSu0wgzf9cFiFaQo3HWK9S1B8svDtsjyO0oWpbm7gncPrp9eEUeBZ5Vl3XrnZxKAOPini7NhqfMuAeCpBvQFMSUX49N8vp6ny6ousyiBl-cbOnooD--cMkw8R0O13tUc6pgGJWHj7qv1syRukhXTJBYUZEudcFI9GeTbPoVAL5GHHUGRUCBRW2mHtEtXGmyjayfphuCEJw-u2okqzpvPYi6NYuX_6bjOcj_WM25eylRDkNcXmSUj91pZ7m12ArgOUlxbY-tabjvNxs8rG80XuJVq0uC3uE8ciUt2rWC7fJqIGgrKGbnMl23r8xJrSKAut3HWGb9tJHL84wiUTq9_PVIoo-OzD-kpbIojq9K8GqPLJE8Z2IpMutn39CzaB736XEK8NiJlgq58VtgxAsJBswcYn5vhYDKXkhZcB3913U6eW89ou3rR4L_ljSgGgIvQ8GqIHu5740vHWiOmU0zc%26flowName%3DGeneralOAuthFlow%26as%3DS-1407942581%253A1767976865071473%26client_id%3D787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com%23&app_domain=https%3A%2F%2Fclerk.shared.lcl.dev&rart=ANgoxceAtIzT2n-F5h3rt0dFTYjjUQOBSRr5-JHXT1pp6IdgcSO66FVcCpWm5VjXDdYJ1u8Wk7QWee29YcNg_6b04jACD0tlgLXi2Q3CR2Am0bfaYBRvQco"
+  ],
+  "screenshots": [
+    "/Users/sriramvenkatg/edunexus/e2e-tests/screenshots/lab_nexus-ec_dashboard.png",
+    "/Users/sriramvenkatg/edunexus/e2e-tests/screenshots/lab_nexus-ec_full.png"
+  ],
+  "summary": {
+    "total": 9,
+    "passed": 5,
+    "failed": 3,
+    "warnings": 1,
+    "status": "FAIL"
+  }
+}

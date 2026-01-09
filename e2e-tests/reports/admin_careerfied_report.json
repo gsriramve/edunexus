@@ -1,0 +1,70 @@
+{
+  "email": "admin@careerfied.edu",
+  "role": "admin",
+  "college": "careerfied",
+  "timestamp": "2026-01-09T22:12:58.554897",
+  "tests": [
+    {
+      "name": "Login",
+      "status": "FAIL",
+      "details": "Unexpected URL: https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S1109726165%3A1767976983752684&access_type=offline&client_id=787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com&o2v=1&prompt=consent&redirect_uri=https%3A%2F%2Fclerk.shared.lcl.dev%2Fv1%2Foauth_callback&response_type=code&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email&service=lso&state=2ry6ib9bkekf6gvn8fcr13lqe4l710j2654jc7cv&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAMVs21DQmZeiWi4Kwec46ES6Jz7W6UKOeLnqtu-A7BsiH-o1diivwyaLv2xImaHhKpv_rH3Fs41e4fGnHJfgrJLfl8CDo2RKcoKn-BzmK5y-gXlmF-b5929y3M1tSoHeFqjpf_Sm3m6Jv1BGYLdNyrVrbrrS_c2w1eJ-Mc0ep7CxglPaPkM5V96z_YjSbMM5EyjTzMoLbY2X3k-s-Bmv-6ikamIyrJXOmal7Ng0GpMw-83h1WoAp1FnfiyuDJf4usqaOyYDnJVvf8BAvNkGkcnOrz5QvyD0DSIYJAMpVe8VHRPVyejpZGvESeelhkgx1-VXPpxCJnqEl4T62tDO4MPD_LkqbYZ0x2YDqEkPqvdBO-_I7V0OqerXiB-0BHW58HTesgMAbHfZQ_c6kMrWlND7lHoHIOOQHxhwyI88AxDYL8J1D333zbL2oxMH28azofjQ2Q0LrJLjNaJ7B0Wx_lYVAVbU72hdpD_NWXfE_13d3wJy9Ho%26flowName%3DGeneralOAuthFlow%26as%3DS1109726165%253A1767976983752684%26client_id%3D787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com%23&app_domain=https%3A%2F%2Fclerk.shared.lcl.dev&rart=ANgoxccKxjyB8LlR_83cleFishoYH9EuGHL8ZTND9MZRNIgc0brRNDFH2E4Oc45JMw41lB4_-j7Upj6j4pBR24bb1JpWQJmg7dW4gfMXHlPydYxcSe8UEMs"
+    },
+    {
+      "name": "No 404",
+      "status": "PASS",
+      "details": "No 404 errors"
+    },
+    {
+      "name": "No Access Denied",
+      "status": "PASS",
+      "details": "Dashboard accessible"
+    },
+    {
+      "name": "Sidebar Visible",
+      "status": "FAIL",
+      "details": "Sidebar not visible"
+    },
+    {
+      "name": "Navigation Links",
+      "status": "FAIL",
+      "details": "Error navigating: Locator.get_attribute: Timeout 30000ms exceeded.\nC"
+    },
+    {
+      "name": "UI Alignment",
+      "status": "PASS",
+      "details": "Viewport: 1920x1080"
+    },
+    {
+      "name": "Tenant Data",
+      "status": "WARN",
+      "details": "Could not verify tenant-specific data"
+    },
+    {
+      "name": "Console Errors",
+      "status": "PASS",
+      "details": "No JS errors"
+    },
+    {
+      "name": "Logout",
+      "status": "PASS",
+      "details": "Logout attempted"
+    }
+  ],
+  "performance": {
+    "login_page_load": 3.23
+  },
+  "errors": [
+    "Login redirect failed: https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S1109726165%3A1767976983752684&access_type=offline&client_id=787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com&o2v=1&prompt=consent&redirect_uri=https%3A%2F%2Fclerk.shared.lcl.dev%2Fv1%2Foauth_callback&response_type=code&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email&service=lso&state=2ry6ib9bkekf6gvn8fcr13lqe4l710j2654jc7cv&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAMVs21DQmZeiWi4Kwec46ES6Jz7W6UKOeLnqtu-A7BsiH-o1diivwyaLv2xImaHhKpv_rH3Fs41e4fGnHJfgrJLfl8CDo2RKcoKn-BzmK5y-gXlmF-b5929y3M1tSoHeFqjpf_Sm3m6Jv1BGYLdNyrVrbrrS_c2w1eJ-Mc0ep7CxglPaPkM5V96z_YjSbMM5EyjTzMoLbY2X3k-s-Bmv-6ikamIyrJXOmal7Ng0GpMw-83h1WoAp1FnfiyuDJf4usqaOyYDnJVvf8BAvNkGkcnOrz5QvyD0DSIYJAMpVe8VHRPVyejpZGvESeelhkgx1-VXPpxCJnqEl4T62tDO4MPD_LkqbYZ0x2YDqEkPqvdBO-_I7V0OqerXiB-0BHW58HTesgMAbHfZQ_c6kMrWlND7lHoHIOOQHxhwyI88AxDYL8J1D333zbL2oxMH28azofjQ2Q0LrJLjNaJ7B0Wx_lYVAVbU72hdpD_NWXfE_13d3wJy9Ho%26flowName%3DGeneralOAuthFlow%26as%3DS1109726165%253A1767976983752684%26client_id%3D787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com%23&app_domain=https%3A%2F%2Fclerk.shared.lcl.dev&rart=ANgoxccKxjyB8LlR_83cleFishoYH9EuGHL8ZTND9MZRNIgc0brRNDFH2E4Oc45JMw41lB4_-j7Upj6j4pBR24bb1JpWQJmg7dW4gfMXHlPydYxcSe8UEMs"
+  ],
+  "screenshots": [
+    "/Users/sriramvenkatg/edunexus/e2e-tests/screenshots/admin_careerfied_dashboard.png",
+    "/Users/sriramvenkatg/edunexus/e2e-tests/screenshots/admin_careerfied_full.png"
+  ],
+  "summary": {
+    "total": 9,
+    "passed": 5,
+    "failed": 3,
+    "warnings": 1,
+    "status": "FAIL"
+  }
+}

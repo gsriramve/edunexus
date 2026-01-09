@@ -1,0 +1,70 @@
+{
+  "email": "hod.cse@quantum-it.edu",
+  "role": "hod",
+  "college": "quantum-it",
+  "timestamp": "2026-01-09T22:11:58.782302",
+  "tests": [
+    {
+      "name": "Login",
+      "status": "FAIL",
+      "details": "Unexpected URL: https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-1089260237%3A1767976925301728&access_type=offline&client_id=787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com&o2v=1&prompt=consent&redirect_uri=https%3A%2F%2Fclerk.shared.lcl.dev%2Fv1%2Foauth_callback&response_type=code&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email&service=lso&state=j2lqh4f897w3nf2kagwrxswa3gsblt0yz93i3zml&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAMbtK_C_0uTbKa8ry_zA4zZEv5asn8TXvwyExvNS0tGcm49yq6F_p-Fwx2wRCUJcjslD741lVevAN08myZCoLEB1q6ZtoljmaYDif4uR3GJQ8KzQiaZu3bOqb1KihuACNwx1rBN5LwZbZdDuPUcJrwcgPq6r7pEXNG7Lro9GNgHSeLvTRXqNueIURzJKq7L0qFk4dntVLp1xkUovQSIfWBRQrQNmQBc5mjML6BdHAXpO0YCMlH287ZxB9vmZv5viKMOtuW2qIOS77khC1C7w0l8y0JaZe2qHO8OeWPLfDqCFruv2gqf8ZlFZc9bFIR-2seGuPNbdGBhsyZFfbZJ_uz-fjvUR13ScutIFU3OFELs0pXgEE7jBtS-drp--tUJJgE1YgZRGd__8yOokAxF0IHra8EbTM2HihAhQ8SPQWdNjyc6Ji3tWF9BsBFCp_qHRrX3wd68FkU-tXH7sJXSPP2Mvnvhm8vCKjR1-ncLvZH0V_f6hTs%26flowName%3DGeneralOAuthFlow%26as%3DS-1089260237%253A1767976925301728%26client_id%3D787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com%23&app_domain=https%3A%2F%2Fclerk.shared.lcl.dev&rart=ANgoxcebZuQRupHZ4Ldc7Y1ytigfG8w8AEzc2_l_jAByY75ag2A1UXRgrTTYwvfgohiFJPn7mWrT_ms_J3yfuXXJGMOU_uAvB0EXq0fkfPmK7hgYgXzSNb8"
+    },
+    {
+      "name": "No 404",
+      "status": "PASS",
+      "details": "No 404 errors"
+    },
+    {
+      "name": "No Access Denied",
+      "status": "PASS",
+      "details": "Dashboard accessible"
+    },
+    {
+      "name": "Sidebar Visible",
+      "status": "FAIL",
+      "details": "Sidebar not visible"
+    },
+    {
+      "name": "Navigation Links",
+      "status": "FAIL",
+      "details": "Error navigating: Locator.get_attribute: Timeout 30000ms exceeded.\nC"
+    },
+    {
+      "name": "UI Alignment",
+      "status": "PASS",
+      "details": "Viewport: 1920x1080"
+    },
+    {
+      "name": "Tenant Data",
+      "status": "WARN",
+      "details": "Could not verify tenant-specific data"
+    },
+    {
+      "name": "Console Errors",
+      "status": "PASS",
+      "details": "No JS errors"
+    },
+    {
+      "name": "Logout",
+      "status": "PASS",
+      "details": "Logout attempted"
+    }
+  ],
+  "performance": {
+    "login_page_load": 4.16
+  },
+  "errors": [
+    "Login redirect failed: https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-1089260237%3A1767976925301728&access_type=offline&client_id=787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com&o2v=1&prompt=consent&redirect_uri=https%3A%2F%2Fclerk.shared.lcl.dev%2Fv1%2Foauth_callback&response_type=code&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+openid+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email&service=lso&state=j2lqh4f897w3nf2kagwrxswa3gsblt0yz93i3zml&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAMbtK_C_0uTbKa8ry_zA4zZEv5asn8TXvwyExvNS0tGcm49yq6F_p-Fwx2wRCUJcjslD741lVevAN08myZCoLEB1q6ZtoljmaYDif4uR3GJQ8KzQiaZu3bOqb1KihuACNwx1rBN5LwZbZdDuPUcJrwcgPq6r7pEXNG7Lro9GNgHSeLvTRXqNueIURzJKq7L0qFk4dntVLp1xkUovQSIfWBRQrQNmQBc5mjML6BdHAXpO0YCMlH287ZxB9vmZv5viKMOtuW2qIOS77khC1C7w0l8y0JaZe2qHO8OeWPLfDqCFruv2gqf8ZlFZc9bFIR-2seGuPNbdGBhsyZFfbZJ_uz-fjvUR13ScutIFU3OFELs0pXgEE7jBtS-drp--tUJJgE1YgZRGd__8yOokAxF0IHra8EbTM2HihAhQ8SPQWdNjyc6Ji3tWF9BsBFCp_qHRrX3wd68FkU-tXH7sJXSPP2Mvnvhm8vCKjR1-ncLvZH0V_f6hTs%26flowName%3DGeneralOAuthFlow%26as%3DS-1089260237%253A1767976925301728%26client_id%3D787459168867-0v2orf3qo56uocsi84iroseoahhuovdm.apps.googleusercontent.com%23&app_domain=https%3A%2F%2Fclerk.shared.lcl.dev&rart=ANgoxcebZuQRupHZ4Ldc7Y1ytigfG8w8AEzc2_l_jAByY75ag2A1UXRgrTTYwvfgohiFJPn7mWrT_ms_J3yfuXXJGMOU_uAvB0EXq0fkfPmK7hgYgXzSNb8"
+  ],
+  "screenshots": [
+    "/Users/sriramvenkatg/edunexus/e2e-tests/screenshots/hod_quantum-it_dashboard.png",
+    "/Users/sriramvenkatg/edunexus/e2e-tests/screenshots/hod_quantum-it_full.png"
+  ],
+  "summary": {
+    "total": 9,
+    "passed": 5,
+    "failed": 3,
+    "warnings": 1,
+    "status": "FAIL"
+  }
+}

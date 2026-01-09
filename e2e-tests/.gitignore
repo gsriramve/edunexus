@@ -1,0 +1,4 @@
+# Ignore screenshots (generated during tests)
+screenshots/*.png
+# Keep the directory
+!screenshots/.gitkeep
