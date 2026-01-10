@@ -25,9 +25,25 @@ async function bootstrap() {
   // Enable compression for responses
   app.use(compression());
 
-  // Enable CORS for frontend
+  // Enable CORS for frontend - support multiple origins for dev and production
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    process.env.FRONTEND_URL,
+  ].filter(Boolean);
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+      // Check if origin matches allowed list or same host pattern (for deployed environments)
+      if (allowedOrigins.includes(origin) || origin.match(/^http:\/\/\d+\.\d+\.\d+\.\d+:3000$/)) {
+        return callback(null, true);
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [

@@ -4,13 +4,11 @@ import Link from "next/link";
 import {
   HelpCircle,
   Mail,
-  Phone,
   MessageSquare,
   Book,
   Video,
   FileQuestion,
   ChevronRight,
-  ExternalLink,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -131,67 +129,67 @@ export default function HelpPage() {
               Contact Support
             </CardTitle>
             <CardDescription>
-              Need more help? Reach out to our support team
+              Need more help? Fill out the form below and our support team will get back to you
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="flex items-start gap-4 p-4 rounded-lg border">
-                <div className="p-2 rounded-lg bg-blue-50">
-                  <Mail className="h-5 w-5 text-blue-600" />
+            <form className="space-y-4 max-w-lg">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label htmlFor="name" className="text-sm font-medium">
+                    Name
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    placeholder="Your name"
+                    className="w-full px-3 py-2 border rounded-md bg-background"
+                  />
                 </div>
-                <div>
-                  <h4 className="font-medium">Email Support</h4>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    For general inquiries
-                  </p>
-                  <a
-                    href="mailto:support@edunexus.io"
-                    className="text-sm text-primary hover:underline"
-                  >
-                    support@edunexus.io
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 rounded-lg border">
-                <div className="p-2 rounded-lg bg-green-50">
-                  <Phone className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <h4 className="font-medium">Phone Support</h4>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Mon-Fri, 9 AM - 6 PM
-                  </p>
-                  <a
-                    href="tel:+919876543210"
-                    className="text-sm text-primary hover:underline"
-                  >
-                    +91 98765 43210
-                  </a>
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="your.email@example.com"
+                    className="w-full px-3 py-2 border rounded-md bg-background"
+                  />
                 </div>
               </div>
-
-              <div className="flex items-start gap-4 p-4 rounded-lg border">
-                <div className="p-2 rounded-lg bg-purple-50">
-                  <MessageSquare className="h-5 w-5 text-purple-600" />
-                </div>
-                <div>
-                  <h4 className="font-medium">Live Chat</h4>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Quick responses
-                  </p>
-                  <Button variant="outline" size="sm">
-                    Start Chat
-                  </Button>
-                </div>
+              <div className="space-y-2">
+                <label htmlFor="subject" className="text-sm font-medium">
+                  Subject
+                </label>
+                <input
+                  id="subject"
+                  type="text"
+                  placeholder="How can we help?"
+                  className="w-full px-3 py-2 border rounded-md bg-background"
+                />
               </div>
-            </div>
+              <div className="space-y-2">
+                <label htmlFor="message" className="text-sm font-medium">
+                  Message
+                </label>
+                <textarea
+                  id="message"
+                  placeholder="Describe your issue or question..."
+                  rows={4}
+                  className="w-full px-3 py-2 border rounded-md bg-background resize-none"
+                />
+              </div>
+              <Button type="submit" className="w-full sm:w-auto">
+                <Mail className="h-4 w-4 mr-2" />
+                Submit Request
+              </Button>
+            </form>
 
             <div className="mt-6 p-4 rounded-lg bg-muted/50">
               <p className="text-sm text-muted-foreground">
-                <strong>Response Time:</strong> We typically respond within 24 hours for email queries.
-                For urgent issues, please use phone support during business hours.
+                <strong>Response Time:</strong> We typically respond within 24 hours.
+                For urgent issues, please mark your subject with [URGENT].
               </p>
             </div>
           </CardContent>

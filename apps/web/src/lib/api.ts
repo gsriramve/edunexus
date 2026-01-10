@@ -2,7 +2,41 @@
  * API client for EduNexus backend
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// Dynamic API URL detection for deployed environments
+// Cached after first client-side resolution
+let _cachedApiUrl: string | null = null;
+
+function getApiBaseUrl(): string {
+  // Return cached URL if already resolved on client
+  if (_cachedApiUrl !== null) {
+    return _cachedApiUrl;
+  }
+
+  // Server-side: use env variable
+  if (typeof window === 'undefined') {
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+  }
+
+  // Client-side: check for explicit env variable first
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl && !envUrl.includes('localhost')) {
+    _cachedApiUrl = envUrl;
+    return _cachedApiUrl;
+  }
+
+  // Client-side: derive API URL from current host (for deployed environments)
+  const { protocol, hostname } = window.location;
+
+  // If accessing via IP or non-localhost domain, use same host with port 3001
+  if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    _cachedApiUrl = `${protocol}//${hostname}:3001/api`;
+    return _cachedApiUrl;
+  }
+
+  // Fallback for local development
+  _cachedApiUrl = envUrl || 'http://localhost:3001/api';
+  return _cachedApiUrl;
+}
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -66,7 +100,7 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     requestHeaders['x-tenant-id'] = tenantId;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
     method,
     headers: requestHeaders,
     body: body ? JSON.stringify(body) : undefined,

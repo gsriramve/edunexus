@@ -63,7 +63,8 @@ const principalNav = [
   { title: "Dashboard", href: "/principal", icon: LayoutDashboard },
   { title: "Institution Metrics", href: "/principal/institution-metrics", icon: TrendingUp },
   { title: "Accreditation", href: "/principal/accreditation", icon: Shield },
-  { title: "Face Recognition", href: "/principal/face-recognition", icon: ScanFace },
+  // Face Recognition hidden for demo - feature not ready
+  // { title: "Face Recognition", href: "/principal/face-recognition", icon: ScanFace },
   { title: "Alumni", href: "/principal/alumni", icon: GraduationCap },
   { title: "Feedback Cycles", href: "/principal/feedback-cycles", icon: MessageSquare },
   { title: "Departments", href: "/principal/departments", icon: Building2 },
