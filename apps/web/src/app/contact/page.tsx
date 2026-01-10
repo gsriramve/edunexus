@@ -135,20 +135,6 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              <div className="pt-6 border-t">
-                <h3 className="font-medium mb-2">For specific queries:</h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>
-                    Sales: <a href="mailto:sales@edunexus.io" className="text-primary hover:underline">sales@edunexus.io</a>
-                  </li>
-                  <li>
-                    Support: <a href="mailto:support@edunexus.io" className="text-primary hover:underline">support@edunexus.io</a>
-                  </li>
-                  <li>
-                    Press: <a href="mailto:press@edunexus.io" className="text-primary hover:underline">press@edunexus.io</a>
-                  </li>
-                </ul>
-              </div>
             </div>
 
             {/* Contact Form */}
