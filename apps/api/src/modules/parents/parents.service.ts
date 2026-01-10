@@ -32,12 +32,21 @@ export class ParentsService {
   /**
    * Get all children linked to a parent user
    */
-  async getChildren(tenantId: string, userId: string): Promise<ParentChild[]> {
+  async getChildren(tenantId: string, clerkUserId: string): Promise<ParentChild[]> {
+    // First find the user by clerkUserId
+    const user = await this.prisma.user.findFirst({
+      where: { clerkUserId, tenantId },
+    });
+
+    if (!user) {
+      return [];
+    }
+
     // Find all parent-student links for this user
     const parentLinks = await this.prisma.parent.findMany({
       where: {
         tenantId,
-        userId,
+        userId: user.id,
       },
       include: {
         student: {
@@ -69,11 +78,20 @@ export class ParentsService {
   /**
    * Get parent profile by user ID
    */
-  async getProfile(tenantId: string, userId: string): Promise<ParentProfile[]> {
+  async getProfile(tenantId: string, clerkUserId: string): Promise<ParentProfile[]> {
+    // First find the user by clerkUserId
+    const user = await this.prisma.user.findFirst({
+      where: { clerkUserId, tenantId },
+    });
+
+    if (!user) {
+      return [];
+    }
+
     const parentLinks = await this.prisma.parent.findMany({
       where: {
         tenantId,
-        userId,
+        userId: user.id,
       },
       include: {
         student: {
@@ -99,14 +117,23 @@ export class ParentsService {
    */
   async getChild(
     tenantId: string,
-    userId: string,
+    clerkUserId: string,
     studentId: string,
   ): Promise<ParentChild | null> {
+    // First find the user by clerkUserId
+    const user = await this.prisma.user.findFirst({
+      where: { clerkUserId, tenantId },
+    });
+
+    if (!user) {
+      return null;
+    }
+
     // Verify parent has access to this student
     const parentLink = await this.prisma.parent.findFirst({
       where: {
         tenantId,
-        userId,
+        userId: user.id,
         studentId,
       },
       include: {

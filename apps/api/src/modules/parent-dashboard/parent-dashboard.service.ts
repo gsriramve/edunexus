@@ -23,14 +23,23 @@ export class ParentDashboardService {
    */
   async getDashboard(
     tenantId: string,
-    parentUserId: string,
+    clerkUserId: string,
     studentId: string,
   ): Promise<ParentDashboardResponseDto> {
+    // First find the user by clerkUserId
+    const user = await this.prisma.user.findFirst({
+      where: { clerkUserId, tenantId },
+    });
+
+    if (!user) {
+      return this.getSampleDashboard(studentId);
+    }
+
     // Verify parent has access to this student
     const parentAccess = await this.prisma.parent.findFirst({
       where: {
         tenantId,
-        userId: parentUserId,
+        userId: user.id,
         studentId,
       },
     });
@@ -45,7 +54,7 @@ export class ParentDashboardService {
         this.getChildInfo(tenantId, studentId),
         this.getChildStats(tenantId, studentId),
         this.getRecentActivity(tenantId, studentId, { limit: 5 }),
-        this.getNotifications(tenantId, parentUserId, { limit: 5 }),
+        this.getNotifications(tenantId, clerkUserId, { limit: 5 }),
         this.getUpcomingEvents(tenantId, studentId, { limit: 4 }),
         this.getSubjectPerformance(tenantId, studentId, {}),
       ]);
@@ -321,14 +330,23 @@ export class ParentDashboardService {
    */
   async getNotifications(
     tenantId: string,
-    parentUserId: string,
+    clerkUserId: string,
     query: QueryNotificationsDto,
   ): Promise<NotificationDto[]> {
     const limit = query.limit || 5;
 
+    // First find the user by clerkUserId
+    const user = await this.prisma.user.findFirst({
+      where: { clerkUserId, tenantId },
+    });
+
+    if (!user) {
+      return this.getSampleNotifications();
+    }
+
     const whereClause: Record<string, unknown> = {
       tenantId,
-      userId: parentUserId,
+      userId: user.id,
     };
 
     if (query.status === 'unread') {

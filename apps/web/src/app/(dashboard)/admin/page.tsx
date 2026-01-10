@@ -55,7 +55,7 @@ export default function AdminStaffDashboard() {
             <Skeleton className="h-10 w-28" />
           </div>
         </div>
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
           {[...Array(6)].map((_, i) => (
             <Skeleton key={i} className="h-24" />
           ))}
@@ -144,81 +144,81 @@ export default function AdminStaffDashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-blue-50">
-                <Users className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-blue-50 shrink-0">
+                <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Students</p>
-                <p className="text-2xl font-bold">{(stats?.totalStudents || 0).toLocaleString()}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Total Students</p>
+                <p className="text-xl sm:text-2xl font-bold">{(stats?.totalStudents || 0).toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-green-50">
-                <UserPlus className="h-6 w-6 text-green-600" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-green-50 shrink-0">
+                <UserPlus className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">New Admissions</p>
-                <p className="text-2xl font-bold text-green-600">+{stats?.newAdmissions || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-orange-50">
-                <ClipboardList className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pending Apps</p>
-                <p className="text-2xl font-bold text-orange-600">{stats?.pendingApplications || 0}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">New Admissions</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600">+{stats?.newAdmissions || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-purple-50">
-                <IndianRupee className="h-6 w-6 text-purple-600" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-orange-50 shrink-0">
+                <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Today's Collection</p>
-                <p className="text-2xl font-bold">{formatCurrency(stats?.todayCollections || 0)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-red-50">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pending Fees</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(stats?.pendingFees || 0)}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Pending Apps</p>
+                <p className="text-xl sm:text-2xl font-bold text-orange-600">{stats?.pendingApplications || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-teal-50">
-                <FileText className="h-6 w-6 text-teal-600" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-purple-50 shrink-0">
+                <IndianRupee className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Certificates</p>
-                <p className="text-2xl font-bold">{stats?.certificatesRequested || 0}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Today's Collection</p>
+                <p className="text-xl sm:text-2xl font-bold">{formatCurrency(stats?.todayCollections || 0)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-red-50 shrink-0">
+                <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Pending Fees</p>
+                <p className="text-xl sm:text-2xl font-bold text-red-600">{formatCurrency(stats?.pendingFees || 0)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-teal-50 shrink-0">
+                <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-teal-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Certificates</p>
+                <p className="text-xl sm:text-2xl font-bold">{stats?.certificatesRequested || 0}</p>
               </div>
             </div>
           </CardContent>
