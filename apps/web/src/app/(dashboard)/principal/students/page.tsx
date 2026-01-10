@@ -116,13 +116,14 @@ export default function StudentsPage() {
     gender: "" as "male" | "female" | "other" | "",
   });
 
-  // API hooks
+  // API hooks - limit to 50 students for faster loading
   const { data: studentsData, isLoading, error } = useStudents(tenantId || '', {
     search: searchQuery || undefined,
     departmentId: departmentFilter !== "all" ? departmentFilter : undefined,
     batch: batchFilter !== "all" ? batchFilter : undefined,
     semester: semesterFilter !== "all" ? parseInt(semesterFilter) : undefined,
     status: 'active',
+    limit: 50,
   });
   const { data: statsData, isLoading: statsLoading } = useStudentStats(tenantId || '');
   const { data: departmentsData } = useDepartments(tenantId || '');

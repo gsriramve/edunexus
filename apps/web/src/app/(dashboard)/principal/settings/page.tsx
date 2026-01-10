@@ -309,7 +309,16 @@ export default function PrincipalSettingsPage() {
       <div className="flex-1 p-6">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-destructive">Failed to load tenant settings. Please try again.</p>
+            <div className="text-center py-8">
+              <p className="text-destructive mb-4">Failed to load tenant settings. Please try again.</p>
+              <Button
+                variant="outline"
+                onClick={() => window.location.reload()}
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

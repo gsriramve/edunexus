@@ -67,12 +67,12 @@ export default function PrincipalFaceRecognition() {
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [dateRange, setDateRange] = useState("7d");
 
-  // Fetch data
-  const { data: departments } = useDepartments(tenantId);
-  const { data: enrollmentStats, isLoading: enrollmentLoading } = useFaceEnrollmentStats(tenantId);
-  const { data: sessionStats, isLoading: sessionLoading } = useFaceSessionStats(tenantId);
-  const { data: config, isLoading: configLoading } = useFaceRecognitionConfig(tenantId);
-  const { data: recentSessions, isLoading: sessionsLoading } = useFaceSessions(tenantId, {
+  // Fetch data with error handling
+  const { data: departments, error: deptError } = useDepartments(tenantId);
+  const { data: enrollmentStats, isLoading: enrollmentLoading, error: enrollmentError } = useFaceEnrollmentStats(tenantId);
+  const { data: sessionStats, isLoading: sessionLoading, error: sessionError } = useFaceSessionStats(tenantId);
+  const { data: config, isLoading: configLoading, error: configError } = useFaceRecognitionConfig(tenantId);
+  const { data: recentSessions, isLoading: sessionsLoading, error: sessionsError } = useFaceSessions(tenantId, {
     departmentId: selectedDepartment || undefined,
     limit: 10,
   });
@@ -82,6 +82,49 @@ export default function PrincipalFaceRecognition() {
 
   const sessions = recentSessions?.data || [];
   const isLoading = enrollmentLoading || sessionLoading || configLoading;
+  const hasError = enrollmentError || sessionError || configError;
+
+  // Show error state if any API fails
+  if (hasError && !isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Face Recognition</h1>
+            <p className="text-muted-foreground">
+              Monitor and manage face recognition attendance system
+            </p>
+          </div>
+        </div>
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Unable to Load Face Recognition</AlertTitle>
+          <AlertDescription className="flex items-center justify-between">
+            <span>
+              Face recognition service is currently unavailable. This feature requires AWS Rekognition to be configured.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8 text-muted-foreground">
+              <Camera className="h-16 w-16 mx-auto mb-4 opacity-50" />
+              <p className="font-medium mb-2">Face Recognition Not Available</p>
+              <p className="text-sm">Please contact your administrator to configure AWS Rekognition credentials.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Calculate overall enrollment percentage
   const totalStudents = enrollmentStats?.byDepartment?.reduce((sum, d) => sum + d.total, 0) || 0;
