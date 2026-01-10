@@ -1,9 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getAuthContext } from '@/lib/api';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { getAuthContext, getApiBaseUrl } from '@/lib/api';
 
 // ============ Types ============
 
@@ -324,7 +322,7 @@ async function principalDashboardApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${API_BASE_URL}/principal-dashboard${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/principal-dashboard${endpoint}`, {
     method: 'GET',
     headers,
   });

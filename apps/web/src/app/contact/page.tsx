@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { GraduationCap, MapPin, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getApiBaseUrl } from "@/lib/api";
 
 interface FormData {
   name: string;
@@ -37,8 +38,7 @@ export default function ContactPage() {
     setErrorMessage("");
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
-      const response = await fetch(`${apiUrl}/leads`, {
+      const response = await fetch(`${getApiBaseUrl()}/leads`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -16,26 +16,30 @@ export class TeacherMessagesService {
   // GET TEACHER INFO
   // =============================================================================
 
-  private async getTeacherInfo(tenantId: string, userId: string) {
-    const staff = await this.prisma.staff.findFirst({
-      where: { tenantId, userId },
+  private async getTeacherInfo(tenantId: string, clerkUserId: string) {
+    // First find the user by Clerk ID
+    const user = await this.prisma.user.findFirst({
+      where: { tenantId, clerkUserId },
       include: {
-        user: { select: { name: true, email: true } },
-        department: { select: { id: true, name: true, code: true } },
+        staff: {
+          include: {
+            department: { select: { id: true, name: true, code: true } },
+          },
+        },
       },
     });
 
-    if (!staff) {
+    if (!user?.staff) {
       throw new NotFoundException('Teacher not found');
     }
 
     return {
-      staffId: staff.id,
-      userId: staff.userId,
-      name: staff.user?.name || 'Unknown',
-      email: staff.user?.email || '',
-      departmentId: staff.departmentId,
-      departmentName: staff.department?.name,
+      staffId: user.staff.id,
+      userId: user.id,
+      name: user.name || 'Unknown',
+      email: user.email || '',
+      departmentId: user.staff.departmentId,
+      departmentName: user.staff.department?.name,
     };
   }
 

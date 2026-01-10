@@ -177,55 +177,55 @@ export default function ParentTransport() {
       </Card>
 
       {/* Quick Info Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-blue-50">
-                <Bus className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-blue-50 shrink-0">
+                <Bus className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Bus Number</p>
-                <p className="text-xl font-bold">{transportInfo.busNo}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground">Bus Number</p>
+                <p className="text-lg sm:text-xl font-bold">{transportInfo.busNo}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-green-50">
-                <MapPin className="h-6 w-6 text-green-600" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-green-50 shrink-0">
+                <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pickup Point</p>
-                <p className="text-lg font-semibold truncate">{transportInfo.pickupPoint}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-orange-50">
-                <Clock className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pickup Time</p>
-                <p className="text-xl font-bold">{transportInfo.pickupTime}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground">Pickup Point</p>
+                <p className="text-sm sm:text-lg font-semibold truncate">{transportInfo.pickupPoint}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-purple-50">
-                <Clock className="h-6 w-6 text-purple-600" />
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-orange-50 shrink-0">
+                <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Drop Time</p>
-                <p className="text-xl font-bold">{transportInfo.dropTime}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground">Pickup Time</p>
+                <p className="text-lg sm:text-xl font-bold">{transportInfo.pickupTime}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 rounded-lg bg-purple-50 shrink-0">
+                <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground">Drop Time</p>
+                <p className="text-lg sm:text-xl font-bold">{transportInfo.dropTime}</p>
               </div>
             </div>
           </CardContent>
@@ -284,45 +284,59 @@ export default function ParentTransport() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-4 rounded-lg border">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-blue-100">
-                  <User className="h-6 w-6 text-blue-600" />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 rounded-full bg-blue-100 shrink-0">
+                    <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold">{transportInfo.driverName}</p>
+                    <p className="text-sm text-muted-foreground">Bus Driver</p>
+                    <p className="text-sm text-muted-foreground sm:hidden">
+                      {transportInfo.driverPhone}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="font-semibold">{transportInfo.driverName}</p>
-                  <p className="text-sm text-muted-foreground">Bus Driver</p>
+                <div className="flex items-center gap-2 sm:ml-auto">
+                  <p className="text-sm text-muted-foreground hidden sm:block">
+                    {transportInfo.driverPhone}
+                  </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`tel:${transportInfo.driverPhone}`}>
+                      <Phone className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Call</span>
+                    </a>
+                  </Button>
                 </div>
-                <Button variant="outline" size="sm" asChild>
-                  <a href={`tel:${transportInfo.driverPhone}`}>
-                    <Phone className="h-4 w-4 mr-2" />
-                    Call
-                  </a>
-                </Button>
               </div>
-              <p className="text-sm text-muted-foreground mt-2 ml-16">
-                {transportInfo.driverPhone}
-              </p>
             </div>
 
             <div className="p-4 rounded-lg border">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-purple-100">
-                  <User className="h-6 w-6 text-purple-600" />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 rounded-full bg-purple-100 shrink-0">
+                    <User className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold">{transportInfo.attendantName}</p>
+                    <p className="text-sm text-muted-foreground">Bus Attendant</p>
+                    <p className="text-sm text-muted-foreground sm:hidden">
+                      {transportInfo.attendantPhone}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="font-semibold">{transportInfo.attendantName}</p>
-                  <p className="text-sm text-muted-foreground">Bus Attendant</p>
+                <div className="flex items-center gap-2 sm:ml-auto">
+                  <p className="text-sm text-muted-foreground hidden sm:block">
+                    {transportInfo.attendantPhone}
+                  </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`tel:${transportInfo.attendantPhone}`}>
+                      <Phone className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Call</span>
+                    </a>
+                  </Button>
                 </div>
-                <Button variant="outline" size="sm" asChild>
-                  <a href={`tel:${transportInfo.attendantPhone}`}>
-                    <Phone className="h-4 w-4 mr-2" />
-                    Call
-                  </a>
-                </Button>
               </div>
-              <p className="text-sm text-muted-foreground mt-2 ml-16">
-                {transportInfo.attendantPhone}
-              </p>
             </div>
           </CardContent>
         </Card>

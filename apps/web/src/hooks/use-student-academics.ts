@@ -1,9 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getAuthContext } from '@/lib/api';
+import { getAuthContext, getApiBaseUrl } from '@/lib/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // Types
 export interface AcademicSubject {
@@ -70,7 +69,7 @@ async function studentAcademicsApi<T>(
     if (authContext.role) headers['x-user-role'] = authContext.role;
   }
 
-  const response = await fetch(`${API_BASE_URL}/student-academics${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/student-academics${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

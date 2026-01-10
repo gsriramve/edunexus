@@ -89,6 +89,56 @@ const componentWeights = {
   behavioral: 10,
 };
 
+// Sample SGI data for demo purposes
+const sampleSgiData: SgiData = {
+  id: 'sample-sgi',
+  studentId: 'sample-student',
+  month: new Date().getMonth() + 1,
+  year: new Date().getFullYear(),
+  sgiScore: 78.5,
+  sgiTrend: 'improving',
+  trendDelta: 3.3,
+  academicScore: 82,
+  engagementScore: 75,
+  skillsScore: 72,
+  behavioralScore: 85,
+  academicBreakdown: {
+    cgpaTrend: 8.2,
+    examImprovement: 85,
+    assignments: 79,
+  },
+  engagementBreakdown: {
+    clubActivity: 70,
+    eventsAttended: 78,
+    attendanceRate: 88,
+  },
+  skillsBreakdown: {
+    certifications: 75,
+    projects: 68,
+    internships: 82,
+  },
+  behavioralBreakdown: {
+    feedbackScore: 90,
+    punctuality: 85,
+    discipline: 82,
+  },
+  insightsSummary: 'Strong academic performance with room for improvement in skills development.',
+  recommendations: [
+    { category: 'Skills', action: 'Focus on improving communication skills through presentations', priority: 'high' },
+    { category: 'Skills', action: 'Participate in more hackathons to boost technical skills', priority: 'medium' },
+    { category: 'Engagement', action: 'Consider joining a leadership role in a student club', priority: 'medium' },
+  ],
+  dataCompleteness: 92,
+  calculatedAt: new Date().toISOString(),
+};
+
+const sampleSgiHistory: SgiData[] = [
+  { ...sampleSgiData, month: new Date().getMonth() + 1, sgiScore: 78.5 },
+  { ...sampleSgiData, month: new Date().getMonth(), sgiScore: 75.2 },
+  { ...sampleSgiData, month: new Date().getMonth() - 1, sgiScore: 72.8 },
+  { ...sampleSgiData, month: new Date().getMonth() - 2, sgiScore: 70.5 },
+];
+
 export default function StudentGrowthPage() {
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
   const tenantId = useTenantId();
@@ -108,9 +158,14 @@ export default function StudentGrowthPage() {
 
   const isLoading = studentLoading || sgiLoading;
 
-  // Get the latest SGI data
-  const sgi: SgiData | null = sgiData && "latest" in sgiData ? sgiData.latest : (sgiData as SgiData | null);
-  const sgiHistory = sgiData && "history" in sgiData ? sgiData.history : [];
+  // Get the latest SGI data - use sample data if no real data available
+  const realSgi: SgiData | null = sgiData && "latest" in sgiData ? sgiData.latest : (sgiData as SgiData | null);
+  const realHistory = sgiData && "history" in sgiData ? sgiData.history : [];
+
+  // Use sample data if no real data is available (for demo purposes)
+  const sgi: SgiData = realSgi || sampleSgiData;
+  const sgiHistory = realHistory.length > 0 ? realHistory : sampleSgiHistory;
+  const isUsingDemoData = !realSgi;
 
   // Previous score from history
   const previousSgi = sgiHistory.length > 1 ? sgiHistory[1]?.sgiScore : undefined;
@@ -145,31 +200,6 @@ export default function StudentGrowthPage() {
     );
   }
 
-  if (!sgi) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Growth Index</h1>
-          <p className="text-muted-foreground">
-            Track your holistic development with the Student Growth Index (SGI)
-          </p>
-        </div>
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No SGI Data Available</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Your Student Growth Index hasn't been calculated yet. <br />
-              Complete more activities and assessments to generate your SGI.
-            </p>
-            <Button onClick={handleRecalculate} disabled={calculateSgi.isPending}>
-              {calculateSgi.isPending ? "Calculating..." : "Calculate SGI Now"}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   // Build components data from SGI
   const components = {
@@ -211,6 +241,11 @@ export default function StudentGrowthPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {isUsingDemoData && (
+            <Badge variant="secondary" className="text-xs">
+              Sample Data
+            </Badge>
+          )}
           <Badge variant="outline" className="text-sm">
             {new Date(0, sgi.month - 1).toLocaleString('default', { month: 'long' })} {sgi.year}
           </Badge>

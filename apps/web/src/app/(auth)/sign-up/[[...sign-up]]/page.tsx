@@ -6,6 +6,7 @@ import { useEffect, useState, Suspense } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, Loader2, CheckCircle } from "lucide-react";
 import Link from "next/link";
+import { getApiBaseUrl } from "@/lib/api";
 
 interface InvitationValidation {
   valid: boolean;
@@ -42,9 +43,8 @@ function SignUpContent() {
       }
 
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
         const response = await fetch(
-          `${apiUrl}/invitations/validate/${token}`
+          `${getApiBaseUrl()}/invitations/validate/${token}`
         );
 
         if (!response.ok) {

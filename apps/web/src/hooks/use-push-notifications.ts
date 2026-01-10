@@ -9,8 +9,10 @@ import {
   PushNotificationPayload,
 } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { getApiBaseUrl } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Get base URL without /api suffix for push notification endpoints
+const getBaseUrl = () => getApiBaseUrl().replace(/\/api$/, '');
 
 interface UsePushNotificationsOptions {
   userId: string;
@@ -83,7 +85,7 @@ export function usePushNotifications({
   const registerTokenWithBackend = useCallback(
     async (token: string): Promise<boolean> => {
       try {
-        const response = await fetch(`${API_URL}/notifications/push/register-token`, {
+        const response = await fetch(`${getBaseUrl()}/notifications/push/register-token`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -123,7 +125,7 @@ export function usePushNotifications({
   // Unregister token from backend
   const unregisterTokenFromBackend = useCallback(async (token: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${API_URL}/notifications/push/unregister-token`, {
+      const response = await fetch(`${getBaseUrl()}/notifications/push/unregister-token`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -272,7 +274,7 @@ export async function sendPushNotification(
   notification: PushNotificationPayload,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch(`${API_URL}/notifications/push`, {
+    const response = await fetch(`${getBaseUrl()}/notifications/push`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -299,7 +301,7 @@ export async function sendBulkPushNotification(
   notification: PushNotificationPayload,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch(`${API_URL}/notifications/push/bulk`, {
+    const response = await fetch(`${getBaseUrl()}/notifications/push/bulk`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -15,20 +15,26 @@ export class HodSkillGapsService {
 
   async getSkillGaps(
     tenantId: string,
-    hodUserId: string,
+    hodClerkUserId: string,
     query: QuerySkillGapsDto,
   ): Promise<SkillGapsResponse> {
-    // Get HOD's department
-    const staff = await this.prisma.staff.findFirst({
-      where: { tenantId, userId: hodUserId },
-      include: { department: true },
+    // Get HOD's department by looking up user via Clerk ID first
+    const user = await this.prisma.user.findFirst({
+      where: { tenantId, clerkUserId: hodClerkUserId },
+      include: {
+        staff: {
+          include: { department: true },
+        },
+      },
     });
 
-    if (!staff?.departmentId) {
+    if (!user?.staff?.departmentId) {
       return this.getSampleSkillGaps();
     }
+    const staff = user.staff;
 
-    const departmentId = staff.departmentId;
+    // departmentId is guaranteed to be non-null after the check above
+    const departmentId = staff.departmentId as string;
     const batchFilter = query.batch && query.batch !== 'all'
       ? { admissionDate: { gte: new Date(`${query.batch}-01-01`), lt: new Date(`${parseInt(query.batch) + 1}-01-01`) } }
       : {};

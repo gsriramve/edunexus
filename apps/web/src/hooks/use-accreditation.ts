@@ -1,9 +1,8 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAuthContext } from '@/lib/api';
+import { getAuthContext, getApiBaseUrl } from '@/lib/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // ============ Types ============
 
@@ -334,7 +333,7 @@ async function accreditationApi<T>(
     if (authContext.role) headers['x-user-role'] = authContext.role;
   }
 
-  const response = await fetch(`${API_BASE_URL}/accreditation${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/accreditation${endpoint}`, {
     ...options,
     headers: { ...headers, ...(options.headers as Record<string, string>) },
     credentials: 'include',

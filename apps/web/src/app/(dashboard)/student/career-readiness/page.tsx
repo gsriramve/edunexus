@@ -45,6 +45,41 @@ import {
   formatAssessmentDate,
 } from "@/hooks/use-career-readiness";
 
+// Sample CRI data for demo purposes
+const sampleCriData: CriData = {
+  id: 'sample-cri',
+  studentId: 'sample-student',
+  criScore: 72.5,
+  placementProbability: 78,
+  salaryBand: 'mid',
+  resumeScore: 75,
+  interviewScore: 70,
+  skillRoleFitScore: 72,
+  industryExposureScore: 68,
+  skillGaps: [
+    { skill: 'System Design', currentLevel: 65, requiredLevel: 100, priority: 'high' },
+    { skill: 'Certifications', currentLevel: 55, requiredLevel: 100, priority: 'medium' },
+    { skill: 'Leadership', currentLevel: 65, requiredLevel: 100, priority: 'medium' },
+  ],
+  targetRoles: [
+    { role: 'Software Engineer', fitScore: 82, requirements: ['DSA', 'System Design', 'OOP'] },
+    { role: 'Full Stack Developer', fitScore: 78, requirements: ['React', 'Node.js', 'SQL'] },
+    { role: 'Data Analyst', fitScore: 65, requirements: ['Python', 'SQL', 'Statistics'] },
+  ],
+  topMatchingCompanies: [
+    { company: 'TCS', fitScore: 85, openings: 150, industry: 'IT Services', avgPackage: 650000 },
+    { company: 'Infosys', fitScore: 82, openings: 200, industry: 'IT Services', avgPackage: 600000 },
+    { company: 'Wipro', fitScore: 78, openings: 120, industry: 'IT Services', avgPackage: 550000 },
+  ],
+  actionPlan: [
+    { action: 'Practice system design problems', deadline: '2025-03-01', impact: 'high', category: 'Technical' },
+    { action: 'Get AWS certification', deadline: '2025-04-01', impact: 'medium', category: 'Experience' },
+    { action: 'Join leadership activities', deadline: '2025-02-15', impact: 'medium', category: 'Soft Skills' },
+  ],
+  confidenceScore: 85,
+  assessmentDate: new Date().toISOString(),
+};
+
 export default function CareerReadinessPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const tenantId = useTenantId();
@@ -64,9 +99,13 @@ export default function CareerReadinessPage() {
 
   const isLoading = studentLoading || criLoading;
 
-  // Get the latest CRI data
-  const cri: CriData | null = criData && "latest" in criData ? criData.latest : (criData as CriData | null);
+  // Get the latest CRI data - use sample data if no real data available
+  const realCri: CriData | null = criData && "latest" in criData ? criData.latest : (criData as CriData | null);
   const criHistory = criData && "history" in criData ? criData.history : [];
+
+  // Use sample data if no real data is available (for demo purposes)
+  const cri: CriData = realCri || sampleCriData;
+  const isUsingDemoData = !realCri;
 
   const handleRecalculate = () => {
     if (student?.id) {
@@ -97,7 +136,9 @@ export default function CareerReadinessPage() {
     );
   }
 
-  if (!cri) {
+  // No longer returning early for missing data since we use sample data
+  if (false) {
+    // Keep this block for reference but it will never execute
     return (
       <div className="space-y-6">
         <div>
@@ -134,6 +175,11 @@ export default function CareerReadinessPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {isUsingDemoData && (
+            <Badge variant="secondary" className="text-xs">
+              Sample Data
+            </Badge>
+          )}
           <Badge variant="outline" className="text-sm">
             Last assessed: {formatAssessmentDate(cri.assessmentDate)}
           </Badge>

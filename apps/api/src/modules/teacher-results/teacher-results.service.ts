@@ -22,18 +22,22 @@ export class TeacherResultsService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Get staff ID for a user
+   * Get staff ID for a user (looks up by Clerk user ID)
    */
-  private async getStaffId(tenantId: string, userId: string): Promise<string> {
-    const staff = await this.prisma.staff.findFirst({
-      where: { tenantId, userId },
+  private async getStaffId(tenantId: string, clerkUserId: string): Promise<string> {
+    // First find the user by Clerk ID
+    const user = await this.prisma.user.findFirst({
+      where: { tenantId, clerkUserId },
+      include: {
+        staff: true,
+      },
     });
 
-    if (!staff) {
+    if (!user?.staff) {
       throw new ForbiddenException('User is not a staff member');
     }
 
-    return staff.id;
+    return user.staff.id;
   }
 
   /**

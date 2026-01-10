@@ -1,9 +1,8 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAuthContext } from '@/lib/api';
+import { getAuthContext, getApiBaseUrl } from '@/lib/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // ============ Types ============
 
@@ -148,7 +147,7 @@ async function teacherAssignmentsApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${API_BASE_URL}/teacher-assignments${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/teacher-assignments${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

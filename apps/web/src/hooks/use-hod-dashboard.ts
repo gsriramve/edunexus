@@ -1,9 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { getAuthContext } from '@/lib/api';
+import { getAuthContext, getApiBaseUrl } from '@/lib/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // ============ Types ============
 
@@ -103,7 +102,7 @@ async function hodDashboardApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${API_BASE_URL}/hod-dashboard${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/hod-dashboard${endpoint}`, {
     method: 'GET',
     headers,
   });

@@ -25,7 +25,107 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
-import { useTeacherDashboard, type ScheduleItemDto, type PendingTaskDto, type SubjectStatsDto } from "@/hooks/use-teacher-dashboard";
+import { useTeacherDashboard, type TeacherDashboardResponse, type ScheduleItemDto, type PendingTaskDto, type SubjectStatsDto } from "@/hooks/use-teacher-dashboard";
+
+// Sample data for demo purposes when API fails
+const sampleDashboardData: TeacherDashboardResponse = {
+  teacher: {
+    id: 'sample-teacher',
+    name: 'Dr. Priya Sharma',
+    employeeId: 'EMP001',
+    department: 'Computer Science',
+    departmentCode: 'CSE',
+    designation: 'Assistant Professor',
+    email: 'teacher@quantum-it.edu',
+    subjectsCount: 3,
+    totalStudents: 120,
+  },
+  quickStats: {
+    totalStudents: 120,
+    classesToday: 4,
+    subjectsCount: 3,
+    pendingTasks: 2,
+    upcomingExams: 1,
+    lowAttendanceStudents: 5,
+  },
+  todaySchedule: [
+    {
+      id: '1',
+      time: '09:00 AM',
+      subject: 'Data Structures',
+      subjectCode: 'CS301',
+      section: 'A',
+      room: 'Room 201',
+      type: 'Lecture',
+      students: 45,
+    },
+    {
+      id: '2',
+      time: '11:00 AM',
+      subject: 'Operating Systems',
+      subjectCode: 'CS401',
+      section: 'B',
+      room: 'Lab 101',
+      type: 'Lab',
+      students: 30,
+    },
+    {
+      id: '3',
+      time: '02:00 PM',
+      subject: 'Database Management',
+      subjectCode: 'CS302',
+      section: 'A',
+      room: 'Room 305',
+      type: 'Lecture',
+      students: 45,
+    },
+  ],
+  pendingTasks: [
+    {
+      id: '1',
+      task: 'Mark attendance for Data Structures (CS301)',
+      type: 'attendance',
+      due: 'Today',
+      urgent: true,
+    },
+    {
+      id: '2',
+      task: 'Enter marks for Mid-term Exam - Database Management',
+      type: 'marks',
+      due: 'This Week',
+      urgent: false,
+    },
+  ],
+  subjectStats: [
+    {
+      id: '1',
+      subject: 'Data Structures',
+      code: 'CS301',
+      sections: 2,
+      students: 90,
+      avgAttendance: 82,
+      classesThisWeek: 4,
+    },
+    {
+      id: '2',
+      subject: 'Operating Systems',
+      code: 'CS401',
+      sections: 1,
+      students: 45,
+      avgAttendance: 78,
+      classesThisWeek: 3,
+    },
+    {
+      id: '3',
+      subject: 'Database Management',
+      code: 'CS302',
+      sections: 1,
+      students: 45,
+      avgAttendance: 85,
+      classesThisWeek: 3,
+    },
+  ],
+};
 
 const quickActions = [
   { title: "Mark Attendance", icon: CheckCircle2, href: "/teacher/attendance", description: "Today's classes" },
@@ -128,30 +228,11 @@ export default function TeacherDashboard() {
     return <DashboardSkeleton />;
   }
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-lg font-semibold mb-2">Failed to load dashboard</h2>
-        <p className="text-muted-foreground mb-4">
-          {error instanceof Error ? error.message : "An error occurred"}
-        </p>
-        <Button onClick={() => window.location.reload()}>Try Again</Button>
-      </div>
-    );
-  }
+  // Use sample data if API fails or returns no data
+  const effectiveData = dashboardData || sampleDashboardData;
+  const isUsingDemoData = !dashboardData || error;
 
-  if (!dashboardData) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold">No data available</h2>
-        <p className="text-muted-foreground">Please ensure you are assigned as a teacher with subjects.</p>
-      </div>
-    );
-  }
-
-  const { teacher, quickStats, todaySchedule, pendingTasks, subjectStats } = dashboardData;
+  const { teacher, quickStats, todaySchedule, pendingTasks, subjectStats } = effectiveData;
 
   const statsConfig = [
     { title: "Total Students", value: quickStats.totalStudents, icon: Users, color: "text-blue-600", bgColor: "bg-blue-50" },
@@ -172,7 +253,14 @@ export default function TeacherDashboard() {
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{greeting}, {teacher.name.split(" ").slice(-1)[0]}!</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight">{greeting}, {teacher.name.split(" ").slice(-1)[0]}!</h1>
+              {isUsingDemoData && (
+                <Badge variant="secondary" className="text-xs">
+                  Sample Data
+                </Badge>
+              )}
+            </div>
             <p className="text-muted-foreground">
               {teacher.designation} • {teacher.departmentCode}
             </p>

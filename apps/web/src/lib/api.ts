@@ -6,7 +6,7 @@
 // Cached after first client-side resolution
 let _cachedApiUrl: string | null = null;
 
-function getApiBaseUrl(): string {
+export function getApiBaseUrl(): string {
   // Return cached URL if already resolved on client
   if (_cachedApiUrl !== null) {
     return _cachedApiUrl;
@@ -1714,7 +1714,7 @@ export const documentsApi = {
       }
     });
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/documents`, {
+    const response = await fetch(`${getApiBaseUrl()}/documents`, {
       method: 'POST',
       headers: {
         'x-tenant-id': tenantId,
@@ -2895,7 +2895,7 @@ export const importExportApi = {
   // Sample Templates
   downloadSampleTemplate: async (tenantId: string, entityType: string) => {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/import-export/sample-template/${entityType}`,
+      `${getApiBaseUrl()}/import-export/sample-template/${entityType}`,
       {
         headers: {
           'x-tenant-id': tenantId,
@@ -2940,7 +2940,7 @@ export const importExportApi = {
     formData.append('file', file);
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/import-export/import/${jobId}/validate`,
+      `${getApiBaseUrl()}/import-export/import/${jobId}/validate`,
       {
         method: 'POST',
         headers: {
@@ -2963,7 +2963,7 @@ export const importExportApi = {
     formData.append('file', file);
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/import-export/import/${jobId}/process`,
+      `${getApiBaseUrl()}/import-export/import/${jobId}/process`,
       {
         method: 'POST',
         headers: {
@@ -2988,7 +2988,7 @@ export const importExportApi = {
     formData.append('createdById', createdById);
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/import-export/import/upload`,
+      `${getApiBaseUrl()}/import-export/import/upload`,
       {
         method: 'POST',
         headers: {
@@ -3014,7 +3014,7 @@ export const importExportApi = {
     formData.append('updateExisting', updateExisting.toString());
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/import-export/import/quick`,
+      `${getApiBaseUrl()}/import-export/import/quick`,
       {
         method: 'POST',
         headers: {
@@ -3052,7 +3052,7 @@ export const importExportApi = {
 
   processAndDownloadExport: async (tenantId: string, id: string) => {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/import-export/export/${id}/process`,
+      `${getApiBaseUrl()}/import-export/export/${id}/process`,
       {
         method: 'POST',
         headers: {
@@ -3068,7 +3068,7 @@ export const importExportApi = {
 
   downloadExport: async (tenantId: string, id: string) => {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/import-export/export/${id}/download`,
+      `${getApiBaseUrl()}/import-export/export/${id}/download`,
       {
         headers: {
           'x-tenant-id': tenantId,
@@ -3083,7 +3083,7 @@ export const importExportApi = {
 
   quickExport: async (tenantId: string, data: CreateExportJobInput) => {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/import-export/export/quick`,
+      `${getApiBaseUrl()}/import-export/export/quick`,
       {
         method: 'POST',
         headers: {
@@ -5841,7 +5841,7 @@ export const idCardsApi = {
 
   // Get PDF download URL (returns blob)
   downloadPdf: async (tenantId: string, id: string): Promise<Blob> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/id-cards/${id}/pdf`, {
+    const response = await fetch(`${getApiBaseUrl()}/id-cards/${id}/pdf`, {
       headers: {
         'x-tenant-id': tenantId,
       },
