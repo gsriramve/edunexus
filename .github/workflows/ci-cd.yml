@@ -1,0 +1,179 @@
+# EduNexus CI/CD Pipeline
+# Builds Docker images and deploys to AWS EC2
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_only:
+        description: 'Skip build and deploy existing images'
+        required: false
+        default: 'false'
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com
+  WEB_IMAGE: edunexus-web
+  API_IMAGE: edunexus-api
+
+jobs:
+  # ===========================================
+  # Build and Push Docker Images
+  # ===========================================
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    if: github.event.inputs.deploy_only != 'true'
+
+    outputs:
+      web_image: ${{ steps.build-web.outputs.image }}
+      api_image: ${{ steps.build-api.outputs.image }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build and push Web image
+      - name: Build and push Web image
+        id: build-web
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/web/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.WEB_IMAGE }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.WEB_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+            NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+            NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      - name: Output Web image
+        run: echo "image=${{ env.ECR_REGISTRY }}/${{ env.WEB_IMAGE }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+        id: output-web
+
+      # Build and push API image
+      - name: Build and push API image
+        id: build-api
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.API_IMAGE }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.API_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output API image
+        run: echo "image=${{ env.ECR_REGISTRY }}/${{ env.API_IMAGE }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+        id: output-api
+
+  # ===========================================
+  # Deploy to Production
+  # ===========================================
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Login to ECR
+            aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+            # Pull latest images
+            docker pull ${{ env.ECR_REGISTRY }}/${{ env.WEB_IMAGE }}:latest
+            docker pull ${{ env.ECR_REGISTRY }}/${{ env.API_IMAGE }}:latest
+
+            # Tag images for docker-compose
+            docker tag ${{ env.ECR_REGISTRY }}/${{ env.WEB_IMAGE }}:latest edunexus-web:latest
+            docker tag ${{ env.ECR_REGISTRY }}/${{ env.API_IMAGE }}:latest edunexus-api:latest
+
+            # Deploy with docker-compose
+            cd ~/edunexus
+            docker-compose up -d web api
+
+            # Run database migrations
+            docker-compose exec -T api npx prisma migrate deploy
+
+            # Cleanup old images
+            docker image prune -f
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/edunexus
+            docker-compose ps
+            curl -f http://localhost:3000 || exit 1
+            curl -f http://localhost:3001/api/leads || echo "API check (optional endpoint)"
+
+  # ===========================================
+  # Database Migration (Manual trigger)
+  # ===========================================
+  migrate:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment: production
+
+    steps:
+      - name: Run migrations on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/edunexus
+            docker-compose exec -T api npx prisma migrate deploy
