@@ -44,6 +44,7 @@ export class LeadsService {
       await this.emailService.sendEmail({
         to: this.salesEmail,
         subject: `🎯 New Lead: ${lead.institutionName} - ${lead.name}`,
+        templateType: 'custom' as any,
         customHtml: html,
         customText: text,
       });
