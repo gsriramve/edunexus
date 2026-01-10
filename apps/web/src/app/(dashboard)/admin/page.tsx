@@ -55,9 +55,9 @@ export default function AdminStaffDashboard() {
             <Skeleton className="h-10 w-28" />
           </div>
         </div>
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-24" />
+            <Skeleton key={i} className="h-[100px]" />
           ))}
         </div>
         <Skeleton className="h-48" />
@@ -143,82 +143,87 @@ export default function AdminStaffDashboard() {
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 rounded-lg bg-blue-50 shrink-0">
-                <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+      {/* Quick Stats - Responsive Grid */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950 shrink-0">
+                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Total Students</p>
-                <p className="text-xl sm:text-2xl font-bold">{(stats?.totalStudents || 0).toLocaleString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 rounded-lg bg-green-50 shrink-0">
-                <UserPlus className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">New Admissions</p>
-                <p className="text-xl sm:text-2xl font-bold text-green-600">+{stats?.newAdmissions || 0}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Total Students</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{(stats?.totalStudents || 0).toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 rounded-lg bg-orange-50 shrink-0">
-                <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-green-50 dark:bg-green-950 shrink-0">
+                <UserPlus className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Pending Apps</p>
-                <p className="text-xl sm:text-2xl font-bold text-orange-600">{stats?.pendingApplications || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 rounded-lg bg-purple-50 shrink-0">
-                <IndianRupee className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Today's Collection</p>
-                <p className="text-xl sm:text-2xl font-bold">{formatCurrency(stats?.todayCollections || 0)}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">New Admissions</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight text-green-600 dark:text-green-400">+{stats?.newAdmissions || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 rounded-lg bg-red-50 shrink-0">
-                <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-950 shrink-0">
+                <ClipboardList className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Pending Fees</p>
-                <p className="text-xl sm:text-2xl font-bold text-red-600">{formatCurrency(stats?.pendingFees || 0)}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Pending Apps</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight text-orange-600 dark:text-orange-400">{stats?.pendingApplications || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 rounded-lg bg-teal-50 shrink-0">
-                <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-teal-600" />
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950 shrink-0">
+                <IndianRupee className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">Certificates</p>
-                <p className="text-xl sm:text-2xl font-bold">{stats?.certificatesRequested || 0}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Today&apos;s Collection</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{formatCurrency(stats?.todayCollections || 0)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950 shrink-0">
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Pending Fees</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight text-red-600 dark:text-red-400">{formatCurrency(stats?.pendingFees || 0)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-teal-50 dark:bg-teal-950 shrink-0">
+                <FileText className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Certificates</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stats?.certificatesRequested || 0}</p>
               </div>
             </div>
           </CardContent>
@@ -227,36 +232,38 @@ export default function AdminStaffDashboard() {
 
       {/* Monthly Collection Progress */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="pb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <CardTitle>Monthly Fee Collection</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Monthly Fee Collection</CardTitle>
               <CardDescription>January 2026 collection progress</CardDescription>
             </div>
-            <Badge className={collectionProgress >= 75 ? "bg-green-500" : collectionProgress >= 50 ? "bg-orange-500" : "bg-red-500"}>
+            <Badge
+              className={`${collectionProgress >= 75 ? "bg-green-500" : collectionProgress >= 50 ? "bg-orange-500" : "bg-red-500"} text-sm px-3 py-1`}
+            >
               {collectionProgress.toFixed(0)}% of target
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Collected: {formatCurrency(stats?.monthlyCollected || 0)}</span>
-              <span className="text-muted-foreground">Target: {formatCurrency(stats?.monthlyTarget || 0)}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-sm">
+              <span className="text-muted-foreground">Collected: <span className="font-medium text-foreground">{formatCurrency(stats?.monthlyCollected || 0)}</span></span>
+              <span className="text-muted-foreground">Target: <span className="font-medium text-foreground">{formatCurrency(stats?.monthlyTarget || 0)}</span></span>
             </div>
             <Progress value={collectionProgress} className="h-3" />
-            <div className="grid grid-cols-3 gap-4 pt-2">
-              <div className="text-center p-3 rounded-lg bg-muted">
-                <p className="text-sm text-muted-foreground">Remaining</p>
-                <p className="font-semibold">{formatCurrency((stats?.monthlyTarget || 0) - (stats?.monthlyCollected || 0))}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <div className="text-center p-4 rounded-lg bg-muted/50 border">
+                <p className="text-sm text-muted-foreground mb-1">Remaining</p>
+                <p className="text-lg sm:text-xl font-bold">{formatCurrency((stats?.monthlyTarget || 0) - (stats?.monthlyCollected || 0))}</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-muted">
-                <p className="text-sm text-muted-foreground">Daily Average</p>
-                <p className="font-semibold">{formatCurrency((stats?.monthlyCollected || 0) / 6)}</p>
+              <div className="text-center p-4 rounded-lg bg-muted/50 border">
+                <p className="text-sm text-muted-foreground mb-1">Daily Average</p>
+                <p className="text-lg sm:text-xl font-bold">{formatCurrency((stats?.monthlyCollected || 0) / 6)}</p>
               </div>
-              <div className="text-center p-3 rounded-lg bg-muted">
-                <p className="text-sm text-muted-foreground">Pending Dues</p>
-                <p className="font-semibold text-red-600">{formatCurrency(stats?.pendingFees || 0)}</p>
+              <div className="text-center p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+                <p className="text-sm text-muted-foreground mb-1">Pending Dues</p>
+                <p className="text-lg sm:text-xl font-bold text-red-600 dark:text-red-400">{formatCurrency(stats?.pendingFees || 0)}</p>
               </div>
             </div>
           </div>
@@ -482,26 +489,26 @@ export default function AdminStaffDashboard() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-5">
-            <Button variant="outline" className="h-20 flex-col">
-              <IndianRupee className="h-6 w-6 mb-2" />
-              <span>Collect Fee</span>
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+            <Button variant="outline" className="h-20 sm:h-24 flex-col gap-2 hover:bg-primary/5 hover:border-primary/50 transition-colors">
+              <IndianRupee className="h-6 w-6 text-primary" />
+              <span className="text-sm">Collect Fee</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <UserPlus className="h-6 w-6 mb-2" />
-              <span>New Admission</span>
+            <Button variant="outline" className="h-20 sm:h-24 flex-col gap-2 hover:bg-green-50 hover:border-green-300 dark:hover:bg-green-950 transition-colors">
+              <UserPlus className="h-6 w-6 text-green-600" />
+              <span className="text-sm">New Admission</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <FileText className="h-6 w-6 mb-2" />
-              <span>Issue Certificate</span>
+            <Button variant="outline" className="h-20 sm:h-24 flex-col gap-2 hover:bg-blue-50 hover:border-blue-300 dark:hover:bg-blue-950 transition-colors">
+              <FileText className="h-6 w-6 text-blue-600" />
+              <span className="text-sm">Issue Certificate</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <Send className="h-6 w-6 mb-2" />
-              <span>Send SMS</span>
+            <Button variant="outline" className="h-20 sm:h-24 flex-col gap-2 hover:bg-purple-50 hover:border-purple-300 dark:hover:bg-purple-950 transition-colors">
+              <Send className="h-6 w-6 text-purple-600" />
+              <span className="text-sm">Send SMS</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <GraduationCap className="h-6 w-6 mb-2" />
-              <span>Student Records</span>
+            <Button variant="outline" className="h-20 sm:h-24 flex-col gap-2 hover:bg-orange-50 hover:border-orange-300 dark:hover:bg-orange-950 transition-colors col-span-2 sm:col-span-1">
+              <GraduationCap className="h-6 w-6 text-orange-600" />
+              <span className="text-sm">Student Records</span>
             </Button>
           </div>
         </CardContent>
