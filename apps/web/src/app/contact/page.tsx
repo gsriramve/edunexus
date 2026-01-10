@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { GraduationCap, Mail, MapPin, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { GraduationCap, MapPin, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FormData {
@@ -107,19 +107,6 @@ export default function ContactPage() {
                 <h2 className="text-2xl font-semibold mb-6">Get in Touch</h2>
 
                 <div className="space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Mail className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Email</h3>
-                      <p className="text-muted-foreground">General inquiries</p>
-                      <a href="mailto:hello@edunexus.io" className="text-primary hover:underline">
-                        hello@edunexus.io
-                      </a>
-                    </div>
-                  </div>
-
                   <div className="flex items-start gap-4">
                     <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <MapPin className="h-5 w-5 text-primary" />
