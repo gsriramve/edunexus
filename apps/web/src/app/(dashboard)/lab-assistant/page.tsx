@@ -34,7 +34,7 @@ function LoadingSkeleton() {
           <Skeleton className="h-10 w-40" />
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         {Array.from({ length: 6 }).map((_, i) => (
           <Card key={i}>
             <CardContent className="pt-6">
@@ -133,81 +133,81 @@ export default function LabAssistantDashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-6">
-        <Card>
-          <CardContent className="pt-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-blue-50">
-                <Beaker className="h-6 w-6 text-blue-600" />
+              <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950 shrink-0">
+                <Beaker className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">My Labs</p>
-                <p className="text-2xl font-bold">{labStats?.totalLabs || 0}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">My Labs</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{labStats?.totalLabs || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-green-50">
-                <Users className="h-6 w-6 text-green-600" />
+              <div className="p-3 rounded-xl bg-green-50 dark:bg-green-950 shrink-0">
+                <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Batches</p>
-                <p className="text-2xl font-bold">{labStats?.totalBatches || 0}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Batches</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{labStats?.totalBatches || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-purple-50">
-                <UserCheck className="h-6 w-6 text-purple-600" />
+              <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950 shrink-0">
+                <UserCheck className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Students Today</p>
-                <p className="text-2xl font-bold">{labStats?.studentsToday || 0}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Students Today</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{labStats?.studentsToday || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-orange-50">
-                <ClipboardCheck className="h-6 w-6 text-orange-600" />
+              <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-950 shrink-0">
+                <ClipboardCheck className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Attendance</p>
-                <p className="text-2xl font-bold">{labStats?.attendanceMarked || 0}%</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Attendance</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{labStats?.attendanceMarked || 0}%</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-red-50">
-                <FileText className="h-6 w-6 text-red-600" />
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950 shrink-0">
+                <FileText className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pending Marks</p>
-                <p className="text-2xl font-bold text-red-600">{labStats?.pendingMarks || 0}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Pending Marks</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight text-red-600 dark:text-red-400">{labStats?.pendingMarks || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-yellow-50">
-                <Wrench className="h-6 w-6 text-yellow-600" />
+              <div className="p-3 rounded-xl bg-yellow-50 dark:bg-yellow-950 shrink-0">
+                <Wrench className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Equipment Issues</p>
-                <p className="text-2xl font-bold text-yellow-600">{labStats?.equipmentIssues || 0}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Equipment Issues</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight text-yellow-600 dark:text-yellow-400">{labStats?.equipmentIssues || 0}</p>
               </div>
             </div>
           </CardContent>

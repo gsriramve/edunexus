@@ -56,7 +56,7 @@ export default function HODDashboard() {
             <Skeleton className="h-10 w-28" />
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-6">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="pt-6">
@@ -179,81 +179,81 @@ export default function HODDashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-6">
-        <Card>
-          <CardContent className="pt-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-blue-50">
-                <Users className="h-6 w-6 text-blue-600" />
+              <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950 shrink-0">
+                <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Faculty</p>
-                <p className="text-2xl font-bold">{stats.totalFaculty}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Faculty</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stats.totalFaculty}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-green-50">
-                <GraduationCap className="h-6 w-6 text-green-600" />
+              <div className="p-3 rounded-xl bg-green-50 dark:bg-green-950 shrink-0">
+                <GraduationCap className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Students</p>
-                <p className="text-2xl font-bold">{stats.totalStudents}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Students</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stats.totalStudents}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-purple-50">
-                <BookOpen className="h-6 w-6 text-purple-600" />
+              <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950 shrink-0">
+                <BookOpen className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Subjects</p>
-                <p className="text-2xl font-bold">{stats.activeSubjects}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Subjects</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stats.activeSubjects}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-orange-50">
-                <UserCheck className="h-6 w-6 text-orange-600" />
+              <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-950 shrink-0">
+                <UserCheck className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Attendance</p>
-                <p className="text-2xl font-bold">{stats.avgAttendance}%</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Attendance</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stats.avgAttendance}%</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-indigo-50">
-                <Award className="h-6 w-6 text-indigo-600" />
+              <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950 shrink-0">
+                <Award className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Avg CGPA</p>
-                <p className="text-2xl font-bold">{stats.avgCGPA || '-'}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">Avg CGPA</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight">{stats.avgCGPA || '-'}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-red-50">
-                <Target className="h-6 w-6 text-red-600" />
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950 shrink-0">
+                <Target className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">At Risk</p>
-                <p className="text-2xl font-bold text-red-600">{stats.atRiskStudents}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-muted-foreground">At Risk</p>
+                <p className="text-2xl sm:text-3xl font-bold tracking-tight text-red-600 dark:text-red-400">{stats.atRiskStudents}</p>
               </div>
             </div>
           </CardContent>

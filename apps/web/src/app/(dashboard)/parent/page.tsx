@@ -90,7 +90,7 @@ export default function ParentDashboard() {
           </div>
           <Skeleton className="h-10 w-48" />
         </div>
-        <div className="grid gap-4 md:grid-cols-5">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {[1, 2, 3, 4, 5].map((i) => (
             <Skeleton key={i} className="h-24" />
           ))}
@@ -219,78 +219,78 @@ export default function ParentDashboard() {
 
       {/* Quick Stats */}
       {dashboardLoading ? (
-        <div className="grid gap-4 md:grid-cols-5">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {[1, 2, 3, 4, 5].map((i) => (
             <Skeleton key={i} className="h-24" />
           ))}
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-5">
-          <Card>
-            <CardContent className="pt-6">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-purple-50">
-                  <Award className="h-6 w-6 text-purple-600" />
+                <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950 shrink-0">
+                  <Award className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">CGPA</p>
-                  <p className="text-2xl font-bold">{currentChild.cgpa}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-muted-foreground">CGPA</p>
+                  <p className="text-2xl sm:text-3xl font-bold tracking-tight">{currentChild.cgpa}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-blue-50">
-                  <TrendingUp className="h-6 w-6 text-blue-600" />
+                <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950 shrink-0">
+                  <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Current SGPA</p>
-                  <p className="text-2xl font-bold">{currentChild.sgpa}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-muted-foreground">Current SGPA</p>
+                  <p className="text-2xl sm:text-3xl font-bold tracking-tight">{currentChild.sgpa}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-lg ${currentChild.attendancePercentage >= 75 ? "bg-green-50" : "bg-red-50"}`}>
-                  <Calendar className={`h-6 w-6 ${currentChild.attendancePercentage >= 75 ? "text-green-600" : "text-red-600"}`} />
+                <div className={`p-3 rounded-xl shrink-0 ${currentChild.attendancePercentage >= 75 ? "bg-green-50 dark:bg-green-950" : "bg-red-50 dark:bg-red-950"}`}>
+                  <Calendar className={`h-6 w-6 ${currentChild.attendancePercentage >= 75 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`} />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Attendance</p>
-                  <p className={`text-2xl font-bold ${currentChild.attendancePercentage >= 75 ? "text-green-600" : "text-red-600"}`}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-muted-foreground">Attendance</p>
+                  <p className={`text-2xl sm:text-3xl font-bold tracking-tight ${currentChild.attendancePercentage >= 75 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                     {currentChild.attendancePercentage}%
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-orange-50">
-                  <CreditCard className="h-6 w-6 text-orange-600" />
+                <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-950 shrink-0">
+                  <CreditCard className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending Fees</p>
-                  <p className="text-2xl font-bold">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-muted-foreground">Pending Fees</p>
+                  <p className="text-2xl sm:text-3xl font-bold tracking-tight">
                     {currentChild.pendingFees > 0 ? `₹${(currentChild.pendingFees / 1000).toFixed(0)}K` : "Paid"}
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-green-50">
-                  <GraduationCap className="h-6 w-6 text-green-600" />
+                <div className="p-3 rounded-xl bg-green-50 dark:bg-green-950 shrink-0">
+                  <GraduationCap className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Class Rank</p>
-                  <p className="text-2xl font-bold">{currentChild.rank}/{currentChild.totalStudents}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-muted-foreground">Class Rank</p>
+                  <p className="text-2xl sm:text-3xl font-bold tracking-tight">{currentChild.rank}/{currentChild.totalStudents}</p>
                 </div>
               </div>
             </CardContent>
