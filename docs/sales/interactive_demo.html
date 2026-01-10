@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduNexus - Interactive Product Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #1e40af;
+            --accent-teal: #0d9488;
+            --dark-text: #1f2937;
+            --light-bg: #f8fafc;
+            --white: #ffffff;
+            --success-green: #059669;
+            --warning-orange: #d97706;
+            --light-gray: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--light-bg);
+            color: var(--dark-text);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, #1e3a8a 100%);
+            color: var(--white);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-teal);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .tagline {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            color: var(--accent-teal);
+        }
+
+        .header-cta {
+            background: var(--accent-teal);
+            color: var(--white);
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .header-cta:hover {
+            background: #0f766e;
+            transform: translateY(-2px);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Intro Section */
+        .intro {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .intro h1 {
+            font-size: 2.5rem;
+            color: var(--primary-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .intro p {
+            font-size: 1.2rem;
+            color: var(--dark-text);
+            opacity: 0.8;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: var(--white);
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-blue);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--dark-text);
+            opacity: 0.7;
+        }
+
+        /* Persona Navigation */
+        .persona-nav {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .persona-btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid var(--light-gray);
+            background: var(--white);
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .persona-btn:hover {
+            border-color: var(--accent-teal);
+            background: #f0fdfa;
+        }
+
+        .persona-btn.active {
+            background: var(--primary-blue);
+            color: var(--white);
+            border-color: var(--primary-blue);
+        }
+
+        .persona-icon {
+            font-size: 1.2rem;
+        }
+
+        /* Demo Viewer */
+        .demo-viewer {
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .demo-header {
+            background: var(--primary-blue);
+            color: var(--white);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .demo-title h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .demo-title p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        .time-saved {
+            background: var(--success-green);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        /* Screenshot Container */
+        .screenshot-container {
+            position: relative;
+            padding: 1rem;
+            background: #f1f5f9;
+        }
+
+        .screenshot {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .screenshot.active {
+            display: block;
+        }
+
+        /* Hotspots */
+        .hotspot {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: var(--warning-orange);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: bold;
+            font-size: 0.9rem;
+            animation: pulse 2s infinite;
+            z-index: 10;
+            border: 3px solid var(--white);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(217, 119, 6, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); }
+        }
+
+        .hotspot-tooltip {
+            position: absolute;
+            background: var(--dark-text);
+            color: var(--white);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            width: 200px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 20;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .hotspot:hover .hotspot-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Features Panel */
+        .features-panel {
+            padding: 2rem;
+            border-top: 1px solid var(--light-gray);
+        }
+
+        .features-title {
+            font-size: 1.2rem;
+            color: var(--primary-blue);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .feature-card {
+            background: var(--light-bg);
+            padding: 1rem;
+            border-radius: 10px;
+            border-left: 4px solid var(--accent-teal);
+        }
+
+        .feature-card h4 {
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .feature-card p {
+            font-size: 0.9rem;
+            color: var(--dark-text);
+            opacity: 0.7;
+        }
+
+        /* Benefits Section */
+        .benefits-section {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+            border-radius: 12px;
+            border: 1px solid #bbf7d0;
+        }
+
+        .benefits-section h3 {
+            color: var(--success-green);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .benefits-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .benefit-check {
+            color: var(--success-green);
+            font-size: 1.2rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 3rem;
+            background: linear-gradient(135deg, var(--primary-blue) 0%, #1e3a8a 100%);
+            border-radius: 16px;
+            color: var(--white);
+        }
+
+        .cta-section h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .cta-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .cta-btn {
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .cta-btn.primary {
+            background: var(--accent-teal);
+            color: var(--white);
+            border: none;
+        }
+
+        .cta-btn.primary:hover {
+            background: #0f766e;
+            transform: translateY(-2px);
+        }
+
+        .cta-btn.secondary {
+            background: transparent;
+            color: var(--white);
+            border: 2px solid var(--white);
+        }
+
+        .cta-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Demo Access Box */
+        .demo-access {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-top: 2rem;
+            display: inline-block;
+        }
+
+        .demo-access h4 {
+            margin-bottom: 0.5rem;
+        }
+
+        .demo-access code {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--dark-text);
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .intro h1 {
+                font-size: 1.8rem;
+            }
+
+            .stats-bar {
+                gap: 1rem;
+            }
+
+            .stat-item {
+                padding: 0.75rem 1rem;
+                min-width: 120px;
+            }
+
+            .persona-nav {
+                gap: 0.25rem;
+            }
+
+            .persona-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            .demo-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+
+        /* Persona Descriptions */
+        .persona-desc {
+            display: none;
+        }
+
+        .persona-desc.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div>
+            <div class="logo">
+                <div class="logo-icon">E</div>
+                EduNexus
+            </div>
+            <div class="tagline">AI-First College Management Platform</div>
+        </div>
+        <a href="http://15.206.243.177" target="_blank" class="header-cta">Try Live Demo</a>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Intro -->
+        <div class="intro">
+            <h1>Interactive Product Demo</h1>
+            <p>Explore how EduNexus transforms college operations for every role</p>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value">20+</div>
+                <div class="stat-label">Modules</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">8</div>
+                <div class="stat-label">Portals</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">85%+</div>
+                <div class="stat-label">AI Accuracy</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">6 Weeks</div>
+                <div class="stat-label">Go-Live</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">1,677%</div>
+                <div class="stat-label">ROI</div>
+            </div>
+        </div>
+
+        <!-- Persona Navigation -->
+        <div class="persona-nav">
+            <button class="persona-btn active" data-persona="principal">
+                <span class="persona-icon">👔</span> Principal
+            </button>
+            <button class="persona-btn" data-persona="hod">
+                <span class="persona-icon">📊</span> HOD
+            </button>
+            <button class="persona-btn" data-persona="admin">
+                <span class="persona-icon">💼</span> Admin Staff
+            </button>
+            <button class="persona-btn" data-persona="teacher">
+                <span class="persona-icon">📚</span> Teacher
+            </button>
+            <button class="persona-btn" data-persona="student">
+                <span class="persona-icon">🎓</span> Student
+            </button>
+            <button class="persona-btn" data-persona="parent">
+                <span class="persona-icon">👨‍👩‍👧</span> Parent
+            </button>
+        </div>
+
+        <!-- Demo Viewer -->
+        <div class="demo-viewer">
+            <!-- Principal -->
+            <div class="persona-desc active" id="principal">
+                <div class="demo-header">
+                    <div class="demo-title">
+                        <h2>Principal Dashboard</h2>
+                        <p>Complete college overview at a glance - make data-driven decisions</p>
+                    </div>
+                    <div class="time-saved">Saves 10-15 hrs/month</div>
+                </div>
+                <div class="screenshot-container">
+                    <img src="../../e2e-tests/screenshots/principal_nexus-ec_dashboard.png" alt="Principal Dashboard" class="screenshot active">
+                </div>
+                <div class="features-panel">
+                    <div class="features-title">Key Features</div>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <h4>Executive Dashboard</h4>
+                            <p>Real-time metrics on enrollment, fees, attendance, and placements</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Department Analytics</h4>
+                            <p>Compare performance across departments with visual reports</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>AICTE Reports</h4>
+                            <p>One-click generation of compliance reports - 10x faster</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Financial Overview</h4>
+                            <p>Fee collection status, pending dues, and revenue tracking</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HOD -->
+            <div class="persona-desc" id="hod">
+                <div class="demo-header">
+                    <div class="demo-title">
+                        <h2>HOD Dashboard</h2>
+                        <p>Department-level management and real-time student analytics</p>
+                    </div>
+                    <div class="time-saved">Saves 15-20 hrs/month</div>
+                </div>
+                <div class="screenshot-container">
+                    <img src="../../e2e-tests/screenshots/hod_nexus-ec_dashboard.png" alt="HOD Dashboard" class="screenshot active">
+                </div>
+                <div class="features-panel">
+                    <div class="features-title">Key Features</div>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <h4>Faculty Management</h4>
+                            <p>Track faculty workload, classes, and performance metrics</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Student Analytics</h4>
+                            <p>Identify at-risk students early with AI predictions</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Curriculum Planning</h4>
+                            <p>Manage syllabus, lesson plans, and academic calendar</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Batch Performance</h4>
+                            <p>Compare batch-wise results and attendance trends</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin -->
+            <div class="persona-desc" id="admin">
+                <div class="demo-header">
+                    <div class="demo-title">
+                        <h2>Admin Staff Dashboard</h2>
+                        <p>Streamlined operations - eliminate paperwork and manual processes</p>
+                    </div>
+                    <div class="time-saved">Saves 40-60 hrs/month</div>
+                </div>
+                <div class="screenshot-container">
+                    <img src="../../e2e-tests/screenshots/admin_nexus-ec_dashboard.png" alt="Admin Dashboard" class="screenshot active">
+                </div>
+                <div class="features-panel">
+                    <div class="features-title">Key Features</div>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <h4>Online Fee Collection</h4>
+                            <p>Multiple payment gateways, auto-receipts, reminders</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Admission Management</h4>
+                            <p>Digital applications, document verification, enrollment</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Certificate Processing</h4>
+                            <p>Auto-generate bonafide, TC, and other certificates</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Bulk Communication</h4>
+                            <p>SMS, email, and WhatsApp integration for announcements</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teacher -->
+            <div class="persona-desc" id="teacher">
+                <div class="demo-header">
+                    <div class="demo-title">
+                        <h2>Teacher Dashboard</h2>
+                        <p>Focus on teaching, not paperwork - simplify daily tasks</p>
+                    </div>
+                    <div class="time-saved">Saves 10-15 hrs/month</div>
+                </div>
+                <div class="screenshot-container">
+                    <img src="../../e2e-tests/screenshots/teacher_nexus-ec_dashboard.png" alt="Teacher Dashboard" class="screenshot active">
+                </div>
+                <div class="features-panel">
+                    <div class="features-title">Key Features</div>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <h4>Quick Attendance</h4>
+                            <p>Mark attendance in seconds with smart defaults</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Digital Gradebook</h4>
+                            <p>Enter marks, calculate grades, track student progress</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Assignment Manager</h4>
+                            <p>Create, distribute, and grade assignments online</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Class Analytics</h4>
+                            <p>Visualize class performance and identify weak areas</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student -->
+            <div class="persona-desc" id="student">
+                <div class="demo-header">
+                    <div class="demo-title">
+                        <h2>Student Dashboard</h2>
+                        <p>Self-service portal with AI-powered career guidance</p>
+                    </div>
+                    <div class="time-saved">Saves 5-10 hrs/month</div>
+                </div>
+                <div class="screenshot-container">
+                    <img src="../../e2e-tests/screenshots/student_nexus-ec_dashboard.png" alt="Student Dashboard" class="screenshot active">
+                </div>
+                <div class="features-panel">
+                    <div class="features-title">Key Features</div>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <h4>AI Score Prediction</h4>
+                            <p>85%+ accurate predictions with study recommendations</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Career Hub</h4>
+                            <p>Placement drives, company matches, interview prep</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Practice Zone</h4>
+                            <p>AI-generated mock tests and previous year papers</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>24/7 AI Chatbot</h4>
+                            <p>Instant answers in English/Hindi for any query</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parent -->
+            <div class="persona-desc" id="parent">
+                <div class="demo-header">
+                    <div class="demo-title">
+                        <h2>Parent Dashboard</h2>
+                        <p>Stay connected with your child's academic journey</p>
+                    </div>
+                    <div class="time-saved">Saves 5 hrs/month</div>
+                </div>
+                <div class="screenshot-container">
+                    <img src="../../e2e-tests/screenshots/parent_nexus-ec_dashboard.png" alt="Parent Dashboard" class="screenshot active">
+                </div>
+                <div class="features-panel">
+                    <div class="features-title">Key Features</div>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <h4>Attendance Tracking</h4>
+                            <p>Real-time attendance alerts and monthly reports</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Online Fee Payment</h4>
+                            <p>Pay fees anytime, download receipts instantly</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Academic Progress</h4>
+                            <p>View marks, grades, and teacher feedback</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>Direct Communication</h4>
+                            <p>Message teachers and receive college announcements</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benefits Section -->
+        <div class="benefits-section">
+            <h3>Why Colleges Choose EduNexus</h3>
+            <div class="benefits-list">
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>Student-Centric Design</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>AI-First Architecture</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>Mobile-First Approach</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>6 Weeks Go-Live</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>Data Stays in India</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>AICTE Compliant</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>24/7 Support</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="benefit-check">✓</span>
+                    <span>1,677% ROI</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Section -->
+        <div class="cta-section">
+            <h2>Ready to Transform Your College?</h2>
+            <p>Join leading engineering colleges already using EduNexus</p>
+            <div class="cta-buttons">
+                <a href="http://15.206.243.177" target="_blank" class="cta-btn primary">Try Live Demo</a>
+                <a href="mailto:sales@edunexus.in" class="cta-btn secondary">Schedule a Call</a>
+            </div>
+            <div class="demo-access">
+                <h4>Live Demo Access</h4>
+                <p>URL: <code>http://15.206.243.177</code></p>
+                <p>Email: <code>principal@nexus-ec.edu</code> | Password: <code>Nexus@1104</code></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>EduNexus - AI-First College Management Platform | Rs 500/student/year</p>
+        <p>© 2026 EduNexus. All rights reserved.</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Persona Navigation
+        document.querySelectorAll('.persona-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active button
+                document.querySelectorAll('.persona-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Show corresponding persona content
+                const persona = btn.dataset.persona;
+                document.querySelectorAll('.persona-desc').forEach(desc => {
+                    desc.classList.remove('active');
+                });
+                document.getElementById(persona).classList.add('active');
+
+                // Smooth scroll to demo viewer
+                document.querySelector('.demo-viewer').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            });
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            const personas = ['principal', 'hod', 'admin', 'teacher', 'student', 'parent'];
+            const currentBtn = document.querySelector('.persona-btn.active');
+            const currentIndex = personas.indexOf(currentBtn.dataset.persona);
+
+            if (e.key === 'ArrowRight' && currentIndex < personas.length - 1) {
+                document.querySelector(`[data-persona="${personas[currentIndex + 1]}"]`).click();
+            } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
+                document.querySelector(`[data-persona="${personas[currentIndex - 1]}"]`).click();
+            }
+        });
+
+        // Auto-cycle through personas (optional - disabled by default)
+        let autoPlay = false;
+        let autoPlayInterval;
+
+        function toggleAutoPlay() {
+            autoPlay = !autoPlay;
+            if (autoPlay) {
+                const personas = ['principal', 'hod', 'admin', 'teacher', 'student', 'parent'];
+                let index = 0;
+                autoPlayInterval = setInterval(() => {
+                    index = (index + 1) % personas.length;
+                    document.querySelector(`[data-persona="${personas[index]}"]`).click();
+                }, 5000);
+            } else {
+                clearInterval(autoPlayInterval);
+            }
+        }
+    </script>
+</body>
+</html>
