@@ -37,8 +37,8 @@ export default function ContactPage() {
     setErrorMessage("");
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      const response = await fetch(`${apiUrl}/api/leads`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+      const response = await fetch(`${apiUrl}/leads`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
