@@ -190,7 +190,7 @@ export default function PlacementsAdminPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Eligible</CardTitle>
@@ -321,7 +321,7 @@ export default function PlacementsAdminPage() {
               <CardTitle>Branch-wise Placement</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-5">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {[
                   { branch: 'CSE', placed: 120, total: 150 },
                   { branch: 'IT', placed: 80, total: 100 },

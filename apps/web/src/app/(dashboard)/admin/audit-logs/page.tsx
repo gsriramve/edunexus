@@ -299,7 +299,7 @@ export default function AuditLogsPage() {
             <Skeleton className="h-10 w-24" />
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-5">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {[...Array(5)].map((_, i) => (
             <Skeleton key={i} className="h-32" />
           ))}
@@ -332,7 +332,7 @@ export default function AuditLogsPage() {
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid gap-4 md:grid-cols-5">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Logs</CardTitle>
@@ -427,7 +427,7 @@ export default function AuditLogsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-6">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
                 <div className="md:col-span-2">
                   <Label>Search</Label>
                   <div className="relative">

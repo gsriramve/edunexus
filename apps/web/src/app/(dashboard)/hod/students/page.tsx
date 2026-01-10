@@ -93,7 +93,7 @@ export default function HODStudentManagement() {
             <Skeleton className="h-10 w-28" />
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-6">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="pt-6">
@@ -205,7 +205,7 @@ export default function HODStudentManagement() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">

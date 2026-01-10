@@ -174,7 +174,7 @@ export default function AdminSportsClubsPage() {
             <Skeleton className="h-4 w-96 mt-2" />
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-6">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           {[...Array(6)].map((_, i) => (
             <Skeleton key={i} className="h-24" />
           ))}
@@ -195,7 +195,7 @@ export default function AdminSportsClubsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Sports Teams</CardTitle>

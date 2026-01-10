@@ -485,7 +485,7 @@ export default function HODDashboard() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-5">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <Button variant="outline" className="h-20 flex-col">
               <Users className="h-6 w-6 mb-2" />
               <span>Manage Faculty</span>

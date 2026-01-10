@@ -135,7 +135,7 @@ export default function StudentAttendance() {
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-96 mt-2" />
         </div>
-        <div className="grid gap-4 md:grid-cols-5">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <Skeleton className="h-32 md:col-span-2" />
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
@@ -189,7 +189,7 @@ export default function StudentAttendance() {
       </div>
 
       {/* Overview Stats */}
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <Card className="md:col-span-2">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">

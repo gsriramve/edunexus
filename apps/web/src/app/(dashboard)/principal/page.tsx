@@ -433,7 +433,7 @@ export default function PrincipalDashboard() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-5">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <Link href="/principal/departments">
               <Button variant="outline" className="h-auto py-4 w-full flex-col">
                 <Building2 className="h-6 w-6 mb-2" />

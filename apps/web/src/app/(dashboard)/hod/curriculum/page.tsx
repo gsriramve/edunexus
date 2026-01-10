@@ -152,7 +152,7 @@ export default function HODCurriculum() {
             <Skeleton className="h-10 w-32" />
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-6">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           {[...Array(6)].map((_, i) => (
             <Skeleton key={i} className="h-24" />
           ))}
@@ -224,7 +224,7 @@ export default function HODCurriculum() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">

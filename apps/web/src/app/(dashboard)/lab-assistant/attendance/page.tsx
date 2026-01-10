@@ -62,7 +62,7 @@ function LoadingSkeleton() {
       </div>
       <Card>
         <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-5">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {[...Array(5)].map((_, i) => (
               <Skeleton key={i} className="h-10 w-full" />
             ))}
@@ -236,7 +236,7 @@ export default function LabAttendance() {
             {/* Selection Row */}
             <Card>
               <CardContent className="pt-6">
-                <div className="grid gap-4 md:grid-cols-5">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Lab</label>
                     <Select value={selectedLab} onValueChange={setSelectedLab}>
