@@ -135,6 +135,28 @@ model PlatformAuditLog {
   @@map("platform_audit_logs")
 }
 
+/// Sales leads from website contact form
+model Lead {
+  id              String   @id @default(cuid())
+  name            String
+  email           String
+  phone           String?
+  institutionName String
+  message         String?
+  source          String   @default("website") // website, referral, social_media, event, other
+  status          String   @default("new") // new, contacted, qualified, demo_scheduled, negotiation, won, lost
+  notes           String?
+  assignedTo      String?
+  convertedToTenantId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([source])
+  @@index([createdAt])
+  @@map("leads")
+}
+
 // =============================================================================
 // TENANT LEVEL (Per-tenant Schema) - Isolated per college
 // =============================================================================

@@ -58,6 +58,7 @@ import { HodSkillGapsModule } from './modules/hod-skill-gaps/hod-skill-gaps.modu
 import { StudentAcademicsModule } from './modules/student-academics/student-academics.module';
 import { AdminRecordsModule } from './modules/admin-records/admin-records.module';
 import { ParentsModule } from './modules/parents/parents.module';
+import { LeadsModule } from './modules/leads/leads.module';
 
 @Module({
   imports: [
@@ -134,6 +135,7 @@ import { ParentsModule } from './modules/parents/parents.module';
     StudentAcademicsModule,
     AdminRecordsModule,
     ParentsModule,
+    LeadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
