@@ -21,18 +21,23 @@ export class HodReportsService {
 
   private async getHodDepartmentId(
     tenantId: string,
-    staffId: string,
+    clerkUserId: string,
   ): Promise<string> {
-    const staff = await this.prisma.staff.findFirst({
-      where: { userId: staffId, tenantId },
-      include: { department: true },
+    // First find the user by clerkUserId
+    const user = await this.prisma.user.findFirst({
+      where: { clerkUserId, tenantId },
+      include: {
+        staff: {
+          include: { department: true },
+        },
+      },
     });
 
-    if (!staff?.departmentId) {
+    if (!user?.staff?.departmentId) {
       throw new ForbiddenException('You are not assigned to any department');
     }
 
-    return staff.departmentId;
+    return user.staff.departmentId;
   }
 
   private getDateRange(period: string): { start: Date; end: Date } {

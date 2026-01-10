@@ -16,10 +16,10 @@ export class TeacherDashboardService {
   /**
    * Get teacher's staff record
    */
-  private async getTeacherStaff(tenantId: string, userId: string) {
+  private async getTeacherStaff(tenantId: string, clerkUserId: string) {
     const user = await this.prisma.user.findFirst({
       where: {
-        id: userId,
+        clerkUserId,
         tenantId,
         role: 'teacher',
       },

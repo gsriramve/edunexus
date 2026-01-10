@@ -21,22 +21,29 @@ export class HodCurriculumService {
 
   private async getHodDepartmentId(
     tenantId: string,
-    staffId: string,
+    clerkUserId: string,
   ): Promise<string> {
-    // Get staff member's department where they are the HOD
-    const staff = await this.prisma.staff.findFirst({
-      where: { userId: staffId, tenantId },
-      include: { department: true },
+    // First find the user by clerkUserId
+    const user = await this.prisma.user.findFirst({
+      where: { clerkUserId, tenantId },
+      include: {
+        staff: {
+          include: { department: true },
+        },
+      },
     });
 
-    if (!staff?.departmentId) {
+    if (!user?.staff?.departmentId) {
       throw new ForbiddenException('You are not assigned to any department');
     }
+
+    const staff = user.staff;
+    const departmentId = staff.departmentId!; // We've already validated this above
 
     // Check if this staff is the HOD of their department
     const department = await this.prisma.department.findFirst({
       where: {
-        id: staff.departmentId,
+        id: departmentId,
         tenantId,
         hodId: staff.id,
       },
@@ -46,7 +53,7 @@ export class HodCurriculumService {
     // In production, you might want stricter HOD-only access
     if (!department) {
       // Fallback: return staff's department even if not HOD
-      return staff.departmentId;
+      return departmentId;
     }
 
     return department.id;

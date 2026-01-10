@@ -51,16 +51,23 @@ export class LabAssistantService {
 
   private async getLabAssistantInfo(
     tenantId: string,
-    userId: string,
+    clerkUserId: string,
   ): Promise<{ staff: any; labs: any[] }> {
-    const staff = await this.prisma.staff.findFirst({
-      where: { userId, tenantId },
-      include: { department: true },
+    // First find the user by clerkUserId
+    const user = await this.prisma.user.findFirst({
+      where: { clerkUserId, tenantId },
+      include: {
+        staff: {
+          include: { department: true },
+        },
+      },
     });
 
-    if (!staff) {
+    if (!user || !user.staff) {
       throw new ForbiddenException('Staff profile not found');
     }
+
+    const staff = user.staff;
 
     // Get labs assigned to this lab assistant (from Subject assignments or a dedicated LabAssignment model)
     // For now, we'll get labs from subjects in their department

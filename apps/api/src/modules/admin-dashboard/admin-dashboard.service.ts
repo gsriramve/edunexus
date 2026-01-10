@@ -52,15 +52,20 @@ export class AdminDashboardService {
   /**
    * Get admin staff info
    */
-  private async getAdminInfo(tenantId: string, userId: string): Promise<AdminInfoDto> {
-    const staff = await this.prisma.staff.findFirst({
-      where: { tenantId, userId },
-      include: { department: true, user: true },
+  private async getAdminInfo(tenantId: string, clerkUserId: string): Promise<AdminInfoDto> {
+    // First find the user by clerkUserId
+    const user = await this.prisma.user.findFirst({
+      where: { clerkUserId, tenantId },
+      include: {
+        staff: {
+          include: { department: true },
+        },
+      },
     });
 
-    if (!staff) {
+    if (!user || !user.staff) {
       return {
-        id: userId,
+        id: clerkUserId,
         name: 'Admin Staff',
         employeeId: 'ADM-001',
         department: 'Administrative Office',
@@ -68,9 +73,11 @@ export class AdminDashboardService {
       };
     }
 
+    const staff = user.staff;
+
     return {
       id: staff.id,
-      name: staff.user?.name || 'Admin Staff',
+      name: user.name || 'Admin Staff',
       employeeId: staff.employeeId,
       department: staff.department?.name || 'Administrative Office',
       role: staff.designation || 'Administrative Officer',

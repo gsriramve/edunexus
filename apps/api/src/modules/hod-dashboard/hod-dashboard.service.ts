@@ -32,10 +32,10 @@ export class HodDashboardService {
   /**
    * Get HoD's department ID from their staff record
    */
-  private async getHodDepartment(tenantId: string, userId: string) {
+  private async getHodDepartment(tenantId: string, clerkUserId: string) {
     const user = await this.prisma.user.findFirst({
       where: {
-        id: userId,
+        clerkUserId,
         tenantId,
         role: 'hod',
       },
