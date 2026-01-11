@@ -1,0 +1,117 @@
+{
+  "test_run": {
+    "timestamp": "2026-01-11T00:12:49.399519",
+    "institution": "Nexus Engineering College",
+    "base_url": "http://15.206.243.177:3000",
+    "total_personas": 7,
+    "viewports_tested": [
+      "mobile",
+      "tablet",
+      "desktop"
+    ]
+  },
+  "summary": {
+    "passed": 0,
+    "failed": 7,
+    "warnings": 0,
+    "total_pages_tested": 0,
+    "total_screenshots": 0
+  },
+  "responsiveness": {
+    "mobile_issues": 0,
+    "tablet_issues": 0,
+    "desktop_issues": 0
+  },
+  "performance": {
+    "average_load_time_ms": 0,
+    "slowest_pages": [],
+    "pages_over_3s": 0
+  },
+  "errors": {
+    "total_404": 0,
+    "routes_with_404": [],
+    "console_errors": 0
+  },
+  "data_authenticity": {
+    "issues_found": []
+  },
+  "persona_results": [
+    {
+      "persona": "lab",
+      "status": "EXCEPTION",
+      "login_success": false,
+      "login_time_ms": 0,
+      "pages_tested": 0,
+      "screenshots": 0,
+      "errors_404": [],
+      "ui_issues_count": 0,
+      "console_errors_count": 0
+    },
+    {
+      "persona": "student",
+      "status": "EXCEPTION",
+      "login_success": false,
+      "login_time_ms": 0,
+      "pages_tested": 0,
+      "screenshots": 0,
+      "errors_404": [],
+      "ui_issues_count": 0,
+      "console_errors_count": 0
+    },
+    {
+      "persona": "principal",
+      "status": "EXCEPTION",
+      "login_success": false,
+      "login_time_ms": 0,
+      "pages_tested": 0,
+      "screenshots": 0,
+      "errors_404": [],
+      "ui_issues_count": 0,
+      "console_errors_count": 0
+    },
+    {
+      "persona": "teacher",
+      "status": "EXCEPTION",
+      "login_success": false,
+      "login_time_ms": 0,
+      "pages_tested": 0,
+      "screenshots": 0,
+      "errors_404": [],
+      "ui_issues_count": 0,
+      "console_errors_count": 0
+    },
+    {
+      "persona": "hod",
+      "status": "EXCEPTION",
+      "login_success": false,
+      "login_time_ms": 0,
+      "pages_tested": 0,
+      "screenshots": 0,
+      "errors_404": [],
+      "ui_issues_count": 0,
+      "console_errors_count": 0
+    },
+    {
+      "persona": "admin",
+      "status": "EXCEPTION",
+      "login_success": false,
+      "login_time_ms": 0,
+      "pages_tested": 0,
+      "screenshots": 0,
+      "errors_404": [],
+      "ui_issues_count": 0,
+      "console_errors_count": 0
+    },
+    {
+      "persona": "parent",
+      "status": "EXCEPTION",
+      "login_success": false,
+      "login_time_ms": 0,
+      "pages_tested": 0,
+      "screenshots": 0,
+      "errors_404": [],
+      "ui_issues_count": 0,
+      "console_errors_count": 0
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+build
+.next
+.turbo
+
+# Development
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Testing
+coverage
+.nyc_output
+*.test.ts
+*.spec.ts
+__tests__
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Git
+.git
+.gitignore
+
+# CI/CD
+.github
+.gitlab
+
+# Infrastructure
+infrastructure
+terraform
+
+# E2E Tests
+e2e-tests
+
+# Logs
+*.log
+logs
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Other apps (monorepo)
+apps/web
+apps/ml-service
+
+# Misc
+*.tgz
+*.tar.gz
+.npmrc

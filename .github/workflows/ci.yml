@@ -105,11 +105,12 @@ jobs:
       - name: Verify Schema Sync
         run: |
           # Ensure no drift between schema and migrations
+          # This will fail the build if schema drift is detected
           npx prisma migrate diff \
             --from-schema-datamodel prisma/schema.prisma \
             --to-migrations prisma/migrations \
             --shadow-database-url postgresql://test:test@localhost:5432/edunexus_shadow \
-            --exit-code || echo "Schema drift detected - please review"
+            --exit-code || { echo "❌ Schema drift detected! Please run 'npx prisma migrate dev' to create a migration."; exit 1; }
         working-directory: packages/database
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/edunexus_test

@@ -364,7 +364,7 @@ export default function AccreditationPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                 {[
                   { name: "TLR", fullName: "Teaching, Learning & Resources", weight: 100, score: 72, icon: <FileText className="h-6 w-6" /> },
                   { name: "RP", fullName: "Research & Professional Practice", weight: 100, score: 58, icon: <BarChart3 className="h-6 w-6" /> },
