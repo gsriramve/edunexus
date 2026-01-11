@@ -41,6 +41,18 @@ dnf install -y git
 echo "Installing Certbot..."
 dnf install -y certbot python3-certbot-nginx
 
+# Install CloudWatch Agent
+echo "Installing CloudWatch Agent..."
+dnf install -y amazon-cloudwatch-agent
+
+# Configure and start CloudWatch Agent
+echo "Configuring CloudWatch Agent..."
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+    -a fetch-config \
+    -m ec2 \
+    -c ssm:AmazonCloudWatch-edunexus-demo \
+    -s || echo "CloudWatch Agent config not found, will configure later"
+
 # Create app directory
 echo "Creating application directory..."
 mkdir -p /home/ec2-user/edunexus
@@ -70,13 +82,10 @@ AWS_S3_BUCKET=${s3_bucket}
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_API_URL=http://localhost:3001
 
-# Clerk Authentication (add your keys)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
+# JWT Authentication
+JWT_SECRET=change-this-to-a-secure-secret-in-production
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
 
 # Email (add your SendGrid key)
 SENDGRID_API_KEY=
