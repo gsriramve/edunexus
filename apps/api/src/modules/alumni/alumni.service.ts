@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { S3Service } from '../documents/s3.service';
 import { Prisma } from '@prisma/client';
 import {
   CreateAlumniProfileDto,
@@ -17,9 +18,15 @@ import {
   AlumniDirectoryFiltersDto,
 } from './dto/alumni.dto';
 
+const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
+
 @Injectable()
 export class AlumniService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   // ============ PROFILE OPERATIONS ============
 
@@ -747,5 +754,62 @@ export class AlumniService {
         department: { select: { id: true, name: true, code: true } },
       },
     });
+  }
+
+  /**
+   * Upload profile photo for an alumni
+   * Validates file type and size, uploads to S3, and updates AlumniProfile
+   */
+  async uploadProfilePhoto(
+    tenantId: string,
+    alumniId: string,
+    file: Express.Multer.File,
+  ): Promise<{ photoUrl: string }> {
+    // Validate file type
+    if (!ALLOWED_PHOTO_TYPES.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Invalid file type. Allowed types: JPEG, PNG, WebP',
+      );
+    }
+
+    // Validate file size
+    if (file.size > MAX_PHOTO_SIZE) {
+      throw new BadRequestException(
+        'File size too large. Maximum size is 5MB',
+      );
+    }
+
+    // Get alumni profile and verify they exist
+    const profile = await this.prisma.alumniProfile.findFirst({
+      where: { id: alumniId, tenantId },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Alumni profile not found');
+    }
+
+    // Generate S3 key for profile photo
+    const extension = file.mimetype.split('/')[1];
+    const key = `tenants/${tenantId}/profiles/alumni-${alumniId}.${extension}`;
+
+    // Upload to S3
+    const uploadResult = await this.s3Service.uploadBuffer(
+      key,
+      file.buffer,
+      file.mimetype,
+      {
+        'tenant-id': tenantId,
+        'alumni-id': alumniId,
+        'uploaded-at': new Date().toISOString(),
+      },
+    );
+
+    // Update AlumniProfile with new photo URL
+    await this.prisma.alumniProfile.update({
+      where: { id: alumniId },
+      data: { photoUrl: uploadResult.url },
+    });
+
+    return { photoUrl: uploadResult.url };
   }
 }

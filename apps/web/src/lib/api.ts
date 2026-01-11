@@ -123,6 +123,56 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   return response.json();
 }
 
+/**
+ * File upload API helper
+ * Uses FormData instead of JSON for multipart/form-data uploads
+ */
+async function uploadFile<T>(
+  endpoint: string,
+  formData: FormData,
+  tenantId?: string,
+): Promise<T> {
+  const requestHeaders: Record<string, string> = {};
+  // Note: Don't set Content-Type for FormData - browser will set it with boundary
+
+  // Add auth headers from context
+  if (authContext) {
+    if (authContext.userId) {
+      requestHeaders['x-user-id'] = authContext.userId;
+    }
+    if (authContext.role) {
+      requestHeaders['x-user-role'] = authContext.role;
+    }
+    if (authContext.name) {
+      requestHeaders['x-user-name'] = authContext.name;
+    }
+    if (authContext.tenantId) {
+      requestHeaders['x-user-tenant-id'] = authContext.tenantId;
+    }
+  }
+
+  if (tenantId) {
+    requestHeaders['x-tenant-id'] = tenantId;
+  }
+
+  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+    method: 'POST',
+    headers: requestHeaders,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new ApiError(
+      errorData.message || 'File upload failed',
+      response.status,
+      errorData,
+    );
+  }
+
+  return response.json();
+}
+
 // Department API
 export const departmentsApi = {
   list: (tenantId: string, params?: { search?: string; limit?: number; offset?: number }) => {
@@ -610,6 +660,9 @@ export const studentsApi = {
 
   academics: (tenantId: string, studentId: string) =>
     api<StudentAcademics>(`/students/${studentId}/academics`, { tenantId }),
+
+  uploadPhoto: (tenantId: string, studentId: string, formData: FormData) =>
+    uploadFile<{ photoUrl: string }>(`/students/${studentId}/photo`, formData, tenantId),
 };
 
 // Profile sub-types

@@ -11,7 +11,10 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { StudentsService } from './students.service';
 import { CreateStudentDto, UpdateStudentDto, StudentQueryDto } from './dto/student.dto';
 
@@ -103,6 +106,22 @@ export class StudentsController {
       throw new BadRequestException('Tenant ID is required');
     }
     return this.studentsService.update(tenantId, id, updateStudentDto);
+  }
+
+  @Post(':id/photo')
+  @UseInterceptors(FileInterceptor('photo'))
+  uploadPhoto(
+    @Headers('x-tenant-id') tenantId: string,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!tenantId) {
+      throw new BadRequestException('Tenant ID is required');
+    }
+    if (!file) {
+      throw new BadRequestException('Photo file is required');
+    }
+    return this.studentsService.uploadProfilePhoto(tenantId, id, file);
   }
 
   @Delete(':id')

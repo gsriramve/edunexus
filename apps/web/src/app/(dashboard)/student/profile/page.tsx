@@ -33,8 +33,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
-import { useStudentByUserId, useUpdateStudent, useStudentIdCard, useGenerateIdCard, useDownloadIdCardPdf, useTenant } from "@/hooks/use-api";
+import { useStudentByUserId, useUpdateStudent, useStudentIdCard, useGenerateIdCard, useDownloadIdCardPdf, useTenant, useUploadStudentPhoto } from "@/hooks/use-api";
 import { StudentIDCard } from "@/components/student/StudentIDCard";
+import { PhotoUpload } from "@/components/profile/photo-upload";
 import { toast } from "sonner";
 
 export default function StudentProfile() {
@@ -56,6 +57,9 @@ export default function StudentProfile() {
   );
   const generateIdCardMutation = useGenerateIdCard(tenantId);
   const downloadPdfMutation = useDownloadIdCardPdf(tenantId);
+
+  // Photo upload mutation
+  const uploadPhotoMutation = useUploadStudentPhoto(tenantId, studentData?.id || '');
 
   const handleGenerateIdCard = async () => {
     if (!studentData?.id) return;
@@ -188,23 +192,15 @@ export default function StudentProfile() {
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-            <div className="relative">
-              <Avatar className="h-32 w-32">
-                <AvatarImage src={photoUrl} />
-                <AvatarFallback className="text-3xl bg-primary text-primary-foreground">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              {isEditing && (
-                <Button
-                  size="icon"
-                  variant="secondary"
-                  className="absolute bottom-0 right-0 rounded-full"
-                >
-                  <Camera className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <PhotoUpload
+              currentPhoto={photoUrl}
+              name={fullName}
+              size="lg"
+              onUpload={async (formData) => {
+                const result = await uploadPhotoMutation.mutateAsync(formData);
+                return result;
+              }}
+            />
             <div className="flex-1 text-center md:text-left">
               <h2 className="text-2xl font-bold">{fullName}</h2>
               <p className="text-muted-foreground">{email}</p>

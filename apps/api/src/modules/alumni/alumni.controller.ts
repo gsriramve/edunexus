@@ -8,7 +8,11 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AlumniService } from './alumni.service';
 import { MentorshipService } from './mentorship.service';
 import { EventsService } from './events.service';
@@ -131,6 +135,24 @@ export class AlumniController {
   ) {
     const profile = await this.alumniService.getProfileByUserId(tenantId, userId);
     return this.alumniService.updateProfile(tenantId, profile.id, dto);
+  }
+
+  /**
+   * Upload profile photo (alumni)
+   */
+  @Post('my-profile/photo')
+  @Roles('alumni')
+  @UseInterceptors(FileInterceptor('photo'))
+  async uploadMyPhoto(
+    @TenantId() tenantId: string,
+    @UserId() userId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Photo file is required');
+    }
+    const profile = await this.alumniService.getProfileByUserId(tenantId, userId);
+    return this.alumniService.uploadProfilePhoto(tenantId, profile.id, file);
   }
 
   /**

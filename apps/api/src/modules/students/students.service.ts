@@ -1,11 +1,18 @@
 import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { S3Service } from '../documents/s3.service';
 import { CreateStudentDto, UpdateStudentDto, StudentQueryDto } from './dto/student.dto';
+
+const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
 
 @Injectable()
 export class StudentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private s3Service: S3Service,
+  ) {}
 
   async create(tenantId: string, createStudentDto: CreateStudentDto) {
     // Check if roll number already exists
@@ -730,5 +737,74 @@ export class StudentsService {
         data: { status: 'inactive' },
       }),
     ]);
+  }
+
+  /**
+   * Upload profile photo for a student
+   * Validates file type and size, uploads to S3, and updates UserProfile
+   */
+  async uploadProfilePhoto(
+    tenantId: string,
+    studentId: string,
+    file: Express.Multer.File,
+  ): Promise<{ photoUrl: string }> {
+    // Validate file type
+    if (!ALLOWED_PHOTO_TYPES.includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Invalid file type. Allowed types: JPEG, PNG, WebP',
+      );
+    }
+
+    // Validate file size
+    if (file.size > MAX_PHOTO_SIZE) {
+      throw new BadRequestException(
+        'File size too large. Maximum size is 5MB',
+      );
+    }
+
+    // Get student and verify they exist
+    const student = await this.prisma.student.findFirst({
+      where: { id: studentId, tenantId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            profile: true,
+          },
+        },
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
+
+    // Generate S3 key for profile photo
+    const extension = file.mimetype.split('/')[1];
+    const key = `tenants/${tenantId}/profiles/${student.userId}.${extension}`;
+
+    // Upload to S3
+    const uploadResult = await this.s3Service.uploadBuffer(
+      key,
+      file.buffer,
+      file.mimetype,
+      {
+        'tenant-id': tenantId,
+        'user-id': student.userId,
+        'uploaded-at': new Date().toISOString(),
+      },
+    );
+
+    // Update UserProfile with new photo URL
+    await this.prisma.userProfile.upsert({
+      where: { userId: student.userId },
+      update: { photoUrl: uploadResult.url },
+      create: {
+        userId: student.userId,
+        photoUrl: uploadResult.url,
+      },
+    });
+
+    return { photoUrl: uploadResult.url };
   }
 }

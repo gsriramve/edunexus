@@ -318,6 +318,17 @@ export function useDeleteStudent(tenantId: string) {
   });
 }
 
+export function useUploadStudentPhoto(tenantId: string, studentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (formData: FormData) => studentsApi.uploadPhoto(tenantId, studentId, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student', tenantId, studentId] });
+      queryClient.invalidateQueries({ queryKey: ['student', 'user', tenantId] });
+    },
+  });
+}
+
 // ============ Payments Hooks ============
 
 export function useStudentFees(tenantId: string, studentId: string) {

@@ -52,9 +52,11 @@ import {
   useUpdateMyAlumniProfile,
   useAddEmployment,
   useDeleteEmployment,
+  useUploadAlumniPhoto,
   type CurrentStatus,
   type CreateEmploymentInput,
 } from "@/hooks/use-alumni";
+import { PhotoUpload } from "@/components/profile/photo-upload";
 import { useUser } from "@clerk/nextjs";
 
 const currentStatusOptions: { value: CurrentStatus; label: string }[] = [
@@ -88,6 +90,7 @@ export default function AlumniProfilePage() {
   const updateProfile = useUpdateMyAlumniProfile(tenantId || "");
   const addEmployment = useAddEmployment(tenantId || "");
   const deleteEmployment = useDeleteEmployment(tenantId || "");
+  const uploadPhoto = useUploadAlumniPhoto(tenantId || "");
 
   const handleEditStart = () => {
     if (profile) {
@@ -198,12 +201,16 @@ export default function AlumniProfilePage() {
         </CardHeader>
         <CardContent>
           <div className="flex items-start gap-6">
-            <Avatar className="h-24 w-24">
-              <AvatarImage src={profile.photoUrl} alt={`${profile.firstName} ${profile.lastName}`} />
-              <AvatarFallback className="text-2xl">
-                {profile.firstName?.[0]}{profile.lastName?.[0]}
-              </AvatarFallback>
-            </Avatar>
+            <PhotoUpload
+              currentPhoto={profile.photoUrl}
+              name={`${profile.firstName} ${profile.lastName}`}
+              size="lg"
+              onUpload={async (formData) => {
+                const result = await uploadPhoto.mutateAsync(formData);
+                refetch();
+                return result;
+              }}
+            />
             <div className="flex-1 space-y-4">
               {isEditing ? (
                 <div className="grid gap-4 md:grid-cols-2">

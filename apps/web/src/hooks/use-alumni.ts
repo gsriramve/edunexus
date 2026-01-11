@@ -364,6 +364,41 @@ async function alumniApi<T>(
   return response.json();
 }
 
+/**
+ * File upload API helper for alumni
+ */
+async function alumniUploadFile<T>(
+  endpoint: string,
+  tenantId: string,
+  formData: FormData,
+): Promise<T> {
+  const authContext = getAuthContext();
+
+  const headers: Record<string, string> = {
+    'x-tenant-id': tenantId,
+  };
+  // Note: Don't set Content-Type for FormData - browser will set it with boundary
+
+  if (authContext) {
+    if (authContext.userId) headers['x-user-id'] = authContext.userId;
+    if (authContext.role) headers['x-user-role'] = authContext.role;
+    if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
+  }
+
+  const response = await fetch(`${getApiBaseUrl()}/alumni${endpoint}`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'File upload failed');
+  }
+
+  return response.json();
+}
+
 // ============ Query Keys ============
 
 export const alumniKeys = {
@@ -516,6 +551,19 @@ export function useUpdateMyAlumniProfile(tenantId: string) {
   return useMutation({
     mutationFn: (data: UpdateAlumniProfileInput) =>
       alumniApi<AlumniProfile>('/my-profile', tenantId, { method: 'PUT', body: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: alumniKeys.myProfile(tenantId) });
+      queryClient.invalidateQueries({ queryKey: alumniKeys.profiles() });
+    },
+  });
+}
+
+export function useUploadAlumniPhoto(tenantId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (formData: FormData) =>
+      alumniUploadFile<{ photoUrl: string }>('/my-profile/photo', tenantId, formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: alumniKeys.myProfile(tenantId) });
       queryClient.invalidateQueries({ queryKey: alumniKeys.profiles() });
