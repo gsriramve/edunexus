@@ -2,10 +2,26 @@
 
 import { createContext, useContext, useCallback, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { setAuthContext as setApiAuthContext } from '@/lib/api';
+import { setAuthContext as setApiAuthContext, getApiBaseUrl } from '@/lib/api';
 
-// Auth API base URL
-const AUTH_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Get auth API URL dynamically (uses same logic as api.ts but without /api suffix for auth routes)
+function getAuthApiUrl(): string {
+  // Server-side: use env variable
+  if (typeof window === 'undefined') {
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  }
+
+  // Client-side: derive from current origin for production
+  const { protocol, hostname } = window.location;
+
+  // If accessing via IP or non-localhost domain, use same origin (nginx proxies /api)
+  if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    return `${protocol}//${hostname}`;
+  }
+
+  // Local development: use localhost:3001
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+}
 
 // JWT payload structure
 interface JwtPayload {
@@ -78,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize auth state from cookie (on mount)
   const initializeAuth = useCallback(async () => {
     try {
-      const response = await fetch(`${AUTH_API_URL}/api/auth/me`, {
+      const response = await fetch(`${getAuthApiUrl()}/api/auth/me`, {
         credentials: 'include',
       });
 
@@ -95,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         syncAuthContext(userData);
       } else {
         // Try to refresh token
-        const refreshResponse = await fetch(`${AUTH_API_URL}/api/auth/refresh`, {
+        const refreshResponse = await fetch(`${getAuthApiUrl()}/api/auth/refresh`, {
           method: 'POST',
           credentials: 'include',
         });
@@ -133,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${AUTH_API_URL}/api/auth/login`, {
+      const response = await fetch(`${getAuthApiUrl()}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -178,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = useCallback(async (email: string, password: string, name: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${AUTH_API_URL}/api/auth/register`, {
+      const response = await fetch(`${getAuthApiUrl()}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, name }),
@@ -211,7 +227,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Logout
   const logout = useCallback(async () => {
     try {
-      await fetch(`${AUTH_API_URL}/api/auth/logout`, {
+      await fetch(`${getAuthApiUrl()}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
