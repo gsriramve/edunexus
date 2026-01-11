@@ -60,7 +60,7 @@ import {
 } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTenantId } from '@/hooks/use-tenant';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/lib/auth';
 
 const ENTITY_TYPES: { value: ImportEntityType; label: string; description: string }[] = [
   { value: 'students', label: 'Students', description: 'Student records with personal and academic info' },
@@ -114,7 +114,7 @@ function formatFileSize(bytes: number) {
 
 export default function ImportExportPage() {
   const tenantId = useTenantId() || '';
-  const { user } = useUser();
+  const { user } = useAuth();
   const currentUserId = user?.id || '';
   const [activeTab, setActiveTab] = useState('import');
   const [stats, setStats] = useState<ImportExportStats | null>(null);

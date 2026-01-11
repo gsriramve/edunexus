@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/lib/auth';
 import {
   BookOpen,
   Search,
@@ -66,7 +66,7 @@ import {
 import type { LibraryBook } from '@/lib/api';
 
 export default function StudentLibraryPage() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const tenantId = useTenantId() || '';
   const [activeTab, setActiveTab] = useState('mybooks');
   const [searchQuery, setSearchQuery] = useState('');

@@ -59,7 +59,7 @@ import {
   useMyMentorshipsAsStudent,
   type FocusArea,
 } from "@/hooks/use-api";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 
 // Focus area options - must match FocusArea type
 const focusAreas: { value: FocusArea; label: string }[] = [
@@ -81,7 +81,7 @@ export default function StudentMentorshipPage() {
   const [selectedFocusArea, setSelectedFocusArea] = useState<string>("");
 
   const tenantId = useTenantId();
-  const { user } = useUser();
+  const { user } = useAuth();
 
   const { data: mentors, isLoading: mentorsLoading } = useAlumniMentors(tenantId || "");
   const { data: myMentorships, isLoading: myMentorshipsLoading } = useMyMentorshipsAsStudent(tenantId || "");

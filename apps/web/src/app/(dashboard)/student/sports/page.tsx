@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/lib/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,7 +62,7 @@ import { useStudentByUserId } from '@/hooks/use-api';
 
 export default function StudentSportsPage() {
   // Auth context
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user, isLoading: isUserLoaded } = useAuth();
   const tenantId = useTenantId() || '';
   const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
 

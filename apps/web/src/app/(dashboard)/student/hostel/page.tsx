@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/lib/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -70,7 +70,7 @@ export default function StudentHostelPage() {
   });
 
   // API hooks
-  const { user } = useUser();
+  const { user } = useAuth();
   const tenantId = useTenantId() || '';
   const { toast } = useToast();
   const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');

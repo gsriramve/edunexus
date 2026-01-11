@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useUser, useClerk } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, Clock, RefreshCw, LogOut, CheckCircle } from "lucide-react";
@@ -19,8 +19,7 @@ const ROLE_DASHBOARDS: Record<string, string> = {
 };
 
 export default function SetupPendingPage() {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
+  const { user, isLoading, logout, refreshAuth } = useAuth();
   const router = useRouter();
   const [lastChecked, setLastChecked] = useState<Date>(new Date());
   const [isChecking, setIsChecking] = useState(false);
@@ -31,11 +30,10 @@ export default function SetupPendingPage() {
 
     setIsChecking(true);
 
-    // Reload user data from Clerk
-    await user.reload();
+    // Refresh auth to get latest user data
+    await refreshAuth();
 
-    const metadata = user.publicMetadata as { role?: string };
-    const role = metadata?.role;
+    const role = user.role;
 
     if (role && ROLE_DASHBOARDS[role]) {
       router.replace(ROLE_DASHBOARDS[role]);
@@ -45,11 +43,11 @@ export default function SetupPendingPage() {
     setLastChecked(new Date());
     setIsChecking(false);
     setCountdown(15);
-  }, [user, router]);
+  }, [user, router, refreshAuth]);
 
   // Auto-refresh every 15 seconds
   useEffect(() => {
-    if (!isLoaded || !user) return;
+    if (isLoading || !user) return;
 
     const interval = setInterval(() => {
       setCountdown((prev) => {
@@ -62,25 +60,24 @@ export default function SetupPendingPage() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isLoaded, user, checkRoleAndRedirect]);
+  }, [isLoading, user, checkRoleAndRedirect]);
 
   // Check immediately on load
   useEffect(() => {
-    if (isLoaded && user) {
-      const metadata = user.publicMetadata as { role?: string };
-      const role = metadata?.role;
+    if (!isLoading && user) {
+      const role = user.role;
 
       if (role && ROLE_DASHBOARDS[role]) {
         router.replace(ROLE_DASHBOARDS[role]);
       }
     }
-  }, [isLoaded, user, router]);
+  }, [isLoading, user, router]);
 
   const handleSignOut = () => {
-    signOut({ redirectUrl: "/" });
+    logout();
   };
 
-  if (!isLoaded) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -103,7 +100,7 @@ export default function SetupPendingPage() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Account Setup Pending</h1>
 
         <p className="text-muted-foreground mb-6">
-          Welcome, {user?.firstName || user?.emailAddresses[0]?.emailAddress || "User"}! Your account has been created
+          Welcome, {user?.name || user?.email || "User"}! Your account has been created
           but is awaiting role assignment.
         </p>
 

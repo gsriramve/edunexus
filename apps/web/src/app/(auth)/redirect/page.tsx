@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
@@ -18,19 +18,18 @@ const ROLE_DASHBOARDS: Record<string, string> = {
 };
 
 export default function AuthRedirect() {
-  const { user, isLoaded } = useUser();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (isLoading) return;
 
     if (!user) {
-      router.replace('/sign-in');
+      router.replace('/login');
       return;
     }
 
-    const metadata = user.publicMetadata as { role?: string };
-    const role = metadata?.role;
+    const role = user.role;
     const dashboard = role ? ROLE_DASHBOARDS[role] : null;
 
     if (dashboard) {
@@ -38,7 +37,7 @@ export default function AuthRedirect() {
     } else {
       router.replace('/setup-pending');
     }
-  }, [user, isLoaded, router]);
+  }, [user, isLoading, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">

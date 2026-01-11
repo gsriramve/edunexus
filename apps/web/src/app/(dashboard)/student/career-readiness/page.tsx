@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useStudentByUserId, useStudentCri, useCalculateCri } from "@/hooks/use-api";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import { CRICard, CRIRadarChart, CRISkillGapChart, CRIActionPlan } from "@/components/career";
 import {
   CriData,
@@ -83,7 +83,7 @@ const sampleCriData: CriData = {
 export default function CareerReadinessPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const tenantId = useTenantId();
-  const { user } = useUser();
+  const { user } = useAuth();
 
   const { data: student, isLoading: studentLoading } = useStudentByUserId(
     tenantId || "",

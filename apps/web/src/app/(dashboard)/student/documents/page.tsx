@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   FileText,
   Upload,
@@ -110,7 +110,7 @@ export default function StudentDocumentsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auth context
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user, isLoading: isUserLoaded } = useAuth();
   const tenantId = useTenantId() || '';
   const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   Calendar,
   CheckCircle2,
@@ -32,7 +32,7 @@ import {
 } from "@/hooks/use-attendance";
 
 export default function StudentAttendance() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const tenantId = useTenantId() || '';
   const [selectedSubject, setSelectedSubject] = useState("all");
 

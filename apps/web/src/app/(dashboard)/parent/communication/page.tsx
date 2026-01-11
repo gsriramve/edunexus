@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   MessageSquare,
   Bell,
@@ -72,7 +72,7 @@ const mockSentMessages: Array<{
 }> = [];
 
 export default function ParentCommunication() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const tenantId = useTenantId() || '';
   const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState("");

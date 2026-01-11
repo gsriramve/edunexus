@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   Card,
   CardContent,
@@ -81,7 +81,7 @@ const roleOptions = [
 ];
 
 export default function UsersPage() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const { toast } = useToast();
   const tenantId = useTenantId();
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);

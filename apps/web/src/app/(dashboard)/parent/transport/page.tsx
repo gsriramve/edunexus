@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   Bus,
   MapPin,
@@ -37,7 +37,7 @@ import { useTenantId } from "@/hooks/use-tenant";
 import { useParentChildren } from "@/hooks/use-parents";
 
 export default function ParentTransport() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const tenantId = useTenantId() || '';
   const [selectedChildId, setSelectedChildId] = useState<string>('');
 

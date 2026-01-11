@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useStudentByUserId, useStudentSgi, useCalculateSgi, type SgiData } from "@/hooks/use-api";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import { SGITrendChart } from "@/components/indices";
 
 const getTrendIcon = (trend: string) => {
@@ -142,7 +142,7 @@ const sampleSgiHistory: SgiData[] = [
 export default function StudentGrowthPage() {
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
   const tenantId = useTenantId();
-  const { user } = useUser();
+  const { user } = useAuth();
 
   const { data: student, isLoading: studentLoading } = useStudentByUserId(
     tenantId || "",

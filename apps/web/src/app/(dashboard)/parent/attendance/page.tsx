@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   Calendar,
   CheckCircle2,
@@ -45,7 +45,7 @@ import {
 } from "@/hooks/use-attendance";
 
 export default function ParentAttendance() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const tenantId = useTenantId() || '';
   const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState("january");

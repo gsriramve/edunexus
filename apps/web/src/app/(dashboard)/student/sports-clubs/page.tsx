@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/lib/auth';
 import {
   Trophy,
   Users,
@@ -45,7 +45,7 @@ import {
 } from '@/hooks/use-sports-clubs';
 
 export default function StudentSportsClubsPage() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const tenantId = useTenantId() || '';
   const [activeTab, setActiveTab] = useState('overview');
   const [showJoinTeamDialog, setShowJoinTeamDialog] = useState(false);
@@ -103,7 +103,7 @@ export default function StudentSportsClubsPage() {
 
   // Handlers
   // Get student name for mutations - Student has user.name, not firstName/lastName
-  const studentName = studentData?.user?.name || user?.fullName || '';
+  const studentName = studentData?.user?.name || user?.name || '';
   const rollNo = studentData?.rollNo;
 
   const handleJoinTeam = async (teamId: string) => {

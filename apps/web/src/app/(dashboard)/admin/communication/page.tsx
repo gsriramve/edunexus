@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   Send,
   MessageSquare,
@@ -86,7 +86,7 @@ import {
 
 export default function CommunicationPage() {
   const { toast } = useToast();
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user, isLoading: isUserLoaded } = useAuth();
   const tenantId = useTenantId() || '';
 
   const [selectedTab, setSelectedTab] = useState("announcements");

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   BookOpen,
   Download,
@@ -99,7 +99,7 @@ function getMaterialsForSubject(subject: AcademicSubject) {
 }
 
 export default function StudentAcademics() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const tenantId = useTenantId() || '';
   const [selectedSemester, setSelectedSemester] = useState("0"); // "0" means current semester
 

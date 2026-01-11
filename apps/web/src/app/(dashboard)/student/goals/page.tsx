@@ -49,7 +49,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useTenantId } from "@/hooks/use-tenant";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import { useStudentByUserId } from "@/hooks/use-api";
 import {
   useMyGoals,
@@ -75,7 +75,7 @@ export default function StudentGoalsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const tenantId = useTenantId();
-  const { user } = useUser();
+  const { user } = useAuth();
 
   // Get student data
   const { data: student, isLoading: studentLoading } = useStudentByUserId(

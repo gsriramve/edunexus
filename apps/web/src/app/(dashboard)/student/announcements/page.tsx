@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   Megaphone,
   Pin,
@@ -49,7 +49,7 @@ export default function StudentAnnouncementsPage() {
   const { toast } = useToast();
 
   // Auth context
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user, isLoading: isUserLoaded } = useAuth();
   const tenantId = useTenantId() || '';
   const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
 

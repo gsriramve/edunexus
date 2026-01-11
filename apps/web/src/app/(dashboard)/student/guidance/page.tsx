@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTenantId } from "@/hooks/use-tenant";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   useMyGuidanceDashboard,
   useMyGuidance,
@@ -61,7 +61,7 @@ export default function StudentGuidancePage() {
   const [activeTab, setActiveTab] = useState("recommendations");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const tenantId = useTenantId();
-  const { user } = useUser();
+  const { user } = useAuth();
 
   // Get student ID
   const { data: student, isLoading: studentLoading } = useStudentByUserId(

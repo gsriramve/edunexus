@@ -15,7 +15,7 @@ import {
   User,
   Loader2,
 } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ import {
 } from "@/hooks/use-transport";
 
 export default function StudentTransportPage() {
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user, isLoading: isUserLoaded } = useAuth();
   const tenantId = useTenantId();
   const [currentTime, setCurrentTime] = useState(new Date());
 

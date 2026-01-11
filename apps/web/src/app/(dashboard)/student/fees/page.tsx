@@ -13,7 +13,7 @@ import {
   ArrowRight,
   Loader2,
 } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ export default function StudentFees() {
 
   // Auth context
   const tenantId = useTenantId();
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user, isLoading: isUserLoaded } = useAuth();
 
   // Get student data from user ID
   const { data: studentData, isLoading: isLoadingStudent } = useStudentByUserId(
@@ -68,8 +68,8 @@ export default function StudentFees() {
   );
 
   const studentId = studentData?.id || '';
-  const studentName = user?.fullName || user?.firstName || 'Student';
-  const studentEmail = user?.primaryEmailAddress?.emailAddress || '';
+  const studentName = user?.name || user?.name || 'Student';
+  const studentEmail = user?.email || '';
 
   // API Hooks
   const { data: feesData, isLoading: isLoadingFees, refetch: refetchFees } = useStudentFees(tenantId || '', studentId);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   User,
   Mail,
@@ -39,7 +39,7 @@ import { PhotoUpload } from "@/components/profile/photo-upload";
 import { toast } from "sonner";
 
 export default function StudentProfile() {
-  const { user, isLoaded: userLoaded } = useUser();
+  const { user, isLoading: userLoaded } = useAuth();
   const tenantId = useTenantId() || '';
   const [isEditing, setIsEditing] = useState(false);
 
@@ -86,7 +86,7 @@ export default function StudentProfile() {
 
   // Initialize edit state when entering edit mode
   const startEditing = () => {
-    setEditedPhone(user?.primaryPhoneNumber?.phoneNumber || '');
+    setEditedPhone('');
     setIsEditing(true);
   };
 
@@ -130,13 +130,13 @@ export default function StudentProfile() {
     );
   }
 
-  // Derive display data from student and Clerk user
-  const firstName = user?.firstName || studentData?.user?.name?.split(' ')[0] || '';
-  const lastName = user?.lastName || studentData?.user?.name?.split(' ').slice(1).join(' ') || '';
-  const fullName = `${firstName} ${lastName}`.trim() || 'Student';
-  const email = user?.primaryEmailAddress?.emailAddress || studentData?.user?.email || '';
-  const phone = user?.primaryPhoneNumber?.phoneNumber || '';
-  const photoUrl = user?.imageUrl || studentData?.user?.profile?.photoUrl || '';
+  // Derive display data from student and user
+  const firstName = user?.name?.split(' ')[0] || studentData?.user?.name?.split(' ')[0] || '';
+  const lastName = studentData?.user?.name?.split(' ').slice(1).join(' ') || '';
+  const fullName = user?.name || studentData?.user?.name || 'Student';
+  const email = user?.email || studentData?.user?.email || '';
+  const phone = '';
+  const photoUrl = studentData?.user?.profile?.photoUrl || '';
   const initials = `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase() || 'S';
 
   // Student academic data

@@ -57,7 +57,7 @@ import {
   type CreateEmploymentInput,
 } from "@/hooks/use-alumni";
 import { PhotoUpload } from "@/components/profile/photo-upload";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 
 const currentStatusOptions: { value: CurrentStatus; label: string }[] = [
   { value: "employed", label: "Employed" },
@@ -84,7 +84,7 @@ export default function AlumniProfilePage() {
   const [newEmployment, setNewEmployment] = useState<Partial<CreateEmploymentInput>>({});
 
   const tenantId = useTenantId();
-  const { user } = useUser();
+  const { user } = useAuth();
 
   const { data: profile, isLoading, refetch } = useMyAlumniProfile(tenantId || "");
   const updateProfile = useUpdateMyAlumniProfile(tenantId || "");

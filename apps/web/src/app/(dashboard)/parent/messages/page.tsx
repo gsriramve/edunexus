@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   MessageSquare,
   Bell,
@@ -49,7 +49,7 @@ import { useUserAnnouncements } from "@/hooks/use-communication";
 import { useStudentTeachers } from "@/hooks/use-parent-dashboard";
 
 export default function ParentMessages() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const tenantId = useTenantId() || '';
   const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState("");

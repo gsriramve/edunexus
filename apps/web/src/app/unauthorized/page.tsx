@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { ShieldX, Home, ArrowLeft } from "lucide-react";
 
 export default function UnauthorizedPage() {
-  const { user } = useUser();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">

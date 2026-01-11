@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   Building2,
   Users,
@@ -31,7 +31,7 @@ import {
 } from "@/hooks/use-principal-dashboard";
 
 export default function PrincipalDashboard() {
-  const { isLoaded: clerkLoaded } = useUser();
+  const { isLoading: clerkLoaded } = useAuth();
   const tenantId = useTenantId();
 
   // Fetch dashboard data

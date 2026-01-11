@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   GraduationCap,
   TrendingUp,
@@ -45,7 +45,7 @@ const gradePoints: Record<string, number> = {
 };
 
 export default function ParentAcademics() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const tenantId = useTenantId() || '';
   const [selectedChildId, setSelectedChildId] = useState<string>('');
   const [selectedSemester, setSelectedSemester] = useState("5");

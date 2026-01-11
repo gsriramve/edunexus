@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser, useClerk } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import { Bell, Search, LogOut, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,26 +16,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function DashboardHeader() {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
+  const { user, isLoading, logout } = useAuth();
 
   // Get user initials for avatar fallback
   const getInitials = () => {
     if (!user) return "?";
-    const firstName = user.firstName || "";
-    const lastName = user.lastName || "";
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    const nameParts = user.name.split(" ");
+    if (nameParts.length >= 2) {
+      return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
     }
-    if (firstName) return firstName[0].toUpperCase();
-    if (user.emailAddresses?.[0]?.emailAddress) {
-      return user.emailAddresses[0].emailAddress[0].toUpperCase();
+    if (nameParts.length === 1 && nameParts[0]) {
+      return nameParts[0][0].toUpperCase();
+    }
+    if (user.email) {
+      return user.email[0].toUpperCase();
     }
     return "?";
   };
 
   const handleSignOut = () => {
-    signOut({ redirectUrl: "/" });
+    logout();
   };
 
   return (
@@ -56,10 +56,9 @@ export function DashboardHeader() {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Notification bell - no badge until real notifications are implemented */}
+        {/* Notification bell */}
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
-          {/* TODO: Add real notification count when notifications are implemented */}
         </Button>
 
         {/* Visible logout button for quick access */}
@@ -73,7 +72,7 @@ export function DashboardHeader() {
           <span className="hidden md:inline">Sign out</span>
         </Button>
 
-        {/* User dropdown with real Clerk data */}
+        {/* User dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -82,11 +81,8 @@ export function DashboardHeader() {
               suppressHydrationWarning
             >
               <Avatar className="h-9 w-9">
-                {user?.imageUrl && (
-                  <AvatarImage src={user.imageUrl} alt={user.fullName || "User"} />
-                )}
                 <AvatarFallback className="bg-primary text-primary-foreground">
-                  {isLoaded ? getInitials() : "..."}
+                  {isLoading ? "..." : getInitials()}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -95,10 +91,10 @@ export function DashboardHeader() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">
-                  {user?.fullName || user?.firstName || "User"}
+                  {user?.name || "User"}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  {user?.emailAddresses?.[0]?.emailAddress || ""}
+                  {user?.email || ""}
                 </p>
               </div>
             </DropdownMenuLabel>

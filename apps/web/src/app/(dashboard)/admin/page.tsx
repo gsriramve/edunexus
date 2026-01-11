@@ -20,12 +20,12 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import { useAdminDashboard } from "@/hooks/use-admin-dashboard";
 
 export default function AdminStaffDashboard() {
   const tenantId = useTenantId() || '';
-  const { user, isLoaded: userLoaded } = useUser();
+  const { user, isLoading: userLoaded } = useAuth();
 
   // Fetch admin dashboard data
   const { data: dashboardData, isLoading, error } = useAdminDashboard(tenantId);
@@ -83,7 +83,7 @@ export default function AdminStaffDashboard() {
   }
 
   // Get user display name
-  const displayName = user?.fullName || user?.firstName || adminInfo?.name || 'Admin';
+  const displayName = user?.name || user?.name || adminInfo?.name || 'Admin';
 
   const getStatusBadge = (status: string) => {
     switch (status) {

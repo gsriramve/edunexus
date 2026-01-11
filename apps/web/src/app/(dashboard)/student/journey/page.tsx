@@ -20,7 +20,7 @@ import {
   type JourneyDashboard,
   type TimelineItem,
 } from '@/hooks/use-student-journey';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/lib/auth';
 import {
   JourneyTimeline,
   JourneyStats,
@@ -117,7 +117,7 @@ export default function StudentJourneyPage() {
   } | null>(null);
 
   const tenantId = useTenantId();
-  const { user } = useUser();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const { data: student, isLoading: studentLoading } = useStudentByUserId(

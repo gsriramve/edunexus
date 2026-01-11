@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   FileText,
   Folder,
@@ -109,10 +109,10 @@ const formatFileSize = (bytes: number) => {
 
 export default function AdminDocumentsPage() {
   const { toast } = useToast();
-  const { user, isLoaded: isUserLoaded } = useUser();
+  const { user, isLoading: isUserLoaded } = useAuth();
   const tenantId = useTenantId() || '';
   const userId = user?.id || '';
-  const userName = user?.fullName || user?.firstName || 'Admin User';
+  const userName = user?.name || user?.name || 'Admin User';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State

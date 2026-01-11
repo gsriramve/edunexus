@@ -1,27 +1,24 @@
 'use client';
 
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/lib/auth';
 import { useParams, useSearchParams } from 'next/navigation';
 
 /**
  * Hook to get the current tenant ID.
  * Priority:
- * 1. Clerk user's publicMetadata.tenantId (for authenticated users with assigned tenant)
+ * 1. User's tenantId from JWT (for authenticated users with assigned tenant)
  * 2. URL params (e.g., /[tenantId]/dashboard)
  * 3. Query string (e.g., ?tenantId=xxx) - for development/testing
  * 4. localStorage - for development/testing fallback
  */
 export function useTenantId(): string | null {
-  const { user, isLoaded } = useUser();
+  const { user, isLoading } = useAuth();
   const params = useParams();
   const searchParams = useSearchParams();
 
-  // 1. First priority: Get from Clerk user's publicMetadata (production flow)
-  if (isLoaded && user) {
-    const metadata = user.publicMetadata as { tenantId?: string };
-    if (metadata?.tenantId) {
-      return metadata.tenantId;
-    }
+  // 1. First priority: Get from user's tenantId (production flow)
+  if (!isLoading && user && user.tenantId) {
+    return user.tenantId;
   }
 
   // 2. Try to get from URL params (e.g., /[tenantId]/dashboard)

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   BookOpen,
   Calendar,
@@ -48,7 +48,7 @@ const quickActions = [
 ];
 
 export default function StudentDashboard() {
-  const { user, isLoaded: userLoaded } = useUser();
+  const { user, isLoading: userLoaded } = useAuth();
   const tenantId = useTenantId() || '';
   const [greeting, setGreeting] = useState("Good morning");
 
@@ -108,10 +108,10 @@ export default function StudentDashboard() {
   }
 
   // Derive display data
-  const firstName = user?.firstName || dashboardData?.name?.split(' ')[0] || studentData?.user?.name?.split(' ')[0] || 'Student';
-  const fullName = user?.fullName || dashboardData?.name || studentData?.user?.name || 'Student';
-  const photoUrl = user?.imageUrl || '';
-  const initials = fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const firstName = user?.name?.split(' ')[0] || dashboardData?.name?.split(' ')[0] || studentData?.user?.name?.split(' ')[0] || 'Student';
+  const fullName = user?.name || dashboardData?.name || studentData?.user?.name || 'Student';
+  const photoUrl = studentData?.user?.profile?.photoUrl || '';
+  const initials = fullName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
 
   const rollNo = dashboardData?.rollNo || studentData?.rollNo || 'N/A';
   const departmentCode = dashboardData?.departmentCode || studentData?.department?.code || '';

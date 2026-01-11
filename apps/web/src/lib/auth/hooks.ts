@@ -1,7 +1,7 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
 import { useMemo } from "react";
+import { useAuth } from "./auth-context";
 import {
   UserRole,
   UserRoleType,
@@ -22,30 +22,23 @@ interface UserPermissions {
 }
 
 /**
- * Hook to get current user's role and permissions from Clerk
+ * Hook to get current user's role and permissions
  */
-export function useRole() {
-  const { user, isLoaded } = useUser();
+export function useRolePermissions() {
+  const { user, isLoading } = useAuth();
 
   const permissions = useMemo<UserPermissions | null>(() => {
-    if (!isLoaded || !user) return null;
-
-    // Get role from Clerk's public metadata
-    const metadata = user.publicMetadata as {
-      role?: UserRoleType;
-      tenantId?: string;
-      departmentId?: string;
-    };
+    if (isLoading || !user) return null;
 
     return {
-      role: metadata.role || UserRole.STUDENT,
-      tenantId: metadata.tenantId || null,
-      departmentId: metadata.departmentId || null,
+      role: (user.role as UserRoleType) || UserRole.STUDENT,
+      tenantId: user.tenantId || null,
+      departmentId: null, // Will be loaded from API if needed
     };
-  }, [user, isLoaded]);
+  }, [user, isLoading]);
 
   return {
-    isLoaded,
+    isLoaded: !isLoading,
     permissions,
     role: permissions?.role || null,
     tenantId: permissions?.tenantId || null,
@@ -59,7 +52,7 @@ export function useRole() {
  * Hook to check if user has permission for a specific action on a resource
  */
 export function usePermission(resource: ResourceType, action: ActionType) {
-  const { role } = useRole();
+  const { role } = useRolePermissions();
 
   return useMemo(() => {
     if (!role) return false;
@@ -71,7 +64,7 @@ export function usePermission(resource: ResourceType, action: ActionType) {
  * Hook to check if user can access a resource (any action)
  */
 export function useCanAccess(resource: ResourceType) {
-  const { role } = useRole();
+  const { role } = useRolePermissions();
 
   return useMemo(() => {
     if (!role) return false;
@@ -83,7 +76,7 @@ export function useCanAccess(resource: ResourceType) {
  * Hook to check if user's role meets minimum required role
  */
 export function useRequiredRole(requiredRole: UserRoleType) {
-  const { role } = useRole();
+  const { role } = useRolePermissions();
 
   return useMemo(() => {
     if (!role) return false;
@@ -95,7 +88,7 @@ export function useRequiredRole(requiredRole: UserRoleType) {
  * Hook to get permission scope for a resource
  */
 export function usePermissionScope(resource: ResourceType) {
-  const { role } = useRole();
+  const { role } = useRolePermissions();
 
   return useMemo(() => {
     if (!role) return null;
@@ -109,7 +102,7 @@ export function usePermissionScope(resource: ResourceType) {
 export function usePermissions(
   checks: Array<{ resource: ResourceType; action: ActionType }>
 ) {
-  const { role } = useRole();
+  const { role } = useRolePermissions();
 
   return useMemo(() => {
     if (!role) return checks.map(() => false);

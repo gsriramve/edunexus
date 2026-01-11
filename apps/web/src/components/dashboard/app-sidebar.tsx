@@ -36,7 +36,6 @@ import {
   Camera,
   ScanFace,
 } from "lucide-react";
-import { useClerk } from "@clerk/nextjs";
 import {
   Sidebar,
   SidebarContent,
@@ -49,7 +48,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useRole, UserRole } from "@/lib/auth";
+import { useRolePermissions, useAuth, UserRole } from "@/lib/auth";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useTenant } from "@/hooks/use-api";
 
@@ -185,13 +184,13 @@ const NAV_BY_ROLE: Record<string, typeof platformOwnerNav> = {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { role, roleName } = useRole();
+  const { role, roleName } = useRolePermissions();
   const tenantId = useTenantId();
   const { data: tenant } = useTenant(tenantId || "");
-  const { signOut } = useClerk();
+  const { logout } = useAuth();
 
   const handleSignOut = () => {
-    signOut({ redirectUrl: "/" });
+    logout();
   };
 
   const navItems = role ? NAV_BY_ROLE[role] || studentNav : [];

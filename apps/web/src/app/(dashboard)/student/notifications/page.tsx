@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -162,7 +162,7 @@ function NotificationsList({
 }
 
 export default function NotificationsPage() {
-  const { user, isLoaded: userLoaded } = useUser();
+  const { user, isLoading: userLoaded } = useAuth();
   const tenantId = useTenantId() || '';
   const [activeCategory, setActiveCategory] = useState("all");
   const [markingReadId, setMarkingReadId] = useState<string | null>(null);

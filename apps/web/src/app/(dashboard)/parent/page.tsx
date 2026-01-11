@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/auth";
 import {
   GraduationCap,
   Calendar,
@@ -37,7 +37,7 @@ import { useParentChildren } from "@/hooks/use-parents";
 import { useParentDashboard } from "@/hooks/use-parent-dashboard";
 
 export default function ParentDashboard() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const tenantId = useTenantId() || '';
   const [selectedChildId, setSelectedChildId] = useState<string>('');
 

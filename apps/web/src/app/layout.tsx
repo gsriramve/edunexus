@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/query-client";
-import { AuthProvider } from "@/components/auth-provider";
+import { AuthProvider } from "@/lib/auth";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -97,35 +96,33 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <head>
-          {/* PWA Meta Tags */}
-          <meta name="mobile-web-app-capable" content="yes" />
-          <meta name="apple-mobile-web-app-capable" content="yes" />
-          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-          <meta name="apple-mobile-web-app-title" content="EduNexus" />
-          <meta name="msapplication-TileColor" content="#4F46E5" />
-          <meta name="msapplication-tap-highlight" content="no" />
+    <html lang="en">
+      <head>
+        {/* PWA Meta Tags */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="EduNexus" />
+        <meta name="msapplication-TileColor" content="#4F46E5" />
+        <meta name="msapplication-tap-highlight" content="no" />
 
-          {/* Splash screens for iOS */}
-          <link
-            rel="apple-touch-startup-image"
-            href="/icons/icon-512x512.png"
-            media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)"
-          />
-        </head>
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <AuthProvider>
-            <QueryProvider>
-              {children}
-              <Toaster />
-            </QueryProvider>
-          </AuthProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        {/* Splash screens for iOS */}
+        <link
+          rel="apple-touch-startup-image"
+          href="/icons/icon-512x512.png"
+          media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)"
+        />
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <AuthProvider>
+          <QueryProvider>
+            {children}
+            <Toaster />
+          </QueryProvider>
+        </AuthProvider>
+      </body>
+    </html>
   );
 }
