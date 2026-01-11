@@ -1,0 +1,121 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REGISTRY: 243333339289.dkr.ecr.ap-south-1.amazonaws.com
+
+jobs:
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/edunexus-api:latest
+            ${{ env.ECR_REGISTRY }}/edunexus-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/web/Dockerfile
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/edunexus-web:latest
+            ${{ env.ECR_REGISTRY }}/edunexus-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to EC2
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            echo "=========================================="
+            echo "🚀 EduNexus Deployment Starting..."
+            echo "=========================================="
+
+            # Login to ECR
+            echo "📦 Logging into ECR..."
+            aws ecr get-login-password --region ap-south-1 | \
+              docker login --username AWS --password-stdin \
+              243333339289.dkr.ecr.ap-south-1.amazonaws.com
+
+            # Pull latest images
+            echo "📥 Pulling latest images..."
+            docker pull 243333339289.dkr.ecr.ap-south-1.amazonaws.com/edunexus-api:latest
+            docker pull 243333339289.dkr.ecr.ap-south-1.amazonaws.com/edunexus-web:latest
+
+            # Tag images for docker-compose
+            echo "🏷️ Tagging images..."
+            docker tag 243333339289.dkr.ecr.ap-south-1.amazonaws.com/edunexus-api:latest edunexus-api:latest
+            docker tag 243333339289.dkr.ecr.ap-south-1.amazonaws.com/edunexus-web:latest edunexus-web:latest
+
+            # Restart containers with new images
+            echo "🔄 Restarting containers..."
+            cd /home/ec2-user/edunexus
+            docker-compose --profile app up -d --force-recreate api web
+
+            # Wait for health checks
+            echo "⏳ Waiting for services to be healthy..."
+            sleep 10
+
+            # Show status
+            echo "=========================================="
+            echo "✅ Deployment Complete!"
+            echo "=========================================="
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep edunexus
+            echo ""
+            echo "🌐 Site: http://15.206.243.177"
+            echo "=========================================="
+
+      - name: Deployment Summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Status:** Success" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 **URL:** http://15.206.243.177" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📝 **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
