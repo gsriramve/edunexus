@@ -64,13 +64,16 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
       - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          script: |
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'DEPLOY_SCRIPT'
             set -e
             echo "=========================================="
             echo "🚀 EduNexus Deployment Starting..."
@@ -109,6 +112,7 @@ jobs:
             echo ""
             echo "🌐 Site: http://15.206.243.177"
             echo "=========================================="
+          DEPLOY_SCRIPT
 
       - name: Deployment Summary
         run: |
