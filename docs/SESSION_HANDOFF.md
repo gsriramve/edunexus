@@ -1,14 +1,17 @@
 # EduNexus - Session Handoff Document
 
-## Project Status as of January 8, 2026 (Latest Update)
+## Project Status as of January 11, 2026 (Latest Update)
 
 ---
 
 ## Executive Summary
 
-EduNexus **Core ERP is 96% complete** (66/69 tasks). **Phase 6: Student-Centric Platform is 93% complete** (4/7 modules + 8 Frontend Pages).
+EduNexus is a multi-tenant college ERP system. **Major milestone achieved: Migrated from Clerk to JWT-based authentication**, saving ~$25/month and eliminating vendor lock-in.
 
-**Today's Focus:** Implemented Teacher Alerts page with reusable components (AlertStatsRow, AlertCard, AlertDetailDialog, AlertHistory).
+**Today's Focus:**
+1. Completed JWT authentication migration (replaced Clerk entirely)
+2. Cleaned up all e2e test data (65 files, 7,452 lines removed)
+3. Updated architecture documentation
 
 ---
 
@@ -16,223 +19,170 @@ EduNexus **Core ERP is 96% complete** (66/69 tasks). **Phase 6: Student-Centric 
 
 | Phase | Description | Status | Progress |
 |-------|-------------|--------|----------|
-| Phase 1 | Foundation & Setup | 🟢 Complete | 100% |
-| Phase 2 | Core Modules | 🟢 Complete | 100% |
-| Phase 3 | Advanced Modules | 🟢 Complete | 100% |
-| Phase 4 | AI Features | 🟢 Complete | 100% |
-| Phase 5 | Polish & Launch | 🟡 In Progress | 70% |
-| **Phase 6** | **Student-Centric Platform** | 🟡 **In Progress** | **93% (4/7 modules + 8 Frontend)** |
-
-### Phase 6 - Student-Centric Features Progress
-
-| Module | Status | Files Created |
-|--------|--------|---------------|
-| Student Growth Index (SGI) | ✅ Complete | API module, calculator, hooks |
-| Career Readiness Index (CRI) | ✅ Complete | API module, calculator, hooks |
-| 360° Feedback System | ✅ Complete | API module, normalizer, hooks |
-| AI-Driven Guidance | ✅ Complete | API module, recommendation engine, alert detection, hooks |
-| Student Growth Page (Frontend) | ✅ Complete | SGI components, charts, growth page |
-| Career Readiness Page (Frontend) | ✅ Complete | CRI components, radar, skill gaps, action plan |
-| Student Guidance Page (Frontend) | ✅ Complete | Guidance components, alerts, goals, deadlines |
-| Student Goals Page (Frontend) | ✅ Complete | GoalForm, GoalSuggestions, ProgressUpdateDialog |
-| Student Journey Page (Frontend) | ✅ Complete | JourneyTimeline, JourneyStats, YearProgressGrid, AddMilestoneDialog |
-| Teacher Feedback Page (Frontend) | ✅ Complete | FeedbackStatsRow, StudentFeedbackCard, FeedbackFormDialog, FeedbackHistory |
-| **Teacher Alerts Page (Frontend)** | ✅ **Complete** | AlertStatsRow, AlertCard, AlertDetailDialog, AlertHistory |
-| Face Recognition Attendance | ⬜ Pending | - |
-| Alumni Management | ⬜ Pending | - |
-| Accreditation Dashboards | ⬜ Pending | - |
+| Phase 1 | Foundation & Setup | Complete | 100% |
+| Phase 2 | Core Modules | Complete | 100% |
+| Phase 3 | Advanced Modules | Complete | 100% |
+| Phase 4 | AI Features | Complete | 100% |
+| Phase 5 | Polish & Launch | In Progress | 75% |
+| **Phase 6** | **Student-Centric Platform** | In Progress | 93% |
 
 ---
 
-## Today's Accomplishments
+## Authentication Migration (January 11, 2026)
 
-### Teacher Alerts Page Complete (Session 30)
+### What Changed
 
-Created reusable alert components and enhanced the teacher alerts page:
+| Before | After |
+|--------|-------|
+| Clerk authentication ($25+/month) | JWT-based auth ($0) |
+| ClerkProvider in frontend | Custom AuthProvider |
+| Clerk webhooks | Direct API auth |
+| @clerk/nextjs package | jose + custom auth |
 
-#### 1. Alert Components (`apps/web/src/components/alerts/`)
-- **AlertStatsRow.tsx** - Stats cards row (Unresolved, Critical, Total, Resolved) with loading states and percentages
-- **AlertCard.tsx** - Individual alert card with student info, severity badges, metric values, change percentages
-- **AlertDetailDialog.tsx** - Full alert details with suggested actions, acknowledgment/resolution workflow
-- **AlertHistory.tsx** - View resolved alerts with resolution notes and metric history
-
-#### 2. Enhanced Teacher Alerts Page (`/teacher/alerts/`)
-- Integrated with real API hooks (useAlerts, useAlertStats, useAcknowledgeAlert, useResolveAlert, useRunAlertDetection)
-- Stats row showing unresolved, critical, total, and resolved counts
-- Filters for severity (Critical/Warning/Info) and type (Attendance/Grade/Activity/Feedback)
-- Tabbed interface: Active, Resolved
-- Alert cards with severity colors and status badges
-- Alert detail dialog with acknowledge and resolve workflow
-- Run Detection button to trigger alert detection manually
-- Refresh functionality
-- Toast notifications for success/error
-
-### Files Created Today (Session 30)
-
-| File | Purpose | Lines |
-|------|---------|-------|
-| `apps/web/src/components/alerts/AlertStatsRow.tsx` | Stats cards row | ~120 |
-| `apps/web/src/components/alerts/AlertCard.tsx` | Alert card component | ~150 |
-| `apps/web/src/components/alerts/AlertDetailDialog.tsx` | Alert detail dialog | ~250 |
-| `apps/web/src/components/alerts/AlertHistory.tsx` | Resolved alerts display | ~200 |
-| `apps/web/src/components/alerts/index.ts` | Component exports | ~4 |
-
-### Files Modified Today (Session 30)
-
-| File | Change |
-|------|--------|
-| `apps/web/src/app/(dashboard)/teacher/alerts/page.tsx` | Refactored to use new reusable components with resolved alerts tab |
-
----
-
-### Previous Session (29): Teacher Feedback Page Complete
-
-Created reusable feedback components and enhanced the teacher feedback page:
-
-#### 1. Feedback Components (`apps/web/src/components/feedback/`)
-- **FeedbackStatsRow.tsx** - Stats cards row (Pending, Overdue, Completed, Active Cycles) with loading states
-- **StudentFeedbackCard.tsx** - Individual student card for pending feedback with due dates, overdue badges, days remaining
-- **FeedbackFormDialog.tsx** - Complete feedback form with 6 rating categories, progress indicator, strengths/improvements
-- **FeedbackHistory.tsx** - View submitted feedback with rating grids, dates, and text feedback display
-
-#### 2. Enhanced Teacher Feedback Page (`/teacher/feedback/`)
-- Integrated with real API hooks (usePendingFeedback, useFeedbackCycles, useSubmitFeedback, useFeedbackStats, useFeedbackEntries)
-- Stats row showing pending, overdue, completed, and active cycles
-- Active cycle info banner with due date
-- Tabbed interface: Pending, Completed
-- Grid of clickable student cards in Pending tab
-- Detailed feedback history in Completed tab
-- Refresh functionality
-- Toast notifications for success/error
-
----
-
-### Previous Session (28): Student Journey Timeline Page Complete
-
-Created reusable journey components and enhanced the journey page:
-
-#### 1. Journey Components (`apps/web/src/components/journey/`)
-- **JourneyTimeline.tsx** - Timeline visualization with milestone icons, category filtering, expand/collapse
-- **JourneyStats.tsx** - Stats cards (CGPA with trend, milestones, achievements, events/clubs)
-- **YearProgressGrid.tsx** - Year-over-year progress cards with CGPA, SGI, CRI progress bars
-- **AddMilestoneDialog.tsx** - Dialog for students to add custom milestones with type, category, date
-- **SemesterCompareDialog.tsx** - Compare two semesters side-by-side with trend indicators
-
-#### 2. Enhanced Journey Page (`/student/journey/`)
-- Integrated with real API hooks (useMyJourneyDashboard, useMyTimeline, useExportJourney)
-- Add custom milestone functionality for students
-- Semester comparison feature
-- Category filtering for timeline (Academic, Career, Extracurricular, Achievement)
-- Year-over-year progress visualization
-- Export journey data (JSON/CSV)
-- Refresh functionality
-
----
-
-## Phase 6 Architecture
-
-### Database Schema (Already Added)
-
-20+ new models in `packages/database/prisma/schema.prisma`:
+### New Auth Architecture
 
 ```
-StudentGrowthIndex    - Monthly SGI scores with component breakdown
-CareerReadinessIndex  - CRI with placement probability
-IndexConfiguration    - Per-tenant weight configuration
-FeedbackCycle         - Monthly feedback cycles
-FeedbackEntry         - Individual feedback submissions
-FeedbackSummary       - Aggregated feedback per student
-AiGuidance            - Personalized recommendations
-StudentGoal           - Student goals with milestones
-DisengagementAlert    - Early warning alerts
-JourneyMilestone      - 4-year timeline events
-SemesterSnapshot      - Semester-end captures
-AlumniProfile         - Alumni registration & directory
-AlumniEmployment      - Career history
-AlumniMentorship      - Student-alumni connections
-AlumniContribution    - Donations & scholarships
-AlumniTestimonial     - Success stories
-AlumniEvent           - Reunions & networking
-AccreditationMetric   - NBA/NAAC/NIRF criteria
-AccreditationValue    - Metric values by year
+Frontend (Next.js)                 Backend (NestJS)
+┌─────────────────┐               ┌─────────────────┐
+│ Login Form      │──────────────▶│ POST /auth/login│
+│                 │  email+pass   │                 │
+│ AuthProvider    │◀──────────────│ JWT in cookies  │
+│ (auth-context)  │  httpOnly     │                 │
+└─────────────────┘               └─────────────────┘
+         │                                │
+         │ useAuth()                      │ bcrypt verify
+         ▼                                ▼
+  Access protected                 Store RefreshToken
+  routes via middleware            in database
 ```
 
-### API Modules Structure
+### Files Created/Modified
 
-```
-apps/api/src/modules/
-├── student-indices/     ✅ Complete
-│   ├── sgi-calculator.service.ts
-│   ├── cri-calculator.service.ts
-│   └── student-indices.controller.ts
-├── feedback/            ✅ Complete
-│   ├── feedback.service.ts
-│   ├── normalizer.service.ts
-│   └── feedback.controller.ts
-├── ai-guidance/         ✅ Complete
-│   ├── recommendation-engine.service.ts
-│   ├── alert-detection.service.ts
-│   ├── ai-guidance.service.ts
-│   └── ai-guidance.controller.ts
-├── student-journey/     ⬜ Pending
-├── face-recognition/    ⬜ Pending
-├── alumni/              ⬜ Pending
-└── accreditation/       ⬜ Pending
+**Backend (apps/api):**
+- `src/modules/auth/auth.service.ts` - Core auth logic
+- `src/modules/auth/auth.controller.ts` - HTTP endpoints
+- `src/modules/auth/jwt.strategy.ts` - Passport JWT strategy
+- `src/modules/auth/jwt-auth.guard.ts` - Auth guard
+- `src/modules/auth/dto/*.ts` - Validation DTOs
+- `src/main.ts` - Added cookie-parser
+
+**Frontend (apps/web):**
+- `src/lib/auth/auth-context.tsx` - AuthProvider, useAuth, useUser
+- `src/app/(auth)/login/page.tsx` - Login form
+- `src/app/(auth)/register/page.tsx` - Registration form
+- `src/middleware.ts` - JWT verification with jose
+- 40+ dashboard pages updated to use new auth
+
+**Database:**
+- `RefreshToken` model added to schema
+- Migration: `20260111040000_add_refresh_tokens`
+
+### Environment Variables
+
+**Removed (Clerk):**
+```bash
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+CLERK_SECRET_KEY
+NEXT_PUBLIC_CLERK_SIGN_IN_URL
+NEXT_PUBLIC_CLERK_SIGN_UP_URL
+CLERK_WEBHOOK_SECRET
 ```
 
-### Frontend Components
-
-```
-apps/web/src/components/
-├── indices/             ✅ Complete
-│   ├── SGICard.tsx
-│   ├── SGITrendChart.tsx
-│   └── SGIBreakdownRadar.tsx
-├── career/              ✅ Complete
-│   ├── CRICard.tsx
-│   ├── CRIRadarChart.tsx
-│   ├── CRISkillGapChart.tsx
-│   └── CRIActionPlan.tsx
-├── guidance/            ✅ Complete
-│   ├── GuidanceCard.tsx
-│   ├── AlertBanner.tsx
-│   ├── MonthlyPlanCard.tsx
-│   ├── GoalCard.tsx
-│   ├── DeadlineList.tsx
-│   └── GuidanceStats.tsx
-├── goals/               ✅ Complete
-│   ├── GoalForm.tsx
-│   ├── GoalSuggestions.tsx
-│   └── ProgressUpdateDialog.tsx
-├── journey/             ✅ Complete
-│   ├── JourneyTimeline.tsx
-│   ├── JourneyStats.tsx
-│   ├── YearProgressGrid.tsx
-│   ├── AddMilestoneDialog.tsx
-│   └── SemesterCompareDialog.tsx
-├── feedback/            ✅ Complete
-│   ├── FeedbackStatsRow.tsx
-│   ├── StudentFeedbackCard.tsx
-│   ├── FeedbackFormDialog.tsx
-│   └── FeedbackHistory.tsx
-├── alerts/              ✅ Complete (TODAY)
-│   ├── AlertStatsRow.tsx
-│   ├── AlertCard.tsx
-│   ├── AlertDetailDialog.tsx
-│   └── AlertHistory.tsx
-├── alumni/              ⬜ Pending
-└── accreditation/       ⬜ Pending
+**Added (JWT):**
+```bash
+JWT_SECRET=your-super-secret-key-min-32-chars
+JWT_ACCESS_EXPIRY=15m
+JWT_REFRESH_EXPIRY=7d
+BCRYPT_ROUNDS=12
 ```
 
 ---
 
-## How to Start Tomorrow
+## Test Data Cleanup (January 11, 2026)
+
+Removed entire `e2e-tests/` directory:
+- 65 files deleted
+- 7,452 lines removed
+- All screenshots, reports, and test scripts cleaned up
+
+---
+
+## Recent Commits
+
+```
+ad3e6ca chore: Remove e2e-tests directory and test data
+d8832e2 feat: Replace Clerk with JWT-based authentication
+3e87414 feat: Add profile photo upload for students and alumni
+d04313d chore: CI/CD fixes, RWD improvements, and add E2E tests
+ab4c29a fix: Apply responsive grid layouts to all dashboard pages
+```
+
+---
+
+## What's Complete
+
+### Infrastructure
+- [x] CI/CD pipeline (GitHub Actions)
+- [x] Docker containerization
+- [x] AWS EC2 deployment
+- [x] RDS PostgreSQL
+- [x] S3 file storage
+- [x] .dockerignore files for faster builds
+- [x] Schema drift detection in CI
+
+### Authentication
+- [x] JWT-based auth (replaced Clerk)
+- [x] Login/Register pages
+- [x] Password hashing (bcrypt)
+- [x] Refresh token rotation
+- [x] Role-based middleware
+- [x] 9 user roles supported
+
+### UI/UX
+- [x] Responsive design (RWD) on all dashboards
+- [x] Profile photo upload (Student + Alumni)
+- [x] All dashboard pages functional
+
+---
+
+## What's Pending
+
+### High Priority (P1)
+
+| Task | Description |
+|------|-------------|
+| CloudWatch Observability | Install agent, create alarms, dashboard |
+| Run database migration | Apply RefreshToken migration to production |
+| Test JWT auth end-to-end | Verify login flow works in production |
+| Student profile edit | Allow editing more fields beyond phone |
+
+### Medium Priority (P2)
+
+| Task | Description |
+|------|-------------|
+| Contact form verification | Test /api/leads endpoint |
+| Email notifications | Add email on form submit |
+| Parallel CI builds | Speed up deployments |
+| CloudFront CDN | Static asset delivery |
+
+### Low Priority (P3)
+
+| Task | Description |
+|------|-------------|
+| CAPTCHA on contact form | Spam prevention |
+| Sentry error tracking | Error monitoring |
+| WAF rules | Security hardening |
+
+---
+
+## How to Start Next Session
 
 ### 1. Start Development Environment
+
 ```bash
 cd /Users/sriramvenkatg/edunexus
 
-# Start infrastructure (Postgres + Redis)
+# Start infrastructure
 docker-compose up -d
 
 # Start all services
@@ -242,122 +192,89 @@ npm run dev
 # Backend:  http://localhost:3001
 ```
 
-### 2. Continue Phase 6 Development
-
-Next pages to implement:
-- `/alumni/` - Alumni portal with registration and mentorship
-- `/principal/accreditation/` - NBA/NAAC/NIRF dashboards
-- `/student/mentorship/` - Find alumni mentors
-- `/hod/department-health/` - SGI heatmap
-
-### 3. Verify Changes
-```bash
-# Run typecheck to verify all changes
-npm run typecheck
-
-# Expected: No errors
-```
-
----
-
-## Next Steps (Priority Order)
-
-### Immediate (Phase 6 Continuation)
-1. **Alumni Module** - Registration, mentorship, directory
-2. **Accreditation Module** - NBA/NAAC/NIRF dashboards
-3. **Student Mentorship Page** - Find alumni mentors
-4. **HoD Department Health** - SGI heatmap
-
-### Frontend Pages Status (Phase 6)
-```
-/student/growth/           - ✅ COMPLETE - SGI dashboard with charts
-/student/career-readiness/ - ✅ COMPLETE - CRI dashboard with skill gaps, radar, action plan
-/student/guidance/         - ✅ COMPLETE - AI recommendations, goals summary, alerts
-/student/goals/            - ✅ COMPLETE - Full CRUD, AI suggestions, progress tracking
-/student/journey/          - ✅ COMPLETE - Timeline, year progress, add milestones, compare semesters
-/student/mentorship/       - ⬜ Pending - Find alumni mentors
-/teacher/feedback/         - ✅ COMPLETE - Submit feedback, view history
-/teacher/alerts/           - ✅ COMPLETE - View/resolve alerts, run detection (TODAY)
-/hod/department-health/    - ⬜ Pending - SGI heatmap
-/principal/accreditation/  - ⬜ Pending - NBA/NAAC/NIRF
-/alumni/                   - ⬜ Pending - Alumni portal (new role)
-```
-
----
-
-## Technical Notes
-
-### Key Features Implemented Today (Session 30)
-1. **AlertStatsRow** - Reusable stats cards with unresolved, critical counts and percentages
-2. **AlertCard** - Clickable card with student info, severity/status badges, metric values
-3. **AlertDetailDialog** - Full details with suggested actions, acknowledge/resolve workflow
-4. **AlertHistory** - Resolved alerts with resolution notes and metric history
-5. **Run Detection** - Manual trigger for alert detection
-6. **Toast notifications** - Success/error feedback for all operations
-
-### Key Interfaces
-
-```typescript
-// Alert Stats Row Props
-interface AlertStatsRowProps {
-  stats: AlertStats | undefined;
-  isLoading: boolean;
-}
-
-// Alert Card Props
-interface AlertCardProps {
-  alert: Alert;
-  onClick: () => void;
-}
-
-// Alert Detail Dialog Props
-interface AlertDetailDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  alert: Alert | null;
-  onAcknowledge: (alertId: string) => void;
-  onResolve: (alertId: string, resolution: string) => void;
-  isAcknowledging?: boolean;
-  isResolving?: boolean;
-}
-
-// Alert History Props
-interface AlertHistoryProps {
-  alerts: Alert[] | undefined;
-  isLoading: boolean;
-  emptyMessage?: string;
-  onAlertClick?: (alert: Alert) => void;
-}
-```
-
----
-
-## Useful Commands
+### 2. Run Database Migration (Production)
 
 ```bash
-# Development
-npm run dev              # Start all services
-npm run typecheck        # Verify TypeScript
+cd packages/database
+npx prisma migrate deploy
+```
 
-# Database
-npx prisma generate      # Regenerate client
-npx prisma db push       # Push schema changes
-npx prisma studio        # Open Prisma Studio
+### 3. Test Authentication
 
-# Git
-git status               # Check current status
-git log --oneline -10    # Recent commits
+```bash
+# Register a new user
+curl -X POST http://localhost:3001/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "password": "Password123!", "name": "Test User"}'
+
+# Login
+curl -X POST http://localhost:3001/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "password": "Password123!"}'
 ```
 
 ---
 
-## Contact & Resources
+## Technology Stack
 
-- **Repository:** https://github.com/gsriramve/edunexus
-- **Plan Document:** `docs/PLAN.md` (updated with Phase 6 tracker)
-- **Plan Mode File:** `.claude/plans/lively-napping-wilkinson.md`
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 14, React 18, TailwindCSS, shadcn/ui |
+| Backend | NestJS 10, Prisma, PostgreSQL |
+| Auth | JWT (jose, @nestjs/jwt, passport, bcrypt) |
+| Infrastructure | AWS EC2, RDS, S3, Docker |
+| CI/CD | GitHub Actions |
 
 ---
 
-*Document updated: January 8, 2026 (Session 30)*
-*Next session: Continue with Alumni Portal or Accreditation Dashboards*
+## User Roles
+
+| Role | Dashboard | Description |
+|------|-----------|-------------|
+| platform_owner | /platform | Super admin |
+| principal | /principal | College principal |
+| hod | /hod | Head of Department |
+| admin_staff | /admin | Administrative staff |
+| teacher | /teacher | Faculty |
+| lab_assistant | /lab-assistant | Lab staff |
+| student | /student | Students |
+| parent | /parent | Parents |
+| alumni | /alumni | Graduates |
+
+---
+
+## Key Files Reference
+
+### Authentication
+- `apps/api/src/modules/auth/` - Backend auth module
+- `apps/web/src/lib/auth/auth-context.tsx` - Frontend auth
+- `apps/web/src/middleware.ts` - Route protection
+
+### Configuration
+- `docker-compose.yml` - Local services
+- `.github/workflows/ci-cd.yml` - CI/CD pipeline
+- `packages/database/prisma/schema.prisma` - Database schema
+
+### Documentation
+- `docs/architecture/SYSTEM_ARCHITECTURE.md` - System design
+- `docs/SESSION_HANDOFF.md` - This file
+- `.claude/plans/magical-singing-flamingo.md` - Implementation tracker
+
+---
+
+## Cost Summary
+
+| Item | Monthly Cost |
+|------|-------------|
+| EC2 t3.small | ~$15 |
+| RDS db.t3.micro | ~$12.50 |
+| S3 + Data Transfer | ~$5 |
+| ~~Clerk~~ | ~~$25+~~ $0 |
+| **Total** | **~$32/month** |
+
+**Savings from Clerk removal: ~$25+/month**
+
+---
+
+*Document updated: January 11, 2026*
+*Next session: Deploy JWT auth to production, add CloudWatch observability*

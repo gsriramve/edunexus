@@ -2,6 +2,8 @@
 
 This document provides an overview of the EduNexus system architecture, including high-level design, component interactions, and deployment topology.
 
+**Last Updated:** January 11, 2026
+
 ## High-Level Architecture
 
 ```mermaid
@@ -12,17 +14,18 @@ flowchart TB
     end
 
     subgraph CDN["Content Delivery"]
-        Vercel["Vercel Edge"]
+        CloudFront["CloudFront CDN (Future)"]
     end
 
     subgraph Frontend["Frontend (Next.js)"]
         NextJS["Next.js 14 App Router"]
-        Clerk["Clerk Auth"]
+        AuthContext["JWT Auth Context"]
         TanStack["React Query"]
     end
 
     subgraph Backend["Backend (NestJS)"]
         API["NestJS API"]
+        JWTAuth["JWT Authentication"]
         Guards["Auth Guards"]
         Services["Business Services"]
         Modules["58+ Modules"]
@@ -30,29 +33,29 @@ flowchart TB
 
     subgraph Data["Data Layer"]
         Prisma["Prisma ORM"]
-        PostgreSQL["PostgreSQL"]
-        Redis["Redis (Future)"]
+        PostgreSQL["PostgreSQL (RDS)"]
+        Redis["Redis (ElastiCache)"]
     end
 
     subgraph External["External Services"]
-        ClerkAPI["Clerk API"]
         Email["Email (Resend)"]
         SMS["SMS Gateway"]
         Storage["File Storage (S3)"]
     end
 
-    Web --> Vercel
-    Mobile --> Vercel
-    Vercel --> NextJS
-    NextJS --> Clerk
+    Web --> CloudFront
+    Mobile --> CloudFront
+    CloudFront --> NextJS
+    NextJS --> AuthContext
     NextJS --> TanStack
     TanStack --> API
-    API --> Guards
+    API --> JWTAuth
+    JWTAuth --> Guards
     Guards --> Services
     Services --> Modules
     Modules --> Prisma
     Prisma --> PostgreSQL
-    API --> ClerkAPI
+    API --> Redis
     API --> Email
     API --> SMS
     API --> Storage
@@ -69,7 +72,7 @@ flowchart TB
 | TailwindCSS | Utility-first CSS | 3.x |
 | shadcn/ui | Component library | Latest |
 | React Query | Server state management | 5.x |
-| Clerk | Authentication | Latest |
+| jose | JWT verification | Latest |
 | Lucide React | Icon library | Latest |
 | Recharts | Chart library | 2.x |
 
@@ -80,17 +83,93 @@ flowchart TB
 | TypeScript | Type-safe JavaScript | 5.x |
 | Prisma | ORM | 5.x |
 | PostgreSQL | Primary database | 15.x |
+| @nestjs/jwt | JWT token handling | Latest |
+| Passport | Authentication middleware | Latest |
+| bcrypt | Password hashing | Latest |
 | Class Validator | DTO validation | Latest |
-| Swagger | API documentation | Latest |
+
+### Infrastructure (AWS)
+| Service | Purpose |
+|---------|---------|
+| EC2 (t3.small) | API + Web hosting |
+| RDS (db.t3.micro) | PostgreSQL database |
+| S3 | File storage (documents, photos) |
+| ElastiCache | Redis caching (future) |
+| CloudWatch | Monitoring & alerts |
 
 ### DevOps
 | Technology | Purpose |
 |------------|---------|
 | pnpm | Package manager |
 | Turborepo | Monorepo build |
-| Vercel | Frontend hosting |
 | Docker | Containerization |
+| Docker Compose | Local orchestration |
 | GitHub Actions | CI/CD |
+
+## Authentication Architecture
+
+### JWT-Based Authentication (Replaced Clerk - January 2026)
+
+```mermaid
+flowchart TB
+    subgraph Client["Browser"]
+        LoginForm["Login Form"]
+        AuthContext["Auth Context"]
+        Cookies["httpOnly Cookies"]
+    end
+
+    subgraph Backend["NestJS API"]
+        AuthController["Auth Controller"]
+        AuthService["Auth Service"]
+        JWTStrategy["JWT Strategy"]
+        bcrypt["bcrypt"]
+    end
+
+    subgraph Database["PostgreSQL"]
+        Users["Users Table"]
+        RefreshTokens["RefreshTokens Table"]
+    end
+
+    LoginForm -->|email + password| AuthController
+    AuthController --> AuthService
+    AuthService --> bcrypt
+    bcrypt -->|validate| Users
+    AuthService -->|generate tokens| JWTStrategy
+    JWTStrategy -->|store| RefreshTokens
+    AuthController -->|set cookies| Cookies
+    Cookies --> AuthContext
+```
+
+### Authentication Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/auth/register` | POST | Create user with email/password |
+| `/auth/login` | POST | Validate credentials, return JWT |
+| `/auth/refresh` | POST | Refresh access token |
+| `/auth/logout` | POST | Revoke refresh token |
+| `/auth/me` | GET | Get current user from JWT |
+| `/auth/change-password` | POST | Update password |
+
+### JWT Token Structure
+
+```json
+{
+  "sub": "user_abc123",
+  "email": "student@college.edu",
+  "name": "John Doe",
+  "role": "student",
+  "tenantId": "tenant_xyz",
+  "iat": 1704067200,
+  "exp": 1704672000
+}
+```
+
+### Token Security
+- **Access Token**: 15 minutes expiry, stored in httpOnly cookie
+- **Refresh Token**: 7 days expiry, stored in httpOnly cookie
+- **Password Hashing**: bcrypt with 12 rounds
+- **Token Rotation**: New refresh token on each refresh
 
 ## Module Architecture
 
@@ -141,7 +220,7 @@ flowchart LR
     end
 
     subgraph SupportModules["Support Modules"]
-        Feedback["360° Feedback"]
+        Feedback["360 Feedback"]
         Notifications["Notifications"]
         Communications["Communications"]
         Events["Events"]
@@ -161,8 +240,9 @@ The database contains 130+ models organized into functional groups:
 
 ### Core Models
 - `Tenant` - Multi-tenant organization
-- `User` - All user accounts
+- `User` - All user accounts with passwordHash
 - `UserProfile` - Extended user information
+- `RefreshToken` - JWT refresh token storage
 
 ### Academic Models
 - `Department`, `Course`, `Subject`
@@ -195,7 +275,12 @@ The database contains 130+ models organized into functional groups:
 
 ```
 /api/v1
-├── /auth                    # Authentication
+├── /auth                    # JWT Authentication
+│   ├── POST /register
+│   ├── POST /login
+│   ├── POST /refresh
+│   ├── POST /logout
+│   └── GET /me
 ├── /users                   # User management
 ├── /tenants                 # Tenant operations
 │
@@ -216,7 +301,7 @@ The database contains 130+ models organized into functional groups:
 ├── /student-indices        # SGI/CRI
 ├── /student-journey        # Journey tracking
 ├── /student-goals          # Goal management
-├── /feedback               # 360° Feedback
+├── /feedback               # 360 Feedback
 │
 ├── /library               # Library services
 ├── /hostel                # Hostel management
@@ -234,20 +319,21 @@ The database contains 130+ models organized into functional groups:
 sequenceDiagram
     participant Client
     participant NextJS
-    participant Clerk
+    participant Middleware
     participant API
-    participant Guards
+    participant JWTGuard
     participant Service
     participant Prisma
     participant DB
 
     Client->>NextJS: Request
-    NextJS->>Clerk: Validate Session
-    Clerk-->>NextJS: User Info
-    NextJS->>API: API Request + JWT
-    API->>Guards: Authenticate
-    Guards->>Guards: Validate Role
-    Guards->>Service: Call Service
+    NextJS->>Middleware: Check Route
+    Middleware->>Middleware: Verify JWT (jose)
+    Middleware-->>NextJS: User Claims
+    NextJS->>API: API Request + Cookie
+    API->>JWTGuard: Validate Token
+    JWTGuard->>JWTGuard: Check Role
+    JWTGuard->>Service: Call Service
     Service->>Prisma: Database Query
     Prisma->>DB: SQL
     DB-->>Prisma: Results
@@ -258,8 +344,6 @@ sequenceDiagram
 ```
 
 ## Multi-Tenancy Architecture
-
-See [Multi-Tenancy](./MULTI_TENANCY.md) for detailed patterns.
 
 ### Tenant Isolation
 
@@ -296,29 +380,48 @@ Every table has a `tenantId` column ensuring data isolation at the row level.
 
 ```mermaid
 flowchart TD
-    A[User] --> B[Clerk Auth]
-    B --> C{Authenticated?}
-    C -->|No| D[Sign In]
-    D --> B
-    C -->|Yes| E[Get JWT]
-    E --> F[API Request]
-    F --> G[Validate Token]
-    G --> H{Valid?}
-    H -->|No| I[401 Unauthorized]
-    H -->|Yes| J[Extract Claims]
-    J --> K[Check Role]
-    K --> L{Authorized?}
-    L -->|No| M[403 Forbidden]
-    L -->|Yes| N[Process Request]
+    A[User] --> B[Login Page]
+    B --> C[Submit Credentials]
+    C --> D{Valid?}
+    D -->|No| E[Show Error]
+    E --> B
+    D -->|Yes| F[Generate JWT]
+    F --> G[Set httpOnly Cookies]
+    G --> H[Redirect to Dashboard]
+    H --> I[API Request]
+    I --> J[Validate Token]
+    J --> K{Valid?}
+    K -->|No| L[401 Redirect to Login]
+    K -->|Yes| M[Extract Claims]
+    M --> N[Check Role]
+    N --> O{Authorized?}
+    O -->|No| P[403 Forbidden]
+    O -->|Yes| Q[Process Request]
 ```
 
 ### Authorization Layers
 
-1. **Route-level**: Middleware checks role for route access
-2. **Endpoint-level**: Guards validate specific permissions
+1. **Route-level**: Middleware checks JWT for route access
+2. **Endpoint-level**: Guards validate specific roles/permissions
 3. **Data-level**: Tenant ID filtering on all queries
 
+### User Roles (9 roles)
+
+| Role | Dashboard | Description |
+|------|-----------|-------------|
+| platform_owner | /platform | Super admin, all tenants |
+| principal | /principal | College principal |
+| hod | /hod | Head of Department |
+| admin_staff | /admin | Administrative staff |
+| teacher | /teacher | Faculty members |
+| lab_assistant | /lab-assistant | Lab staff |
+| student | /student | Students |
+| parent | /parent | Student parents |
+| alumni | /alumni | Graduated students |
+
 ## Deployment Architecture
+
+### Current Infrastructure (AWS EC2)
 
 ```mermaid
 flowchart TB
@@ -326,31 +429,58 @@ flowchart TB
         Repo["Repository"]
     end
 
-    subgraph CI["CI/CD"]
-        Actions["GitHub Actions"]
+    subgraph CI["CI/CD (GitHub Actions)"]
+        Actions["ci-cd.yml"]
         Lint["Lint & Type Check"]
-        Test["Run Tests"]
-        Build["Build"]
+        Build["Docker Build"]
+        Push["Push to ECR"]
+        Deploy["SSH Deploy"]
     end
 
-    subgraph Vercel["Vercel"]
-        Preview["Preview Deployments"]
-        Production["Production"]
-    end
-
-    subgraph Backend["Backend Infrastructure"]
-        Railway["Railway/Render"]
-        DBHOST["Managed PostgreSQL"]
+    subgraph AWS["AWS Infrastructure"]
+        EC2["EC2 t3.small"]
+        RDS["RDS PostgreSQL"]
+        S3["S3 Bucket"]
+        ECR["ECR Registry"]
     end
 
     Repo --> Actions
     Actions --> Lint
-    Lint --> Test
-    Test --> Build
-    Build --> Preview
-    Build --> Production
-    Production --> Railway
-    Railway --> DBHOST
+    Lint --> Build
+    Build --> Push
+    Push --> ECR
+    ECR --> Deploy
+    Deploy --> EC2
+    EC2 --> RDS
+    EC2 --> S3
+```
+
+### Docker Compose Stack
+
+```yaml
+services:
+  api:
+    image: edunexus-api
+    ports: ["3001:3001"]
+    environment:
+      - DATABASE_URL
+      - JWT_SECRET
+      - JWT_ACCESS_EXPIRY=15m
+      - JWT_REFRESH_EXPIRY=7d
+
+  web:
+    image: edunexus-web
+    ports: ["3000:3000"]
+    environment:
+      - NEXT_PUBLIC_API_URL
+
+  postgres:
+    image: postgres:15
+    volumes: [postgres_data:/var/lib/postgresql/data]
+
+  redis:
+    image: redis:7-alpine
+    volumes: [redis_data:/data]
 ```
 
 ## Performance Considerations
@@ -367,19 +497,30 @@ flowchart TB
 - Selective field loading
 - Index optimization on frequently queried columns
 
-### Caching Strategy (Future)
-- Redis for session data
+### Caching Strategy
+- Redis for session data (planned)
 - Query result caching
-- CDN for static assets
+- CDN for static assets (planned)
 
 ## Monitoring & Observability
 
-| Aspect | Tool |
-|--------|------|
-| Error Tracking | Sentry |
-| Analytics | Vercel Analytics |
-| Logging | Console/CloudWatch |
-| Uptime | Vercel |
+| Aspect | Tool | Status |
+|--------|------|--------|
+| Error Tracking | Sentry | Planned |
+| Metrics | CloudWatch | Planned |
+| Logging | CloudWatch Logs | Planned |
+| Uptime | CloudWatch Alarms | Planned |
+
+## Cost Optimization
+
+| Item | Monthly Cost |
+|------|-------------|
+| EC2 t3.small | ~$15 |
+| RDS db.t3.micro | ~$12.50 |
+| S3 + Data Transfer | ~$5 |
+| **Total** | **~$32/month** |
+
+*Note: Removed Clerk ($25+/month) by migrating to JWT auth in January 2026*
 
 ## Scaling Considerations
 
@@ -395,3 +536,4 @@ flowchart TB
 - [Multi-Tenancy](./MULTI_TENANCY.md)
 - [Data Flow Diagrams](./DATA_FLOW_DIAGRAMS.md)
 - [API Documentation](./API_DOCUMENTATION.md)
+- [Deployment Guide](../deployment/DEPLOYMENT_GUIDE.md)
