@@ -164,7 +164,7 @@ export default function HomePage() {
             </Link>
           </nav>
           <div className="flex items-center gap-3">
-            <Link href="/sign-in">
+            <Link href="/login">
               <Button variant="ghost" size="sm">Sign In</Button>
             </Link>
             <Link href="/contact">

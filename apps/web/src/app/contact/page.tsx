@@ -82,7 +82,7 @@ export default function ContactPage() {
             <span className="font-bold text-xl">EduNexus</span>
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/sign-in">
+            <Link href="/login">
               <Button variant="ghost">Sign In</Button>
             </Link>
             <Link href="/sign-up">
@@ -114,7 +114,10 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-medium">Office</h3>
                       <p className="text-muted-foreground">
-                        Hyderabad, Telangana<br />
+                        Building No./Flat No.: SY. 130P & 115<br />
+                        WeWork Rajapushpa Summit<br />
+                        Financial District Circle, Gachibowli<br />
+                        Hyderabad, Telangana - 500032<br />
                         India
                       </p>
                     </div>

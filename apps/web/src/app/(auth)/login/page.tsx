@@ -27,15 +27,15 @@ export default function LoginPage() {
   };
 
   return (
-    <Card className="border-slate-700 bg-slate-800/50 backdrop-blur">
+    <Card className="border-slate-700/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl">
       <CardHeader className="space-y-1 text-center">
         <div className="flex justify-center mb-2">
           <div className="rounded-full bg-primary/10 p-3">
             <GraduationCap className="h-8 w-8 text-primary" />
           </div>
         </div>
-        <CardTitle className="text-2xl font-bold text-white">Welcome back</CardTitle>
-        <CardDescription className="text-slate-400">
+        <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">Welcome back</CardTitle>
+        <CardDescription className="text-slate-600 dark:text-slate-400">
           Enter your credentials to access your account
         </CardDescription>
       </CardHeader>
@@ -49,7 +49,7 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-slate-200">Email</Label>
+            <Label htmlFor="email" className="text-slate-700 dark:text-slate-200">Email</Label>
             <Input
               id="email"
               type="email"
@@ -58,13 +58,13 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isLoading}
-              className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
+              className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400"
             />
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-slate-200">Password</Label>
+              <Label htmlFor="password" className="text-slate-700 dark:text-slate-200">Password</Label>
               <Link
                 href="/forgot-password"
                 className="text-sm text-primary hover:underline"
@@ -80,7 +80,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading}
-              className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
+              className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-400"
             />
           </div>
         </CardContent>
@@ -101,9 +101,9 @@ export default function LoginPage() {
             )}
           </Button>
 
-          <p className="text-sm text-slate-400 text-center">
+          <p className="text-sm text-slate-600 dark:text-slate-400 text-center">
             Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-primary hover:underline">
+            <Link href="/register" className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
               Create one
             </Link>
           </p>

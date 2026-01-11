@@ -43,7 +43,8 @@ async function bootstrap() {
         return callback(null, true);
       }
       // Check if origin matches allowed list or same host pattern (for deployed environments)
-      if (allowedOrigins.includes(origin) || origin.match(/^http:\/\/\d+\.\d+\.\d+\.\d+:3000$/)) {
+      // Allow IPs with or without port for production deployments
+      if (allowedOrigins.includes(origin) || origin.match(/^https?:\/\/\d+\.\d+\.\d+\.\d+(:\d+)?$/)) {
         return callback(null, true);
       }
       callback(new Error('Not allowed by CORS'));

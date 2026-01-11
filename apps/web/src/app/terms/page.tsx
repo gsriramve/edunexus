@@ -13,7 +13,7 @@ export default function TermsPage() {
             <span className="font-bold text-xl">EduNexus</span>
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/sign-in">
+            <Link href="/login">
               <Button variant="ghost">Sign In</Button>
             </Link>
             <Link href="/sign-up">
