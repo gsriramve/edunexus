@@ -776,6 +776,11 @@ export interface UpdateStudentInput {
   semester?: number;
   section?: string;
   status?: 'active' | 'inactive' | 'graduated' | 'dropped' | 'suspended';
+  // Profile fields
+  bloodGroup?: string;
+  nationality?: string;
+  gender?: 'male' | 'female' | 'other';
+  dateOfBirth?: string;
 }
 
 export interface StudentListParams {

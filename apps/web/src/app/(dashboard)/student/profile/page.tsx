@@ -83,18 +83,37 @@ export default function StudentProfile() {
 
   // Form state for editable fields
   const [editedPhone, setEditedPhone] = useState('');
+  const [editedBloodGroup, setEditedBloodGroup] = useState('');
+  const [editedNationality, setEditedNationality] = useState('');
+  const [editedGender, setEditedGender] = useState('');
 
   // Initialize edit state when entering edit mode
   const startEditing = () => {
-    setEditedPhone('');
+    const profile = studentData?.user?.profile;
+    setEditedPhone(profile?.contacts?.[0]?.value || '');
+    setEditedBloodGroup(profile?.bloodGroup || '');
+    setEditedNationality(profile?.nationality || 'Indian');
+    setEditedGender(profile?.gender || '');
     setIsEditing(true);
   };
 
   const handleSave = async () => {
-    // TODO: Implement profile update when backend supports it
-    // Currently, student profile updates are limited
-    // Phone number updates would go through Clerk
-    setIsEditing(false);
+    if (!studentData?.id) return;
+
+    try {
+      await updateStudentMutation.mutateAsync({
+        id: studentData.id,
+        data: {
+          bloodGroup: editedBloodGroup || undefined,
+          nationality: editedNationality || undefined,
+          gender: (editedGender as 'male' | 'female' | 'other') || undefined,
+        },
+      });
+      toast.success('Profile updated successfully!');
+      setIsEditing(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update profile');
+    }
   };
 
   const isLoading = !userLoaded || studentLoading;
@@ -338,14 +357,43 @@ export default function StudentProfile() {
                 </div>
                 <div className="space-y-2">
                   <Label>Gender</Label>
-                  <p className="text-sm font-medium">{gender}</p>
+                  {isEditing ? (
+                    <select
+                      value={editedGender}
+                      onChange={(e) => setEditedGender(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">Select gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  ) : (
+                    <p className="text-sm font-medium capitalize">{gender}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Heart className="h-4 w-4" />
                     Blood Group
                   </Label>
-                  {bloodGroup !== 'N/A' ? (
+                  {isEditing ? (
+                    <select
+                      value={editedBloodGroup}
+                      onChange={(e) => setEditedBloodGroup(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">Select blood group</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                    </select>
+                  ) : bloodGroup !== 'N/A' ? (
                     <Badge variant="outline">{bloodGroup}</Badge>
                   ) : (
                     <p className="text-sm text-muted-foreground">Not provided</p>
@@ -356,7 +404,15 @@ export default function StudentProfile() {
                     <Globe className="h-4 w-4" />
                     Nationality
                   </Label>
-                  <p className="text-sm font-medium">{nationality}</p>
+                  {isEditing ? (
+                    <Input
+                      value={editedNationality}
+                      onChange={(e) => setEditedNationality(e.target.value)}
+                      placeholder="Enter nationality"
+                    />
+                  ) : (
+                    <p className="text-sm font-medium">{nationality}</p>
+                  )}
                 </div>
               </div>
             </CardContent>

@@ -118,6 +118,25 @@ export class UpdateStudentDto {
   @IsEnum(StudentStatus)
   @IsOptional()
   status?: StudentStatus;
+
+  // Profile fields - students can update these
+  @IsString()
+  @IsOptional()
+  @MaxLength(10)
+  bloodGroup?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  nationality?: string;
+
+  @IsDateString()
+  @IsOptional()
+  dateOfBirth?: string;
+
+  @IsEnum(Gender)
+  @IsOptional()
+  gender?: Gender;
 }
 
 export class StudentQueryDto {

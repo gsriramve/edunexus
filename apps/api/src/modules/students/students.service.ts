@@ -294,6 +294,25 @@ export class StudentsService {
         }
       }
 
+      // Update user profile if profile fields are provided
+      const profileData: any = {};
+      if (updateStudentDto.bloodGroup !== undefined) profileData.bloodGroup = updateStudentDto.bloodGroup;
+      if (updateStudentDto.nationality !== undefined) profileData.nationality = updateStudentDto.nationality;
+      if (updateStudentDto.gender !== undefined) profileData.gender = updateStudentDto.gender;
+      if (updateStudentDto.dateOfBirth !== undefined) profileData.dob = new Date(updateStudentDto.dateOfBirth);
+
+      if (Object.keys(profileData).length > 0) {
+        await tx.userProfile.upsert({
+          where: { userId: existing.userId },
+          create: {
+            userId: existing.userId,
+            tenantId,
+            ...profileData,
+          },
+          update: profileData,
+        });
+      }
+
       // Update student record
       const student = await tx.student.update({
         where: { id },
