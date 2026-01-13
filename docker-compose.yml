@@ -71,8 +71,11 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+    image: edunexus-api:latest
     container_name: edunexus-api
     restart: unless-stopped
+    env_file:
+      - .env
     ports:
       - "3001:3001"
     environment:
@@ -119,8 +122,11 @@ services:
         NEXT_PUBLIC_CLERK_SIGN_UP_URL: ${NEXT_PUBLIC_CLERK_SIGN_UP_URL:-/sign-up}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+    image: edunexus-web:latest
     container_name: edunexus-web
     restart: unless-stopped
+    env_file:
+      - .env
     ports:
       - "3000:3000"
     environment:
