@@ -201,10 +201,16 @@ export class StudentsService {
     return student;
   }
 
-  async findByUserId(tenantId: string, clerkUserId: string) {
-    // First, find the user by Clerk user ID
+  async findByUserId(tenantId: string, userId: string) {
+    // Find user by id or clerkUserId (support both internal and Clerk auth)
     const user = await this.prisma.user.findFirst({
-      where: { clerkUserId, tenantId },
+      where: {
+        OR: [
+          { id: userId },
+          { clerkUserId: userId },
+        ],
+        tenantId,
+      },
     });
 
     if (!user) {

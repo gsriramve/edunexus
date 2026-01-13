@@ -52,10 +52,16 @@ export class AdminDashboardService {
   /**
    * Get admin staff info
    */
-  private async getAdminInfo(tenantId: string, clerkUserId: string): Promise<AdminInfoDto> {
-    // First find the user by clerkUserId
+  private async getAdminInfo(tenantId: string, userId: string): Promise<AdminInfoDto> {
+    // Find user by id or clerkUserId (support both internal and Clerk auth)
     const user = await this.prisma.user.findFirst({
-      where: { clerkUserId, tenantId },
+      where: {
+        OR: [
+          { id: userId },
+          { clerkUserId: userId },
+        ],
+        tenantId,
+      },
       include: {
         staff: {
           include: { department: true },
@@ -65,7 +71,7 @@ export class AdminDashboardService {
 
     if (!user || !user.staff) {
       return {
-        id: clerkUserId,
+        id: userId,
         name: 'Admin Staff',
         employeeId: 'ADM-001',
         department: 'Administrative Office',

@@ -9,10 +9,13 @@ export class HodAttendanceService {
   /**
    * Get HoD's department ID from their staff record
    */
-  private async getHodDepartment(tenantId: string, clerkUserId: string) {
+  private async getHodDepartment(tenantId: string, userId: string) {
     const user = await this.prisma.user.findFirst({
       where: {
-        clerkUserId,
+        OR: [
+          { id: userId },
+          { clerkUserId: userId },
+        ],
         tenantId,
         role: 'hod',
       },

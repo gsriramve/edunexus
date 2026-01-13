@@ -23,12 +23,18 @@ export class ParentDashboardService {
    */
   async getDashboard(
     tenantId: string,
-    clerkUserId: string,
+    userId: string,
     studentId: string,
   ): Promise<ParentDashboardResponseDto> {
-    // First find the user by clerkUserId
+    // Find user by id or clerkUserId (support both internal and Clerk auth)
     const user = await this.prisma.user.findFirst({
-      where: { clerkUserId, tenantId },
+      where: {
+        OR: [
+          { id: userId },
+          { clerkUserId: userId },
+        ],
+        tenantId,
+      },
     });
 
     if (!user) {
@@ -54,7 +60,7 @@ export class ParentDashboardService {
         this.getChildInfo(tenantId, studentId),
         this.getChildStats(tenantId, studentId),
         this.getRecentActivity(tenantId, studentId, { limit: 5 }),
-        this.getNotifications(tenantId, clerkUserId, { limit: 5 }),
+        this.getNotifications(tenantId, userId, { limit: 5 }),
         this.getUpcomingEvents(tenantId, studentId, { limit: 4 }),
         this.getSubjectPerformance(tenantId, studentId, {}),
       ]);
@@ -330,14 +336,20 @@ export class ParentDashboardService {
    */
   async getNotifications(
     tenantId: string,
-    clerkUserId: string,
+    userId: string,
     query: QueryNotificationsDto,
   ): Promise<NotificationDto[]> {
     const limit = query.limit || 5;
 
-    // First find the user by clerkUserId
+    // Find user by id or clerkUserId (support both internal and Clerk auth)
     const user = await this.prisma.user.findFirst({
-      where: { clerkUserId, tenantId },
+      where: {
+        OR: [
+          { id: userId },
+          { clerkUserId: userId },
+        ],
+        tenantId,
+      },
     });
 
     if (!user) {

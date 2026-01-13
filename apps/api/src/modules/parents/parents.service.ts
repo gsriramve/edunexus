@@ -32,10 +32,16 @@ export class ParentsService {
   /**
    * Get all children linked to a parent user
    */
-  async getChildren(tenantId: string, clerkUserId: string): Promise<ParentChild[]> {
-    // First find the user by clerkUserId
+  async getChildren(tenantId: string, userId: string): Promise<ParentChild[]> {
+    // Find user by id or clerkUserId (support both internal and Clerk auth)
     const user = await this.prisma.user.findFirst({
-      where: { clerkUserId, tenantId },
+      where: {
+        OR: [
+          { id: userId },
+          { clerkUserId: userId },
+        ],
+        tenantId,
+      },
     });
 
     if (!user) {
@@ -78,10 +84,16 @@ export class ParentsService {
   /**
    * Get parent profile by user ID
    */
-  async getProfile(tenantId: string, clerkUserId: string): Promise<ParentProfile[]> {
-    // First find the user by clerkUserId
+  async getProfile(tenantId: string, userId: string): Promise<ParentProfile[]> {
+    // Find user by id or clerkUserId (support both internal and Clerk auth)
     const user = await this.prisma.user.findFirst({
-      where: { clerkUserId, tenantId },
+      where: {
+        OR: [
+          { id: userId },
+          { clerkUserId: userId },
+        ],
+        tenantId,
+      },
     });
 
     if (!user) {
@@ -117,12 +129,18 @@ export class ParentsService {
    */
   async getChild(
     tenantId: string,
-    clerkUserId: string,
+    userId: string,
     studentId: string,
   ): Promise<ParentChild | null> {
-    // First find the user by clerkUserId
+    // Find user by id or clerkUserId (support both internal and Clerk auth)
     const user = await this.prisma.user.findFirst({
-      where: { clerkUserId, tenantId },
+      where: {
+        OR: [
+          { id: userId },
+          { clerkUserId: userId },
+        ],
+        tenantId,
+      },
     });
 
     if (!user) {

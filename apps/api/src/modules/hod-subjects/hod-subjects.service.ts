@@ -19,11 +19,14 @@ export class HodSubjectsService {
   /**
    * Get HoD's department ID from their staff record
    */
-  private async getHodDepartment(tenantId: string, clerkUserId: string) {
-    // Find user with HoD role
+  private async getHodDepartment(tenantId: string, userId: string) {
+    // Find user with HoD role - support both internal auth (id) and Clerk auth (clerkUserId)
     const user = await this.prisma.user.findFirst({
       where: {
-        clerkUserId,
+        OR: [
+          { id: userId },
+          { clerkUserId: userId },
+        ],
         tenantId,
         role: 'hod',
       },

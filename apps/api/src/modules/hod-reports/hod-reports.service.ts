@@ -21,11 +21,17 @@ export class HodReportsService {
 
   private async getHodDepartmentId(
     tenantId: string,
-    clerkUserId: string,
+    userId: string,
   ): Promise<string> {
-    // First find the user by clerkUserId
+    // Find user by id or clerkUserId (support both internal and Clerk auth)
     const user = await this.prisma.user.findFirst({
-      where: { clerkUserId, tenantId },
+      where: {
+        OR: [
+          { id: userId },
+          { clerkUserId: userId },
+        ],
+        tenantId,
+      },
       include: {
         staff: {
           include: { department: true },
