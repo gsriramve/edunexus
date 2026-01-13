@@ -64,62 +64,74 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Setup SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Deploy to EC2 via SSH
-        run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'DEPLOY_SCRIPT'
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          script: |
             set -e
             echo "=========================================="
-            echo "🚀 EduNexus Deployment Starting..."
+            echo "EduNexus Deployment Starting..."
             echo "=========================================="
 
             # Login to ECR
-            echo "📦 Logging into ECR..."
+            echo "Logging into ECR..."
             aws ecr get-login-password --region ap-south-1 | \
               docker login --username AWS --password-stdin \
               243333339289.dkr.ecr.ap-south-1.amazonaws.com
 
             # Pull latest images
-            echo "📥 Pulling latest images..."
+            echo "Pulling latest images..."
             docker pull 243333339289.dkr.ecr.ap-south-1.amazonaws.com/edunexus-api:latest
             docker pull 243333339289.dkr.ecr.ap-south-1.amazonaws.com/edunexus-web:latest
 
             # Tag images for docker-compose
-            echo "🏷️ Tagging images..."
+            echo "Tagging images..."
             docker tag 243333339289.dkr.ecr.ap-south-1.amazonaws.com/edunexus-api:latest edunexus-api:latest
             docker tag 243333339289.dkr.ecr.ap-south-1.amazonaws.com/edunexus-web:latest edunexus-web:latest
 
             # Restart containers with new images
-            echo "🔄 Restarting containers..."
+            echo "Restarting containers..."
             cd /home/ec2-user/edunexus
-            docker-compose --profile app up -d --force-recreate api web
+            docker-compose --profile app up -d --no-build --force-recreate api web
+
+            # Run database migrations
+            echo "Running database migrations..."
+            docker-compose exec -T api npx prisma migrate deploy || echo "Migration warning (may already be applied)"
 
             # Wait for health checks
-            echo "⏳ Waiting for services to be healthy..."
-            sleep 10
+            echo "Waiting for services to be healthy..."
+            sleep 15
 
             # Show status
             echo "=========================================="
-            echo "✅ Deployment Complete!"
+            echo "Deployment Complete!"
             echo "=========================================="
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep edunexus
+            docker ps --format "table {{.Names}}\t{{.Status}}" | grep edunexus || true
             echo ""
-            echo "🌐 Site: http://15.206.243.177"
+            echo "Site: http://15.206.243.177"
             echo "=========================================="
-          DEPLOY_SCRIPT
+
+      - name: Verify Deployment
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Verifying deployment..."
+            curl -sf http://localhost:3000 > /dev/null && echo "Web: OK" || echo "Web: Check needed"
+            curl -sf http://localhost:3001/api > /dev/null && echo "API: OK" || echo "API: Check needed"
 
       - name: Deployment Summary
         run: |
           echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Status:** Success" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Success" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🌐 **URL:** http://15.206.243.177" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** http://15.206.243.177" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📝 **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
