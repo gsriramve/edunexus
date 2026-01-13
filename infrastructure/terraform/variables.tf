@@ -22,13 +22,13 @@ variable "environment" {
 variable "ec2_instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3.small" # 2 vCPU, 2GB RAM - ~$15/month
+  default     = "t3.medium" # 2 vCPU, 4GB RAM - ~$30/month (better for Docker builds)
 }
 
 variable "ec2_volume_size" {
   description = "EC2 root volume size in GB"
   type        = number
-  default     = 20
+  default     = 30 # Increased for Docker images
 }
 
 # RDS Configuration
