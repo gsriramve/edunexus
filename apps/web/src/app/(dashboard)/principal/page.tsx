@@ -31,16 +31,16 @@ import {
 } from "@/hooks/use-principal-dashboard";
 
 export default function PrincipalDashboard() {
-  const { isLoading: clerkLoaded } = useAuth();
+  const { isLoading: authLoading } = useAuth();
   const tenantId = useTenantId();
 
   // Fetch dashboard data
   const { data: dashboardData, isLoading: dashboardLoading, error } = usePrincipalDashboard(tenantId || '');
 
-  const isLoading = !clerkLoaded || dashboardLoading;
+  const isLoading = authLoading || dashboardLoading;
 
-  // Show loading while Clerk is loading
-  if (!clerkLoaded) {
+  // Show loading while auth is loading
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
