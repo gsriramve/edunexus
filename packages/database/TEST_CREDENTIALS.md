@@ -36,11 +36,11 @@ Department-level administrative access.
 
 | College | Email | Password | Dashboard |
 |---------|-------|----------|-----------|
-| Nexus EC | hod@nexus-ec.edu | Nexus@1104 | /hod |
-| Quantum IT | hod@quantum-it.edu | Nexus@1104 | /hod |
-| Careerfied | hod@careerfied.edu | Nexus@1104 | /hod |
+| Nexus EC | hod.cse@nexus-ec.edu | Nexus@1104 | /hod |
+| Quantum IT | hod.cse@quantum-it.edu | Nexus@1104 | /hod |
+| Careerfied | hod.cse@careerfied.edu | Nexus@1104 | /hod |
 
-**Note:** Additional HODs created per department: `hod.cse@<domain>.internal`, `hod.ece@<domain>.internal`, etc.
+**Note:** Additional HODs per department use `@<domain>.internal` emails: `hod.ece@nexus-ec.internal`, etc.
 
 **Permissions:** Department students, faculty, courses, attendance, results
 
@@ -77,9 +77,9 @@ Laboratory session management.
 
 | College | Email | Password | Dashboard |
 |---------|-------|----------|-----------|
-| Nexus EC | labassistant@nexus-ec.edu | Nexus@1104 | /lab-assistant |
-| Quantum IT | labassistant@quantum-it.edu | Nexus@1104 | /lab-assistant |
-| Careerfied | labassistant@careerfied.edu | Nexus@1104 | /lab-assistant |
+| Nexus EC | lab@nexus-ec.edu | Nexus@1104 | /lab-assistant |
+| Quantum IT | lab@quantum-it.edu | Nexus@1104 | /lab-assistant |
+| Careerfied | lab@careerfied.edu | Nexus@1104 | /lab-assistant |
 
 **Permissions:** Lab attendance, equipment tracking, practical sessions
 
