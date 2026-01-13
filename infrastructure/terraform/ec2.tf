@@ -90,6 +90,38 @@ resource "aws_iam_role_policy" "ec2_s3" {
   })
 }
 
+# ECR Read permissions for pulling Docker images
+resource "aws_iam_role_policy" "ec2_ecr" {
+  name = "${local.name_prefix}-ec2-ecr-policy"
+  role = aws_iam_role.ec2.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ]
+        Resource = [
+          aws_ecr_repository.api.arn,
+          aws_ecr_repository.web.arn,
+          aws_ecr_repository.ml.arn
+        ]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_instance_profile" "ec2" {
   name = "${local.name_prefix}-ec2-profile"
   role = aws_iam_role.ec2.name
