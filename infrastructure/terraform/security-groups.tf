@@ -6,13 +6,23 @@ resource "aws_security_group" "ec2" {
   description = "Security group for EC2 instance"
   vpc_id      = aws_vpc.main.id
 
-  # SSH Access
+  # SSH Access from your IP
   ingress {
-    description = "SSH"
+    description = "SSH from allowed CIDR"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = [var.allowed_ssh_cidr]
+  }
+
+  # SSH Access for CI/CD (GitHub Actions)
+  # Note: For production, consider using AWS Systems Manager instead
+  ingress {
+    description = "SSH for CI/CD deployment"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # GitHub Actions IPs vary; restrict further for production
   }
 
   # HTTP
