@@ -268,12 +268,12 @@ export default function TeacherDashboard() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" asChild>
-            <Link href="/teacher/profile">
+            <Link href="/teacher/profile" prefetch={false}>
               View Profile
             </Link>
           </Button>
           <Button size="sm" asChild>
-            <Link href="/teacher/attendance">
+            <Link href="/teacher/attendance" prefetch={false}>
               <CheckCircle2 className="mr-2 h-4 w-4" />
               Mark Attendance
             </Link>
@@ -345,7 +345,7 @@ export default function TeacherDashboard() {
               <CardTitle>Today's Schedule</CardTitle>
               <CardDescription>Your classes for today</CardDescription>
             </div>
-            <Link href="/teacher/timetable">
+            <Link href="/teacher/timetable" prefetch={false}>
               <Button variant="ghost" size="sm">
                 Full Timetable
                 <ChevronRight className="ml-1 h-4 w-4" />
@@ -387,7 +387,7 @@ export default function TeacherDashboard() {
                         </Badge>
                       </div>
                       <Button variant="outline" size="sm" asChild>
-                        <Link href={`/teacher/attendance?class=${item.id}`}>
+                        <Link href={`/teacher/attendance?class=${item.id}`} prefetch={false}>
                           Mark
                         </Link>
                       </Button>
@@ -493,7 +493,7 @@ export default function TeacherDashboard() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
             {quickActions.map((action) => (
-              <Link key={action.title} href={action.href}>
+              <Link key={action.title} href={action.href} prefetch={false}>
                 <div className="flex flex-col items-center p-4 rounded-lg border hover:bg-muted/50 hover:border-primary/20 transition-colors cursor-pointer">
                   <div className="p-3 rounded-full bg-primary/10 mb-3">
                     <action.icon className="h-6 w-6 text-primary" />
