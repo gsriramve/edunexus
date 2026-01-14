@@ -24,7 +24,7 @@ Start the EC2 instance manually (for demos outside business hours).
 ```
 - Takes ~60-90 seconds for EC2 to start
 - Docker containers auto-start within 2-3 minutes
-- App available at http://15.206.243.177
+- App available at http://edu-nexus.co.in
 
 ### `./ec2-stop.sh`
 Stop the EC2 instance manually (saves ~$0.04/hour).
@@ -72,10 +72,10 @@ Wait 2-3 minutes for Docker containers to fully initialize.
 
 ### Check container status
 ```bash
-ssh -i ../terraform/edunexus-key.pem ec2-user@15.206.243.177 "docker ps"
+ssh -i ../terraform/edunexus-key.pem ec2-user@edu-nexus.co.in "docker ps"
 ```
 
 ### View container logs
 ```bash
-ssh -i ../terraform/edunexus-key.pem ec2-user@15.206.243.177 "docker logs edunexus-web"
+ssh -i ../terraform/edunexus-key.pem ec2-user@edu-nexus.co.in "docker logs edunexus-web"
 ```
