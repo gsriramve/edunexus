@@ -82,7 +82,7 @@ export function YearProgressGrid({ progress, isLoading }: YearProgressGridProps)
     );
   }
 
-  if (!progress || progress.years.length === 0) {
+  if (!progress || !progress.years || progress.years.length === 0) {
     return null;
   }
 
