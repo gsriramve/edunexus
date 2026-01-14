@@ -3,13 +3,13 @@
     "persona": "Platform Owner",
     "email": "admin@edunexus.io",
     "loginSuccess": true,
-    "loginTime": 1713,
+    "loginTime": 1851,
     "dashboardLoadTime": 0,
     "pages": [
       {
         "name": "Dashboard",
         "path": "/platform",
-        "loadTime": 890,
+        "loadTime": 135,
         "success": true,
         "error": null,
         "has404": false
@@ -17,7 +17,7 @@
       {
         "name": "Colleges",
         "path": "/platform/colleges",
-        "loadTime": 794,
+        "loadTime": 100,
         "success": true,
         "error": null,
         "has404": false
@@ -25,7 +25,7 @@
       {
         "name": "Help & Support",
         "path": "/help",
-        "loadTime": 610,
+        "loadTime": 62,
         "success": true,
         "error": null,
         "has404": false
@@ -46,13 +46,13 @@
     "persona": "Principal",
     "email": "principal@nexus-ec.edu",
     "loginSuccess": true,
-    "loginTime": 1701,
+    "loginTime": 1680,
     "dashboardLoadTime": 0,
     "pages": [
       {
         "name": "Dashboard",
         "path": "/principal",
-        "loadTime": 1246,
+        "loadTime": 114,
         "success": true,
         "error": null,
         "has404": false
@@ -60,7 +60,7 @@
       {
         "name": "Departments",
         "path": "/principal/departments",
-        "loadTime": 1084,
+        "loadTime": 114,
         "success": true,
         "error": null,
         "has404": false
@@ -68,7 +68,7 @@
       {
         "name": "Faculty",
         "path": "/principal/faculty",
-        "loadTime": 591,
+        "loadTime": 53,
         "success": true,
         "error": null,
         "has404": false
@@ -76,7 +76,7 @@
       {
         "name": "Students",
         "path": "/principal/students",
-        "loadTime": 1116,
+        "loadTime": 125,
         "success": true,
         "error": null,
         "has404": false
@@ -84,7 +84,7 @@
       {
         "name": "Academics",
         "path": "/principal/academics",
-        "loadTime": 1096,
+        "loadTime": 117,
         "success": true,
         "error": null,
         "has404": false
@@ -92,7 +92,7 @@
       {
         "name": "Reports",
         "path": "/principal/reports",
-        "loadTime": 1032,
+        "loadTime": 107,
         "success": true,
         "error": null,
         "has404": false
@@ -100,7 +100,7 @@
       {
         "name": "Fee Overview",
         "path": "/principal/fees",
-        "loadTime": 1057,
+        "loadTime": 106,
         "success": true,
         "error": null,
         "has404": false
@@ -108,7 +108,7 @@
       {
         "name": "Help & Support",
         "path": "/help",
-        "loadTime": 599,
+        "loadTime": 56,
         "success": true,
         "error": null,
         "has404": false
@@ -132,13 +132,13 @@
     "persona": "HOD",
     "email": "hod.cse@nexus-ec.edu",
     "loginSuccess": true,
-    "loginTime": 1567,
+    "loginTime": 1666,
     "dashboardLoadTime": 0,
     "pages": [
       {
         "name": "Dashboard",
         "path": "/hod",
-        "loadTime": 1048,
+        "loadTime": 112,
         "success": true,
         "error": null,
         "has404": false
@@ -146,7 +146,7 @@
       {
         "name": "Faculty",
         "path": "/hod/faculty",
-        "loadTime": 986,
+        "loadTime": 113,
         "success": true,
         "error": null,
         "has404": false
@@ -154,7 +154,7 @@
       {
         "name": "Students",
         "path": "/hod/students",
-        "loadTime": 989,
+        "loadTime": 109,
         "success": true,
         "error": null,
         "has404": false
@@ -162,7 +162,7 @@
       {
         "name": "Subjects",
         "path": "/hod/subjects",
-        "loadTime": 979,
+        "loadTime": 102,
         "success": true,
         "error": null,
         "has404": false
@@ -170,7 +170,7 @@
       {
         "name": "Time Table",
         "path": "/hod/timetable",
-        "loadTime": 588,
+        "loadTime": 56,
         "success": true,
         "error": null,
         "has404": false
@@ -178,7 +178,7 @@
       {
         "name": "Attendance",
         "path": "/hod/attendance",
-        "loadTime": 970,
+        "loadTime": 140,
         "success": true,
         "error": null,
         "has404": false
@@ -186,7 +186,7 @@
       {
         "name": "Results",
         "path": "/hod/results",
-        "loadTime": 585,
+        "loadTime": 47,
         "success": true,
         "error": null,
         "has404": false
@@ -194,7 +194,7 @@
       {
         "name": "At-Risk Students",
         "path": "/hod/at-risk",
-        "loadTime": 585,
+        "loadTime": 52,
         "success": true,
         "error": null,
         "has404": false
@@ -202,7 +202,7 @@
       {
         "name": "Skill Gaps",
         "path": "/hod/skill-gaps",
-        "loadTime": 1182,
+        "loadTime": 105,
         "success": true,
         "error": null,
         "has404": false
@@ -210,7 +210,7 @@
       {
         "name": "Help & Support",
         "path": "/help",
-        "loadTime": 607,
+        "loadTime": 60,
         "success": true,
         "error": null,
         "has404": false
@@ -236,13 +236,13 @@
     "persona": "Admin Staff",
     "email": "admin@nexus-ec.edu",
     "loginSuccess": true,
-    "loginTime": 1687,
+    "loginTime": 1623,
     "dashboardLoadTime": 0,
     "pages": [
       {
         "name": "Dashboard",
         "path": "/admin",
-        "loadTime": 1143,
+        "loadTime": 111,
         "success": true,
         "error": null,
         "has404": false
@@ -250,7 +250,7 @@
       {
         "name": "Records",
         "path": "/admin/records",
-        "loadTime": 1121,
+        "loadTime": 119,
         "success": true,
         "error": null,
         "has404": false
@@ -258,7 +258,7 @@
       {
         "name": "Fee Management",
         "path": "/admin/fees",
-        "loadTime": 1083,
+        "loadTime": 115,
         "success": true,
         "error": null,
         "has404": false
@@ -266,7 +266,7 @@
       {
         "name": "Attendance",
         "path": "/admin/attendance",
-        "loadTime": 608,
+        "loadTime": 48,
         "success": true,
         "error": null,
         "has404": false
@@ -274,7 +274,7 @@
       {
         "name": "Announcements",
         "path": "/admin/announcements",
-        "loadTime": 603,
+        "loadTime": 45,
         "success": true,
         "error": null,
         "has404": false
@@ -282,7 +282,7 @@
       {
         "name": "Help & Support",
         "path": "/help",
-        "loadTime": 613,
+        "loadTime": 74,
         "success": true,
         "error": null,
         "has404": false
@@ -307,13 +307,13 @@
     "persona": "Teacher",
     "email": "teacher@nexus-ec.edu",
     "loginSuccess": true,
-    "loginTime": 1714,
+    "loginTime": 1609,
     "dashboardLoadTime": 0,
     "pages": [
       {
         "name": "Dashboard",
         "path": "/teacher",
-        "loadTime": 10137,
+        "loadTime": 125,
         "success": true,
         "error": null,
         "has404": false
@@ -321,7 +321,7 @@
       {
         "name": "Classes",
         "path": "/teacher/classes",
-        "loadTime": 1019,
+        "loadTime": 108,
         "success": true,
         "error": null,
         "has404": false
@@ -329,7 +329,7 @@
       {
         "name": "Attendance",
         "path": "/teacher/attendance",
-        "loadTime": 950,
+        "loadTime": 106,
         "success": true,
         "error": null,
         "has404": false
@@ -337,7 +337,7 @@
       {
         "name": "Results",
         "path": "/teacher/results",
-        "loadTime": 1007,
+        "loadTime": 102,
         "success": true,
         "error": null,
         "has404": false
@@ -345,7 +345,7 @@
       {
         "name": "Materials",
         "path": "/teacher/materials",
-        "loadTime": 1089,
+        "loadTime": 118,
         "success": true,
         "error": null,
         "has404": false
@@ -353,7 +353,7 @@
       {
         "name": "Feedback",
         "path": "/teacher/feedback",
-        "loadTime": 916,
+        "loadTime": 110,
         "success": true,
         "error": null,
         "has404": false
@@ -361,7 +361,7 @@
       {
         "name": "Help & Support",
         "path": "/help",
-        "loadTime": 594,
+        "loadTime": 52,
         "success": true,
         "error": null,
         "has404": false
@@ -375,24 +375,23 @@
       "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR"
     ],
     "has404": false,
-    "allPagesUnder2s": false,
-    "summary": "Login: PASS | Pages: 7/7 | 404: NO | Under 2s: NO",
+    "allPagesUnder2s": true,
+    "summary": "Login: PASS | Pages: 7/7 | 404: NO | Under 2s: YES",
     "nonCritical404s": [
-      "404: https://edu-nexus.co.in/teacher/timetable?_rsc=q18w7",
-      "404: https://edu-nexus.co.in/teacher/profile?_rsc=q18w7"
+      "404: https://edu-nexus.co.in/teacher/timetable?_rsc=q18w7"
     ]
   },
   {
     "persona": "Lab Assistant",
     "email": "lab@nexus-ec.edu",
     "loginSuccess": true,
-    "loginTime": 1593,
+    "loginTime": 1658,
     "dashboardLoadTime": 0,
     "pages": [
       {
         "name": "Dashboard",
         "path": "/lab",
-        "loadTime": 656,
+        "loadTime": 52,
         "success": true,
         "error": null,
         "has404": false
@@ -400,7 +399,7 @@
       {
         "name": "Labs",
         "path": "/lab/labs",
-        "loadTime": 584,
+        "loadTime": 53,
         "success": true,
         "error": null,
         "has404": false
@@ -408,7 +407,7 @@
       {
         "name": "Attendance",
         "path": "/lab/attendance",
-        "loadTime": 590,
+        "loadTime": 53,
         "success": true,
         "error": null,
         "has404": false
@@ -416,7 +415,7 @@
       {
         "name": "Equipment",
         "path": "/lab/equipment",
-        "loadTime": 587,
+        "loadTime": 50,
         "success": true,
         "error": null,
         "has404": false
@@ -424,7 +423,7 @@
       {
         "name": "Marks Entry",
         "path": "/lab/marks",
-        "loadTime": 583,
+        "loadTime": 50,
         "success": true,
         "error": null,
         "has404": false
@@ -432,7 +431,7 @@
       {
         "name": "Help & Support",
         "path": "/help",
-        "loadTime": 653,
+        "loadTime": 120,
         "success": true,
         "error": null,
         "has404": false
@@ -460,13 +459,13 @@
     "persona": "Student",
     "email": "student@nexus-ec.edu",
     "loginSuccess": true,
-    "loginTime": 1587,
-    "dashboardLoadTime": 1,
+    "loginTime": 1734,
+    "dashboardLoadTime": 0,
     "pages": [
       {
         "name": "Dashboard",
         "path": "/student",
-        "loadTime": 1223,
+        "loadTime": 139,
         "success": true,
         "error": null,
         "has404": false
@@ -474,7 +473,7 @@
       {
         "name": "Academics",
         "path": "/student/academics",
-        "loadTime": 1106,
+        "loadTime": 129,
         "success": true,
         "error": null,
         "has404": false
@@ -482,7 +481,7 @@
       {
         "name": "Attendance",
         "path": "/student/attendance",
-        "loadTime": 1073,
+        "loadTime": 107,
         "success": true,
         "error": null,
         "has404": false
@@ -490,7 +489,7 @@
       {
         "name": "Results",
         "path": "/student/results",
-        "loadTime": 585,
+        "loadTime": 76,
         "success": true,
         "error": null,
         "has404": false
@@ -498,7 +497,7 @@
       {
         "name": "Fee Details",
         "path": "/student/fees",
-        "loadTime": 1261,
+        "loadTime": 116,
         "success": true,
         "error": null,
         "has404": false
@@ -506,7 +505,7 @@
       {
         "name": "ID Card",
         "path": "/student/id-card",
-        "loadTime": 583,
+        "loadTime": 52,
         "success": true,
         "error": null,
         "has404": false
@@ -514,7 +513,7 @@
       {
         "name": "Career",
         "path": "/student/career",
-        "loadTime": 1074,
+        "loadTime": 100,
         "success": true,
         "error": null,
         "has404": false
@@ -522,7 +521,7 @@
       {
         "name": "Insights",
         "path": "/student/insights",
-        "loadTime": 1023,
+        "loadTime": 93,
         "success": true,
         "error": null,
         "has404": false
@@ -530,7 +529,7 @@
       {
         "name": "Help & Support",
         "path": "/help",
-        "loadTime": 590,
+        "loadTime": 57,
         "success": true,
         "error": null,
         "has404": false
@@ -555,13 +554,13 @@
     "persona": "Parent",
     "email": "parent@nexus-ec.edu",
     "loginSuccess": true,
-    "loginTime": 1669,
+    "loginTime": 1667,
     "dashboardLoadTime": 0,
     "pages": [
       {
         "name": "Dashboard",
         "path": "/parent",
-        "loadTime": 960,
+        "loadTime": 100,
         "success": true,
         "error": null,
         "has404": false
@@ -569,7 +568,7 @@
       {
         "name": "Academics",
         "path": "/parent/academics",
-        "loadTime": 853,
+        "loadTime": 105,
         "success": true,
         "error": null,
         "has404": false
@@ -577,7 +576,7 @@
       {
         "name": "Attendance",
         "path": "/parent/attendance",
-        "loadTime": 863,
+        "loadTime": 99,
         "success": true,
         "error": null,
         "has404": false
@@ -585,7 +584,7 @@
       {
         "name": "Fee Details",
         "path": "/parent/fees",
-        "loadTime": 1045,
+        "loadTime": 1215,
         "success": true,
         "error": null,
         "has404": false
@@ -593,7 +592,7 @@
       {
         "name": "Communications",
         "path": "/parent/communications",
-        "loadTime": 585,
+        "loadTime": 54,
         "success": true,
         "error": null,
         "has404": false
@@ -601,7 +600,7 @@
       {
         "name": "Help & Support",
         "path": "/help",
-        "loadTime": 595,
+        "loadTime": 59,
         "success": true,
         "error": null,
         "has404": false
@@ -631,7 +630,7 @@
       {
         "name": "Dashboard",
         "path": "/alumni",
-        "loadTime": 1047,
+        "loadTime": 97,
         "success": true,
         "error": null,
         "has404": false
@@ -639,7 +638,7 @@
       {
         "name": "Events",
         "path": "/alumni/events",
-        "loadTime": 1109,
+        "loadTime": 103,
         "success": true,
         "error": null,
         "has404": false
@@ -647,7 +646,7 @@
       {
         "name": "Jobs",
         "path": "/alumni/jobs",
-        "loadTime": 588,
+        "loadTime": 50,
         "success": true,
         "error": null,
         "has404": false
@@ -655,7 +654,7 @@
       {
         "name": "Mentorship",
         "path": "/alumni/mentorship",
-        "loadTime": 878,
+        "loadTime": 99,
         "success": true,
         "error": null,
         "has404": false
@@ -663,7 +662,7 @@
       {
         "name": "Directory",
         "path": "/alumni/directory",
-        "loadTime": 882,
+        "loadTime": 116,
         "success": true,
         "error": null,
         "has404": false
@@ -671,7 +670,7 @@
       {
         "name": "Help & Support",
         "path": "/help",
-        "loadTime": 598,
+        "loadTime": 58,
         "success": true,
         "error": null,
         "has404": false

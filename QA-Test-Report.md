@@ -1,5 +1,5 @@
 # EduNexus QA Test Report
-Generated: 2026-01-14T12:51:40.317Z
+Generated: 2026-01-14T13:10:01.300Z
 Domain: https://edu-nexus.co.in
 
 ## Summary
@@ -10,7 +10,7 @@ Domain: https://edu-nexus.co.in
 | Principal | ✅ | 8/8 | ✅ | ✅ | ✅ PASS |
 | HOD | ✅ | 10/10 | ✅ | ✅ | ✅ PASS |
 | Admin Staff | ✅ | 6/6 | ✅ | ✅ | ✅ PASS |
-| Teacher | ✅ | 7/7 | ✅ | ⚠️ | ✅ PASS |
+| Teacher | ✅ | 7/7 | ✅ | ✅ | ✅ PASS |
 | Lab Assistant | ✅ | 6/6 | ✅ | ✅ | ✅ PASS |
 | Student | ✅ | 9/9 | ✅ | ✅ | ✅ PASS |
 | Parent | ✅ | 6/6 | ✅ | ✅ | ✅ PASS |
@@ -22,7 +22,7 @@ Domain: https://edu-nexus.co.in
 
 ### Platform Owner (admin@edunexus.io)
 
-- **Login**: Success (1713ms)
+- **Login**: Success (1851ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -31,9 +31,9 @@ Domain: https://edu-nexus.co.in
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 890ms | ✅ |
-| Colleges | 794ms | ✅ |
-| Help & Support | 610ms | ✅ |
+| Dashboard | 135ms | ✅ |
+| Colleges | 100ms | ✅ |
+| Help & Support | 62ms | ✅ |
 
 #### Errors
 
@@ -47,7 +47,7 @@ Domain: https://edu-nexus.co.in
 
 ### Principal (principal@nexus-ec.edu)
 
-- **Login**: Success (1701ms)
+- **Login**: Success (1680ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -56,14 +56,14 @@ Domain: https://edu-nexus.co.in
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 1246ms | ✅ |
-| Departments | 1084ms | ✅ |
-| Faculty | 591ms | ✅ |
-| Students | 1116ms | ✅ |
-| Academics | 1096ms | ✅ |
-| Reports | 1032ms | ✅ |
-| Fee Overview | 1057ms | ✅ |
-| Help & Support | 599ms | ✅ |
+| Dashboard | 114ms | ✅ |
+| Departments | 114ms | ✅ |
+| Faculty | 53ms | ✅ |
+| Students | 125ms | ✅ |
+| Academics | 117ms | ✅ |
+| Reports | 107ms | ✅ |
+| Fee Overview | 106ms | ✅ |
+| Help & Support | 56ms | ✅ |
 
 #### Errors
 
@@ -77,7 +77,7 @@ Domain: https://edu-nexus.co.in
 
 ### HOD (hod.cse@nexus-ec.edu)
 
-- **Login**: Success (1567ms)
+- **Login**: Success (1666ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -86,16 +86,16 @@ Domain: https://edu-nexus.co.in
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 1048ms | ✅ |
-| Faculty | 986ms | ✅ |
-| Students | 989ms | ✅ |
-| Subjects | 979ms | ✅ |
-| Time Table | 588ms | ✅ |
-| Attendance | 970ms | ✅ |
-| Results | 585ms | ✅ |
-| At-Risk Students | 585ms | ✅ |
-| Skill Gaps | 1182ms | ✅ |
-| Help & Support | 607ms | ✅ |
+| Dashboard | 112ms | ✅ |
+| Faculty | 113ms | ✅ |
+| Students | 109ms | ✅ |
+| Subjects | 102ms | ✅ |
+| Time Table | 56ms | ✅ |
+| Attendance | 140ms | ✅ |
+| Results | 47ms | ✅ |
+| At-Risk Students | 52ms | ✅ |
+| Skill Gaps | 105ms | ✅ |
+| Help & Support | 60ms | ✅ |
 
 #### Errors
 
@@ -109,7 +109,7 @@ Domain: https://edu-nexus.co.in
 
 ### Admin Staff (admin@nexus-ec.edu)
 
-- **Login**: Success (1687ms)
+- **Login**: Success (1623ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -118,12 +118,12 @@ Domain: https://edu-nexus.co.in
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 1143ms | ✅ |
-| Records | 1121ms | ✅ |
-| Fee Management | 1083ms | ✅ |
-| Attendance | 608ms | ✅ |
-| Announcements | 603ms | ✅ |
-| Help & Support | 613ms | ✅ |
+| Dashboard | 111ms | ✅ |
+| Records | 119ms | ✅ |
+| Fee Management | 115ms | ✅ |
+| Attendance | 48ms | ✅ |
+| Announcements | 45ms | ✅ |
+| Help & Support | 74ms | ✅ |
 
 #### Errors
 
@@ -137,22 +137,22 @@ Domain: https://edu-nexus.co.in
 
 ### Teacher (teacher@nexus-ec.edu)
 
-- **Login**: Success (1714ms)
+- **Login**: Success (1609ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
-- **All Pages Under 2s**: No
+- **All Pages Under 2s**: Yes
 
 #### Page Load Times
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 10137ms | ⚠️ SLOW |
-| Classes | 1019ms | ✅ |
-| Attendance | 950ms | ✅ |
-| Results | 1007ms | ✅ |
-| Materials | 1089ms | ✅ |
-| Feedback | 916ms | ✅ |
-| Help & Support | 594ms | ✅ |
+| Dashboard | 125ms | ✅ |
+| Classes | 108ms | ✅ |
+| Attendance | 106ms | ✅ |
+| Results | 102ms | ✅ |
+| Materials | 118ms | ✅ |
+| Feedback | 110ms | ✅ |
+| Help & Support | 52ms | ✅ |
 
 #### Errors
 
@@ -166,7 +166,7 @@ Domain: https://edu-nexus.co.in
 
 ### Lab Assistant (lab@nexus-ec.edu)
 
-- **Login**: Success (1593ms)
+- **Login**: Success (1658ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -175,12 +175,12 @@ Domain: https://edu-nexus.co.in
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 656ms | ✅ |
-| Labs | 584ms | ✅ |
-| Attendance | 590ms | ✅ |
-| Equipment | 587ms | ✅ |
-| Marks Entry | 583ms | ✅ |
-| Help & Support | 653ms | ✅ |
+| Dashboard | 52ms | ✅ |
+| Labs | 53ms | ✅ |
+| Attendance | 53ms | ✅ |
+| Equipment | 50ms | ✅ |
+| Marks Entry | 50ms | ✅ |
+| Help & Support | 120ms | ✅ |
 
 #### Errors
 
@@ -194,8 +194,8 @@ Domain: https://edu-nexus.co.in
 
 ### Student (student@nexus-ec.edu)
 
-- **Login**: Success (1587ms)
-- **Dashboard Load**: 1ms
+- **Login**: Success (1734ms)
+- **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
 
@@ -203,15 +203,15 @@ Domain: https://edu-nexus.co.in
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 1223ms | ✅ |
-| Academics | 1106ms | ✅ |
-| Attendance | 1073ms | ✅ |
-| Results | 585ms | ✅ |
-| Fee Details | 1261ms | ✅ |
-| ID Card | 583ms | ✅ |
-| Career | 1074ms | ✅ |
-| Insights | 1023ms | ✅ |
-| Help & Support | 590ms | ✅ |
+| Dashboard | 139ms | ✅ |
+| Academics | 129ms | ✅ |
+| Attendance | 107ms | ✅ |
+| Results | 76ms | ✅ |
+| Fee Details | 116ms | ✅ |
+| ID Card | 52ms | ✅ |
+| Career | 100ms | ✅ |
+| Insights | 93ms | ✅ |
+| Help & Support | 57ms | ✅ |
 
 #### Errors
 
@@ -225,7 +225,7 @@ Domain: https://edu-nexus.co.in
 
 ### Parent (parent@nexus-ec.edu)
 
-- **Login**: Success (1669ms)
+- **Login**: Success (1667ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -234,12 +234,12 @@ Domain: https://edu-nexus.co.in
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 960ms | ✅ |
-| Academics | 853ms | ✅ |
-| Attendance | 863ms | ✅ |
-| Fee Details | 1045ms | ✅ |
-| Communications | 585ms | ✅ |
-| Help & Support | 595ms | ✅ |
+| Dashboard | 100ms | ✅ |
+| Academics | 105ms | ✅ |
+| Attendance | 99ms | ✅ |
+| Fee Details | 1215ms | ✅ |
+| Communications | 54ms | ✅ |
+| Help & Support | 59ms | ✅ |
 
 #### Errors
 
@@ -262,12 +262,12 @@ Domain: https://edu-nexus.co.in
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 1047ms | ✅ |
-| Events | 1109ms | ✅ |
-| Jobs | 588ms | ✅ |
-| Mentorship | 878ms | ✅ |
-| Directory | 882ms | ✅ |
-| Help & Support | 598ms | ✅ |
+| Dashboard | 97ms | ✅ |
+| Events | 103ms | ✅ |
+| Jobs | 50ms | ✅ |
+| Mentorship | 99ms | ✅ |
+| Directory | 116ms | ✅ |
+| Help & Support | 58ms | ✅ |
 
 #### Errors
 
