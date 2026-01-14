@@ -129,12 +129,17 @@ async function testPersona(browser, persona, results) {
   });
 
   page.on('response', response => {
-    if (response.status() === 404) {
-      const url = response.url();
+    const status = response.status();
+    const url = response.url();
+    if (status === 404) {
       // All navigation and prefetch 404s are logged as non-critical
       // We determine actual page failures by whether the page navigation succeeds
       personaResult.nonCritical404s = personaResult.nonCritical404s || [];
       personaResult.nonCritical404s.push(`404: ${url}`);
+    }
+    if (status === 401) {
+      personaResult.unauthorized401s = personaResult.unauthorized401s || [];
+      personaResult.unauthorized401s.push(`401: ${url}`);
     }
   });
 

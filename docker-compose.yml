@@ -121,7 +121,8 @@ services:
         NEXT_PUBLIC_CLERK_SIGN_IN_URL: ${NEXT_PUBLIC_CLERK_SIGN_IN_URL:-/sign-in}
         NEXT_PUBLIC_CLERK_SIGN_UP_URL: ${NEXT_PUBLIC_CLERK_SIGN_UP_URL:-/sign-up}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+        # DO NOT set NEXT_PUBLIC_API_URL at build time - let api.ts detect dynamically from window.location
+        # This ensures the app works with any domain without rebuilding
     image: edunexus-web:latest
     container_name: edunexus-web
     restart: unless-stopped
@@ -131,7 +132,7 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      # Runtime env vars for Next.js (NEXT_PUBLIC_* are baked at build time, these are just for reference)
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
