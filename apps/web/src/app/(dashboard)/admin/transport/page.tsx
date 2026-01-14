@@ -579,7 +579,7 @@ export default function AdminTransportPage() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="capitalize">{vehicle.type.replace("_", " ")}</TableCell>
+                      <TableCell className="capitalize">{vehicle.type?.replace("_", " ") || 'N/A'}</TableCell>
                       <TableCell>
                         <div>
                           <p>{vehicle.driverName || 'Unassigned'}</p>

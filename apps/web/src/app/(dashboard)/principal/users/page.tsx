@@ -239,7 +239,7 @@ export default function UsersPage() {
       student: "bg-indigo-100 text-indigo-800",
       parent: "bg-pink-100 text-pink-800",
     };
-    return <Badge className={colors[role] || "bg-gray-100 text-gray-800"}>{role.replace("_", " ")}</Badge>;
+    return <Badge className={colors[role] || "bg-gray-100 text-gray-800"}>{role?.replace("_", " ") || 'N/A'}</Badge>;
   };
 
   const getStatusBadge = (status: string) => {

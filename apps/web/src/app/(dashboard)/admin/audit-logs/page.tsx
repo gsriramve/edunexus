@@ -447,7 +447,7 @@ export default function AuditLogsPage() {
                       <SelectValue placeholder="All Actions" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Actions</SelectItem>
+                      <SelectItem value="all">All Actions</SelectItem>
                       {ACTION_OPTIONS.map((action) => (
                         <SelectItem key={action.value} value={action.value}>
                           {action.label}
@@ -463,7 +463,7 @@ export default function AuditLogsPage() {
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Categories</SelectItem>
+                      <SelectItem value="all">All Categories</SelectItem>
                       {CATEGORY_OPTIONS.map((cat) => (
                         <SelectItem key={cat.value} value={cat.value}>
                           {cat.label}
@@ -479,7 +479,7 @@ export default function AuditLogsPage() {
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Status</SelectItem>
+                      <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="success">Success</SelectItem>
                       <SelectItem value="failure">Failure</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>

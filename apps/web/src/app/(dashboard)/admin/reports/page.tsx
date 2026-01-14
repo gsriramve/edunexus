@@ -573,7 +573,7 @@ export default function AdminReportsPage() {
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
+                    <SelectItem value="all">All Categories</SelectItem>
                     {CATEGORY_OPTIONS.map(opt => (
                       <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                     ))}
@@ -587,7 +587,7 @@ export default function AdminReportsPage() {
                     <SelectValue placeholder="Data Source" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Sources</SelectItem>
+                    <SelectItem value="all">All Sources</SelectItem>
                     {DATA_SOURCE_OPTIONS.map(opt => (
                       <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                     ))}
@@ -710,7 +710,7 @@ export default function AdminReportsPage() {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Status</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="processing">Processing</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
@@ -725,7 +725,7 @@ export default function AdminReportsPage() {
                     <SelectValue placeholder="Format" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Formats</SelectItem>
+                    <SelectItem value="all">All Formats</SelectItem>
                     {FORMAT_OPTIONS.map(opt => (
                       <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                     ))}
@@ -837,7 +837,7 @@ export default function AdminReportsPage() {
                     <SelectValue placeholder="Frequency" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Frequencies</SelectItem>
+                    <SelectItem value="all">All Frequencies</SelectItem>
                     {FREQUENCY_OPTIONS.map(opt => (
                       <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                     ))}
@@ -851,7 +851,7 @@ export default function AdminReportsPage() {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
                     <SelectItem value="true">Active</SelectItem>
                     <SelectItem value="false">Inactive</SelectItem>
                   </SelectContent>
