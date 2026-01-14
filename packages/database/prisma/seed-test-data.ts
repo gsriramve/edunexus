@@ -5,7 +5,7 @@
  * Includes academic structure, students, fees, attendance, and operational data.
  *
  * Usage:
- *   DATABASE_URL="..." CLERK_SECRET_KEY="..." npx tsx prisma/seed-test-data.ts
+ *   DATABASE_URL="..." npx tsx prisma/seed-test-data.ts
  *
  * Options:
  *   --clean    Delete all test data before seeding
@@ -13,6 +13,7 @@
  */
 
 import { PrismaClient, UserRole } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -20,15 +21,7 @@ const prisma = new PrismaClient();
 // CONFIGURATION
 // =============================================================================
 
-const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
 const TEST_PASSWORD = 'Nexus@1104';
-
-interface ClerkUser {
-  id: string;
-  email_addresses: Array<{ email_address: string }>;
-  first_name: string;
-  last_name: string;
-}
 
 interface College {
   name: string;
@@ -80,110 +73,11 @@ function getUsersForTenant(domain: string): UserDefinition[] {
 }
 
 // =============================================================================
-// CLERK API HELPERS
+// PASSWORD HELPER
 // =============================================================================
 
-async function findClerkUser(email: string): Promise<ClerkUser | null> {
-  if (!CLERK_SECRET_KEY) return null;
-
-  try {
-    const response = await fetch(
-      `https://api.clerk.com/v1/users?email_address=${encodeURIComponent(email)}`,
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${CLERK_SECRET_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    if (!response.ok) return null;
-    const users = await response.json() as ClerkUser[];
-    return users.length > 0 ? users[0] : null;
-  } catch {
-    return null;
-  }
-}
-
-async function createClerkUser(
-  email: string,
-  firstName: string,
-  lastName: string,
-  role: string,
-  tenantId: string | null
-): Promise<ClerkUser | null> {
-  if (!CLERK_SECRET_KEY) {
-    console.log(`  [SKIP] Clerk not configured, skipping: ${email}`);
-    return null;
-  }
-
-  // Check if user exists
-  const existing = await findClerkUser(email);
-  if (existing) {
-    console.log(`  [EXISTS] ${email} (${existing.id})`);
-    // Update metadata with proper error handling
-    try {
-      const updateResponse = await fetch(`https://api.clerk.com/v1/users/${existing.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${CLERK_SECRET_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          public_metadata: { role, tenantId },
-          bypass_client_trust: true,
-        }),
-      });
-
-      if (!updateResponse.ok) {
-        const error = await updateResponse.json();
-        console.log(`  [WARN] Failed to update metadata for ${email}: ${JSON.stringify(error)}`);
-      } else {
-        console.log(`  [UPDATED] ${email} role=${role}`);
-      }
-    } catch (err) {
-      console.log(`  [WARN] Error updating metadata for ${email}: ${err}`);
-    }
-    return existing;
-  }
-
-  // Create new user
-  try {
-    const response = await fetch('https://api.clerk.com/v1/users', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${CLERK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email_address: [email],
-        password: TEST_PASSWORD,
-        first_name: firstName,
-        last_name: lastName,
-        public_metadata: { role, tenantId },
-        skip_password_checks: true,
-        bypass_client_trust: true,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      console.log(`  [ERROR] ${email}: ${JSON.stringify(error)}`);
-      return null;
-    }
-
-    const user = await response.json() as ClerkUser;
-    console.log(`  [CREATED] ${email} (${user.id})`);
-
-    // Rate limiting - wait 100ms between creations
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    return user;
-  } catch (error) {
-    console.log(`  [ERROR] ${email}: ${error}`);
-    return null;
-  }
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, 10);
 }
 
 // =============================================================================
@@ -205,16 +99,14 @@ async function seedPlatformOwner(): Promise<string> {
     return user.id;
   }
 
-  // Create in Clerk
-  const clerkUser = await createClerkUser(email, 'EduNexus', 'Admin', 'platform_owner', null);
-
-  // Create in DB
+  // Create in DB with hashed password
+  const hashedPassword = await hashPassword(TEST_PASSWORD);
   user = await prisma.user.create({
     data: {
       email,
       name: 'EduNexus Admin',
       role: 'platform_owner',
-      clerkUserId: clerkUser?.id || null,
+      passwordHash: hashedPassword,
       status: 'active',
       tenantId: null,
     },
@@ -352,6 +244,8 @@ async function seedUsersForTenant(
   const staffIds: string[] = [];
   let studentUserId = '';
 
+  const hashedPassword = await hashPassword(TEST_PASSWORD);
+
   for (const userDef of users) {
     // Check if user exists
     let user = await prisma.user.findFirst({
@@ -359,26 +253,18 @@ async function seedUsersForTenant(
     });
 
     if (!user) {
-      // Create in Clerk
-      const clerkUser = await createClerkUser(
-        userDef.email,
-        userDef.firstName,
-        userDef.lastName,
-        userDef.role,
-        tenantId
-      );
-
-      // Create in DB
+      // Create in DB with hashed password
       user = await prisma.user.create({
         data: {
           tenantId,
           email: userDef.email,
           name: userDef.name,
           role: userDef.role,
-          clerkUserId: clerkUser?.id || null,
+          passwordHash: hashedPassword,
           status: 'active',
         },
       });
+      console.log(`      [CREATED] ${userDef.email}`);
     }
 
     // Create role-specific records
@@ -507,16 +393,15 @@ async function seedUsersForTenant(
       }
     } else if (userDef.role === 'alumni') {
       // Create alumni profile for the alumni persona
-      // Use clerkUserId for lookup since the frontend sends Clerk user ID
       const alumniExists = await prisma.alumniProfile.findFirst({
         where: { tenantId, email: userDef.email },
       });
 
-      if (!alumniExists && user.clerkUserId) {
+      if (!alumniExists) {
         const alumni = await prisma.alumniProfile.create({
           data: {
             tenantId,
-            userId: user.clerkUserId, // Use Clerk user ID, not database user ID
+            userId: user.id,
             firstName: userDef.firstName,
             lastName: userDef.lastName,
             email: userDef.email,
@@ -943,8 +828,7 @@ async function main() {
   console.log('║          EDUNEXUS TEST DATA SEEDING SCRIPT                     ║');
   console.log('╚════════════════════════════════════════════════════════════════╝');
   console.log('');
-  console.log(`Clerk API: ${CLERK_SECRET_KEY ? 'Configured' : 'NOT CONFIGURED (users will not have login access)'}`);
-  console.log(`Password: ${TEST_PASSWORD}`);
+  console.log(`Password for all test accounts: ${TEST_PASSWORD}`);
   console.log('');
 
   try {

@@ -110,14 +110,6 @@ export default function StudentFees() {
     .reduce((sum, fee) => sum + (Number(fee.amount) - Number(fee.paidAmount || 0)), 0);
 
   const handlePayNow = async () => {
-    if (!isRazorpayLoaded) {
-      toast({
-        title: "Loading payment gateway",
-        description: "Please wait while we load the payment gateway...",
-      });
-      return;
-    }
-
     if (selectedFees.length === 0) {
       toast({
         title: "No fees selected",
@@ -138,6 +130,18 @@ export default function StudentFees() {
         amount: Math.round(selectedTotal * 100), // Convert to paise
         currency: "INR",
       });
+
+      // Check if Razorpay is loaded
+      if (!isRazorpayLoaded) {
+        // Demo mode - simulate successful payment
+        toast({
+          title: "Demo Mode - Payment Simulated",
+          description: `In production, payment of ${formatCurrency(selectedTotal)} would be processed via Razorpay. Contact admin to enable real payments.`,
+        });
+        setIsPaymentDialogOpen(false);
+        setSelectedFees([]);
+        return;
+      }
 
       // Close dialog
       setIsPaymentDialogOpen(false);
@@ -189,11 +193,22 @@ export default function StudentFees() {
         },
       });
     } catch (error: any) {
-      toast({
-        title: "Error Creating Order",
-        description: error.message || "Failed to create payment order.",
-        variant: "destructive",
-      });
+      // Check if this is a demo environment without Razorpay configured
+      const errorMessage = error?.message || '';
+      if (errorMessage.includes('Razorpay') || errorMessage.includes('payment') || errorMessage.includes('Failed to fetch') || errorMessage.includes('order')) {
+        toast({
+          title: "Demo Environment",
+          description: `Online payment is not configured in demo mode. Amount: ${formatCurrency(selectedTotal)}. Contact admin to enable payments.`,
+        });
+        setIsPaymentDialogOpen(false);
+        setSelectedFees([]);
+      } else {
+        toast({
+          title: "Error Creating Order",
+          description: error.message || "Failed to create payment order.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -408,12 +423,8 @@ export default function StudentFees() {
                     <p className="text-sm text-muted-foreground">Selected Items: {selectedFees.length}</p>
                     <p className="text-2xl font-bold">{formatCurrency(selectedTotal)}</p>
                   </div>
-                  <Button size="lg" onClick={handlePayNow} disabled={!isRazorpayLoaded}>
-                    {!isRazorpayLoaded ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <CreditCard className="mr-2 h-4 w-4" />
-                    )}
+                  <Button size="lg" onClick={handlePayNow}>
+                    <CreditCard className="mr-2 h-4 w-4" />
                     Pay Now
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>

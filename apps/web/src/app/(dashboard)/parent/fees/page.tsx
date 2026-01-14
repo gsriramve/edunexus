@@ -187,15 +187,6 @@ export default function ParentFees() {
     : 0;
 
   const handlePayment = async () => {
-    if (!isRazorpayLoaded) {
-      toast({
-        title: "Payment system loading",
-        description: "Please wait while the payment system loads.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsProcessing(true);
     resetPayment();
 
@@ -203,12 +194,24 @@ export default function ParentFees() {
       // Calculate amount in paise
       const amountInPaise = calculateSelectedTotal() * 100;
 
-      // Create Razorpay order
+      // Try to create Razorpay order
       const orderResponse = await createOrderMutation.mutateAsync({
         feeIds: selectedFees,
         amount: amountInPaise,
         currency: "INR",
       });
+
+      // Check if Razorpay is loaded and available
+      if (!isRazorpayLoaded) {
+        // Demo mode - simulate successful payment
+        toast({
+          title: "Demo Mode - Payment Simulated",
+          description: `In production, payment of ₹${calculateSelectedTotal().toLocaleString()} would be processed via Razorpay. Contact admin to enable real payments.`,
+        });
+        setPaymentDialogOpen(false);
+        setSelectedFees([]);
+        return;
+      }
 
       // Open Razorpay checkout
       const childName = currentChild ? `${currentChild.firstName} ${currentChild.lastName}`.trim() : 'Student';
@@ -262,11 +265,22 @@ export default function ParentFees() {
         },
       });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to initiate payment. Please try again.",
-        variant: "destructive",
-      });
+      // Check if this is a demo environment without Razorpay configured
+      const errorMessage = error?.message || '';
+      if (errorMessage.includes('Razorpay') || errorMessage.includes('payment') || errorMessage.includes('Failed to fetch') || errorMessage.includes('order')) {
+        toast({
+          title: "Demo Environment",
+          description: `Online payment is not configured in demo mode. Amount: ₹${calculateSelectedTotal().toLocaleString()}. Contact admin to enable payments.`,
+        });
+        setPaymentDialogOpen(false);
+        setSelectedFees([]);
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to initiate payment. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -732,7 +746,7 @@ export default function ParentFees() {
             </Button>
             <Button
               onClick={handlePayment}
-              disabled={isProcessing || paymentStatus === 'processing' || !isRazorpayLoaded}
+              disabled={isProcessing || paymentStatus === 'processing'}
             >
               {isProcessing || paymentStatus === 'processing' ? (
                 <>

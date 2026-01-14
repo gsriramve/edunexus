@@ -91,27 +91,13 @@ const features = [
   },
 ];
 
-// Social proof testimonials
-const testimonials = [
-  {
-    quote: "We went from 5 disconnected systems to one platform. The time savings alone justified the investment in 3 months.",
-    author: "Dr. Rajesh Kumar",
-    role: "Principal",
-    org: "Premier Engineering Institute",
-  },
-  {
-    quote: "The AI predictions helped us intervene early. Our dropout rate dropped 40% in the first year.",
-    author: "Prof. Meera Sharma",
-    role: "Dean of Academics",
-    org: "National Technical University",
-  },
-  {
-    quote: "Parents finally stopped calling for updates. They see everything in real-time on their phones.",
-    author: "Anil Verma",
-    role: "Administrative Director",
-    org: "City College of Engineering",
-  },
-];
+// Social proof testimonials - populated by real customers
+const testimonials: Array<{
+  quote: string;
+  author: string;
+  role: string;
+  org: string;
+}> = [];
 
 // Why choose us - B2B focused
 const whyChooseUs = [
@@ -156,7 +142,7 @@ export default function HomePage() {
             <Link href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Platform
             </Link>
-            <Link href="#testimonials" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link href="#enterprise" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Results
             </Link>
             <Link href="#enterprise" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -331,50 +317,52 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 bg-gradient-to-b from-slate-50 to-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <p className="text-blue-600 font-semibold text-sm uppercase tracking-wider mb-3">
-              Real Results
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
-              Don&apos;t Take Our Word For It
-            </h2>
-            <p className="mt-4 text-slate-600 max-w-2xl mx-auto">
-              See what education leaders say about transforming their institutions with EduNexus.
-            </p>
-          </div>
+      {/* Testimonials Section - Only show if we have real testimonials */}
+      {testimonials.length > 0 && (
+        <section id="testimonials" className="py-20 bg-gradient-to-b from-slate-50 to-white">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <p className="text-blue-600 font-semibold text-sm uppercase tracking-wider mb-3">
+                Real Results
+              </p>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
+                Don&apos;t Take Our Word For It
+              </h2>
+              <p className="mt-4 text-slate-600 max-w-2xl mx-auto">
+                See what education leaders say about transforming their institutions with EduNexus.
+              </p>
+            </div>
 
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-2xl p-6 lg:p-8 shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 lg:h-5 lg:w-5 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-
-                <Quote className="h-6 w-6 lg:h-8 lg:w-8 text-blue-100 mb-3" />
-
-                <p className="text-slate-700 text-base lg:text-lg leading-relaxed mb-6 flex-grow">
-                  &ldquo;{testimonial.quote}&rdquo;
-                </p>
-
-                <div className="flex items-center gap-3 mt-auto">
-                  <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
-                    {testimonial.author.split(' ').map((n: string) => n[0]).join('')}
+            <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+              {testimonials.map((testimonial, index) => (
+                <div key={index} className="bg-white rounded-2xl p-6 lg:p-8 shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-4 w-4 lg:h-5 lg:w-5 fill-yellow-400 text-yellow-400" />
+                    ))}
                   </div>
-                  <div>
-                    <p className="font-semibold text-slate-900 text-sm lg:text-base">{testimonial.author}</p>
-                    <p className="text-xs lg:text-sm text-slate-500">{testimonial.role}, {testimonial.org}</p>
+
+                  <Quote className="h-6 w-6 lg:h-8 lg:w-8 text-blue-100 mb-3" />
+
+                  <p className="text-slate-700 text-base lg:text-lg leading-relaxed mb-6 flex-grow">
+                    &ldquo;{testimonial.quote}&rdquo;
+                  </p>
+
+                  <div className="flex items-center gap-3 mt-auto">
+                    <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
+                      {testimonial.author.split(' ').map((n: string) => n[0]).join('')}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900 text-sm lg:text-base">{testimonial.author}</p>
+                      <p className="text-xs lg:text-sm text-slate-500">{testimonial.role}, {testimonial.org}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Enterprise Section - Replaces Pricing for B2B */}
       <section id="enterprise" className="py-20 bg-white border-t">
