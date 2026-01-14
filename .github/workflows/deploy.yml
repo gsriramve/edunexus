@@ -63,9 +63,20 @@ jobs:
     name: Deploy to EC2
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
+      - name: Pre-Deployment Cleanup
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          script: |
+            echo "Running pre-deployment cleanup..."
+            /usr/local/bin/pre-deployment-cleanup.sh
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -127,6 +138,17 @@ jobs:
             echo "Verifying deployment..."
             curl -sf http://localhost:3000 > /dev/null && echo "Web: OK" || echo "Web: Check needed"
             curl -sf http://localhost:3001/api > /dev/null && echo "API: OK" || echo "API: Check needed"
+
+      - name: Post-Deployment Cleanup
+        uses: appleboy/ssh-action@v1.2.0
+        if: always()
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Running post-deployment cleanup..."
+            /usr/local/bin/post-deployment-cleanup.sh
 
       - name: Deployment Summary
         run: |
