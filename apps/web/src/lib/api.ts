@@ -2248,6 +2248,7 @@ export const sportsClubsApi = {
     if (params?.sport) searchParams.set('sport', params.sport);
     if (params?.eventType) searchParams.set('eventType', params.eventType);
     if (params?.status) searchParams.set('status', params.status);
+    if (params?.upcomingOnly !== undefined) searchParams.set('upcomingOnly', params.upcomingOnly.toString());
     if (params?.startDate) searchParams.set('startDate', params.startDate);
     if (params?.endDate) searchParams.set('endDate', params.endDate);
     if (params?.page) searchParams.set('page', params.page.toString());
@@ -2275,6 +2276,7 @@ export const sportsClubsApi = {
     if (params?.clubId) searchParams.set('clubId', params.clubId);
     if (params?.eventType) searchParams.set('eventType', params.eventType);
     if (params?.status) searchParams.set('status', params.status);
+    if (params?.upcomingOnly !== undefined) searchParams.set('upcomingOnly', params.upcomingOnly.toString());
     if (params?.startDate) searchParams.set('startDate', params.startDate);
     if (params?.endDate) searchParams.set('endDate', params.endDate);
     if (params?.page) searchParams.set('page', params.page.toString());
@@ -2627,6 +2629,7 @@ export interface SportsEventQueryParams {
   sport?: string;
   eventType?: string;
   status?: string;
+  upcomingOnly?: boolean;
   startDate?: string;
   endDate?: string;
   page?: number;
@@ -2648,6 +2651,7 @@ export interface ClubEventQueryParams {
   clubId?: string;
   eventType?: string;
   status?: string;
+  upcomingOnly?: boolean;
   startDate?: string;
   endDate?: string;
   page?: number;
