@@ -30,7 +30,7 @@ export class AlumniService {
 
   // ============ PROFILE OPERATIONS ============
 
-  async createProfile(tenantId: string, dto: CreateAlumniProfileDto) {
+  async createProfile(tenantId: string, dto: CreateAlumniProfileDto, userId?: string) {
     // Check if email already registered
     const existing = await this.prisma.alumniProfile.findFirst({
       where: { tenantId, email: dto.email },
@@ -38,6 +38,16 @@ export class AlumniService {
 
     if (existing) {
       throw new ConflictException('An alumni profile with this email already exists');
+    }
+
+    // Check if user already has a profile
+    if (userId) {
+      const existingByUser = await this.prisma.alumniProfile.findFirst({
+        where: { tenantId, userId },
+      });
+      if (existingByUser) {
+        throw new ConflictException('You already have an alumni profile');
+      }
     }
 
     // If studentId provided, verify it exists and doesn't have an alumni profile
@@ -60,6 +70,7 @@ export class AlumniService {
       data: {
         tenantId,
         ...dto,
+        userId,
         registrationDate: new Date(),
       },
       include: {

@@ -323,7 +323,7 @@ export function JourneyTimeline({
                   ) : (
                     <>
                       <ChevronDown className="h-4 w-4 mr-1" />
-                      Show {timeline!.length - maxItems} More
+                      Show {(timeline?.length || 0) - maxItems} More
                     </>
                   )}
                 </Button>

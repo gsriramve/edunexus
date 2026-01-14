@@ -63,11 +63,13 @@ export class AlumniController {
    * Register as alumni (self-registration)
    */
   @Post('register')
+  @Roles('alumni')
   async register(
     @TenantId() tenantId: string,
+    @UserId() userId: string,
     @Body() dto: CreateAlumniProfileDto,
   ) {
-    return this.alumniService.createProfile(tenantId, dto);
+    return this.alumniService.createProfile(tenantId, dto, userId);
   }
 
   /**

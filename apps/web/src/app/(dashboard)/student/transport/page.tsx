@@ -173,12 +173,28 @@ export default function StudentTransportPage() {
     );
   };
 
-  const calculateDaysRemaining = (endDate: string) => {
+  const isValidDate = (dateStr: string | undefined | null): boolean => {
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    return !isNaN(date.getTime());
+  };
+
+  const formatDate = (dateStr: string | undefined | null): string => {
+    if (!dateStr || !isValidDate(dateStr)) return 'N/A';
+    return new Date(dateStr).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const calculateDaysRemaining = (endDate: string | undefined | null): number => {
+    if (!endDate || !isValidDate(endDate)) return 0;
     const end = new Date(endDate);
     const today = new Date();
     const diffTime = end.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    return diffDays > 0 ? diffDays : 0;
   };
 
   const daysRemaining = pass ? calculateDaysRemaining(pass.validUntil) : 0;
@@ -281,15 +297,11 @@ export default function StudentTransportPage() {
               <div>
                 <p className="text-blue-100 text-sm">Valid Until</p>
                 <p className="text-xl font-bold">
-                  {new Date(pass.validUntil).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  {formatDate(pass.validUntil)}
                 </p>
               </div>
               <div>
-                <p className="text-blue-100 text-sm">{daysRemaining} days remaining</p>
+                <p className="text-blue-100 text-sm">{daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Expired'}</p>
                 <Progress
                   value={validityProgress}
                   className="h-2 bg-blue-400 mt-1"

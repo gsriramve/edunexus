@@ -234,6 +234,19 @@ export default function StudentSportsPage() {
     );
   }
 
+  // Handle case when student is not found
+  if (!studentId && !studentLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-medium mb-2">Student Profile Not Found</h3>
+          <p className="text-muted-foreground">Unable to load your sports activities. Please contact support.</p>
+        </div>
+      </div>
+    );
+  }
+
   const myTeams = studentActivities?.teams || [];
   const myClubs = studentActivities?.clubs || [];
   const myRegistrations = studentActivities?.registrations || [];
@@ -771,7 +784,7 @@ export default function StudentSportsPage() {
               {myAchievements.length > 0 ? (
                 <div className="space-y-4">
                   {myAchievements.filter(a =>
-                    a.title.toLowerCase().includes(searchTerm.toLowerCase())
+                    (a.title || '').toLowerCase().includes(searchTerm.toLowerCase())
                   ).map((achievement) => (
                     <div key={achievement.id} className="p-4 border rounded-lg">
                       <div className="flex justify-between items-start mb-2">

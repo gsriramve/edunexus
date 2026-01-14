@@ -52,7 +52,7 @@ export class LabAssistantService {
   private async getLabAssistantInfo(
     tenantId: string,
     userId: string,
-  ): Promise<{ staff: any; labs: any[] }> {
+  ): Promise<{ staff: any; labs: any[]; user: any }> {
     // Find user by id or clerkUserId (support both internal and Clerk auth)
     const user = await this.prisma.user.findFirst({
       where: {
@@ -93,16 +93,16 @@ export class LabAssistantService {
         })
       : [];
 
-    return { staff, labs };
+    return { staff, labs, user };
   }
 
   async getDashboard(tenantId: string, userId: string): Promise<DashboardResponseDto> {
-    const { staff, labs } = await this.getLabAssistantInfo(tenantId, userId);
+    const { staff, labs, user } = await this.getLabAssistantInfo(tenantId, userId);
 
     // Get lab assistant info
     const labAssistantInfo: LabAssistantInfoDto = {
       id: staff.id,
-      name: `${staff.firstName} ${staff.lastName}`,
+      name: user.name || 'Lab Assistant',
       employeeId: staff.employeeId || `LAB-${staff.id.slice(-6).toUpperCase()}`,
       department: staff.department?.name || 'Unknown Department',
       assignedLabs: labs.map((l) => l.name),

@@ -108,19 +108,19 @@ export default function UsersPage() {
   // Combine staff and students for the users list
   const staffUsers = (staffData?.data || []).map((staff: any) => ({
     id: staff.id,
-    name: `${staff.firstName} ${staff.lastName}`.trim(),
-    email: staff.email,
-    role: staff.role,
+    name: staff.user?.name || `${staff.firstName || ''} ${staff.lastName || ''}`.trim() || 'Unknown',
+    email: staff.email || staff.user?.email || 'N/A',
+    role: staff.role || staff.user?.role || 'staff',
     status: staff.employmentStatus === 'active' ? 'active' : 'inactive',
     lastLogin: staff.user?.lastLoginAt ? formatRelativeTime(staff.user.lastLoginAt) : 'Never',
   }));
 
   const studentUsers = (studentsData?.data || []).map((student: any) => ({
     id: student.id,
-    name: `${student.firstName} ${student.lastName}`.trim(),
-    email: student.email,
+    name: student.user?.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Unknown',
+    email: student.email || student.user?.email || 'N/A',
     role: 'student',
-    status: student.enrollmentStatus === 'enrolled' ? 'active' : 'inactive',
+    status: student.enrollmentStatus === 'enrolled' || student.status === 'active' ? 'active' : 'inactive',
     lastLogin: student.user?.lastLoginAt ? formatRelativeTime(student.user.lastLoginAt) : 'Never',
   }));
 

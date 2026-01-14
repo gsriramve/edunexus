@@ -58,6 +58,14 @@ import { useToast } from '@/hooks/use-toast';
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const today = days[new Date().getDay()];
 
+// Safe date formatting helper
+const formatDate = (dateStr: string | Date | undefined | null, options?: Intl.DateTimeFormatOptions): string => {
+  if (!dateStr) return 'N/A';
+  const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+  if (isNaN(date.getTime())) return 'N/A';
+  return date.toLocaleDateString('en-IN', options || { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
 export default function StudentHostelPage() {
   const [activeTab, setActiveTab] = useState('room');
   const [selectedDay, setSelectedDay] = useState(today);
@@ -246,7 +254,7 @@ export default function StudentHostelPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Pending Fee</p>
                   <p className="text-2xl font-bold">₹{pendingFee.amount.toLocaleString()}</p>
-                  <p className="text-sm text-red-500">Due: {pendingFee.dueDate ? new Date(pendingFee.dueDate).toLocaleDateString() : 'N/A'}</p>
+                  <p className="text-sm text-red-500">Due: {formatDate(pendingFee.dueDate)}</p>
                 </div>
                 <CreditCard className="h-8 w-8 text-yellow-500" />
               </div>
@@ -306,7 +314,7 @@ export default function StudentHostelPage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Allocated Date</p>
-                    <p className="font-semibold">{new Date(allocation.allocatedDate).toLocaleDateString()}</p>
+                    <p className="font-semibold">{formatDate(allocation.allocatedDate)}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Status</p>
@@ -435,13 +443,13 @@ export default function StudentHostelPage() {
                         <span className="font-semibold capitalize">{fee.feeType} Fee</span>
                         {fee.month && fee.year && (
                           <span className="text-sm text-muted-foreground">
-                            ({new Date(fee.year, fee.month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})
+                            ({formatDate(new Date(fee.year, fee.month - 1), { month: 'long', year: 'numeric' })})
                           </span>
                         )}
                       </div>
                       {fee.dueDate && (
                         <p className="text-sm text-muted-foreground">
-                          Due: {new Date(fee.dueDate).toLocaleDateString()}
+                          Due: {formatDate(fee.dueDate)}
                         </p>
                       )}
                     </div>
@@ -454,7 +462,7 @@ export default function StudentHostelPage() {
                     <div>
                       {fee.paidDate && (
                         <span className="text-sm text-muted-foreground">
-                          Paid on: {new Date(fee.paidDate).toLocaleDateString()}
+                          Paid on: {formatDate(fee.paidDate)}
                         </span>
                       )}
                     </div>
@@ -591,7 +599,7 @@ export default function StudentHostelPage() {
                           {complaint.status.replace('_', ' ')}
                         </Badge>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(complaint.createdAt).toLocaleDateString()}
+                          {formatDate(complaint.createdAt)}
                         </p>
                       </div>
                     </div>

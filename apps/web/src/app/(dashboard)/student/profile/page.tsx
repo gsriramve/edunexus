@@ -86,6 +86,7 @@ export default function StudentProfile() {
   const [editedBloodGroup, setEditedBloodGroup] = useState('');
   const [editedNationality, setEditedNationality] = useState('');
   const [editedGender, setEditedGender] = useState('');
+  const [editedDob, setEditedDob] = useState('');
 
   // Initialize edit state when entering edit mode
   const startEditing = () => {
@@ -94,6 +95,13 @@ export default function StudentProfile() {
     setEditedBloodGroup(profile?.bloodGroup || '');
     setEditedNationality(profile?.nationality || 'Indian');
     setEditedGender(profile?.gender || '');
+    // Format date for input field (YYYY-MM-DD)
+    if (profile?.dob) {
+      const date = new Date(profile.dob);
+      setEditedDob(date.toISOString().split('T')[0]);
+    } else {
+      setEditedDob('');
+    }
     setIsEditing(true);
   };
 
@@ -107,6 +115,7 @@ export default function StudentProfile() {
           bloodGroup: editedBloodGroup || undefined,
           nationality: editedNationality || undefined,
           gender: (editedGender as 'male' | 'female' | 'other') || undefined,
+          dateOfBirth: editedDob || undefined,
         },
       });
       toast.success('Profile updated successfully!');
@@ -332,14 +341,13 @@ export default function StudentProfile() {
                     <Phone className="h-4 w-4" />
                     Phone
                   </Label>
-                  {isEditing ? (
-                    <Input
-                      value={editedPhone}
-                      onChange={(e) => setEditedPhone(e.target.value)}
-                      placeholder="Enter phone number"
-                    />
-                  ) : (
-                    <p className="text-sm font-medium">{phone || 'Not provided'}</p>
+                  <p className="text-sm font-medium">
+                    {studentData?.user?.profile?.contacts?.[0]?.value || 'Not provided'}
+                  </p>
+                  {isEditing && (
+                    <p className="text-xs text-muted-foreground">
+                      Contact administration to update phone number
+                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -347,13 +355,22 @@ export default function StudentProfile() {
                     <Calendar className="h-4 w-4" />
                     Date of Birth
                   </Label>
-                  <p className="text-sm font-medium">
-                    {dob ? new Date(dob).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    }) : 'Not provided'}
-                  </p>
+                  {isEditing ? (
+                    <Input
+                      type="date"
+                      value={editedDob}
+                      onChange={(e) => setEditedDob(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
+                    />
+                  ) : (
+                    <p className="text-sm font-medium">
+                      {dob ? new Date(dob).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      }) : 'Not provided'}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Gender</Label>

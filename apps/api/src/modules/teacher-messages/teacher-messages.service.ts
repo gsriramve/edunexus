@@ -16,10 +16,10 @@ export class TeacherMessagesService {
   // GET TEACHER INFO
   // =============================================================================
 
-  private async getTeacherInfo(tenantId: string, clerkUserId: string) {
-    // First find the user by Clerk ID
-    const user = await this.prisma.user.findFirst({
-      where: { tenantId, clerkUserId },
+  private async getTeacherInfo(tenantId: string, userId: string) {
+    // First try to find user by database ID
+    let user = await this.prisma.user.findFirst({
+      where: { tenantId, id: userId },
       include: {
         staff: {
           include: {
@@ -28,6 +28,20 @@ export class TeacherMessagesService {
         },
       },
     });
+
+    // If not found, try by Clerk ID (for backwards compatibility)
+    if (!user) {
+      user = await this.prisma.user.findFirst({
+        where: { tenantId, clerkUserId: userId },
+        include: {
+          staff: {
+            include: {
+              department: { select: { id: true, name: true, code: true } },
+            },
+          },
+        },
+      });
+    }
 
     if (!user?.staff) {
       throw new NotFoundException('Teacher not found');

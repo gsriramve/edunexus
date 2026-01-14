@@ -53,8 +53,10 @@ import {
   useAddEmployment,
   useDeleteEmployment,
   useUploadAlumniPhoto,
+  useRegisterAlumni,
   type CurrentStatus,
   type CreateEmploymentInput,
+  type CreateAlumniProfileInput,
 } from "@/hooks/use-alumni";
 import { PhotoUpload } from "@/components/profile/photo-upload";
 import { useAuth } from "@/lib/auth";
@@ -80,8 +82,13 @@ const focusAreaOptions = [
 export default function AlumniProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [showAddEmployment, setShowAddEmployment] = useState(false);
+  const [showRegisterDialog, setShowRegisterDialog] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [newEmployment, setNewEmployment] = useState<Partial<CreateEmploymentInput>>({});
+  const [registerForm, setRegisterForm] = useState<Partial<CreateAlumniProfileInput>>({
+    currentStatus: "employed",
+    openToMentoring: true,
+  });
 
   const tenantId = useTenantId();
   const { user } = useAuth();
@@ -91,6 +98,20 @@ export default function AlumniProfilePage() {
   const addEmployment = useAddEmployment(tenantId || "");
   const deleteEmployment = useDeleteEmployment(tenantId || "");
   const uploadPhoto = useUploadAlumniPhoto(tenantId || "");
+  const registerAlumni = useRegisterAlumni(tenantId || "");
+
+  const handleRegister = () => {
+    if (!registerForm.firstName || !registerForm.lastName || !registerForm.email || !registerForm.graduationYear || !registerForm.batch) {
+      return;
+    }
+    registerAlumni.mutate(registerForm as CreateAlumniProfileInput, {
+      onSuccess: () => {
+        setShowRegisterDialog(false);
+        setRegisterForm({ currentStatus: "employed", openToMentoring: true });
+        refetch();
+      },
+    });
+  };
 
   const handleEditStart = () => {
     if (profile) {
@@ -155,11 +176,150 @@ export default function AlumniProfilePage() {
         <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <User className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">Profile Not Found</h3>
-            <p className="text-muted-foreground text-center">
-              Your alumni profile hasn't been created yet.
+            <GraduationCap className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">Complete Your Alumni Profile</h3>
+            <p className="text-muted-foreground text-center mb-6 max-w-md">
+              Welcome! To access all alumni features like mentorship, events, and networking,
+              please complete your profile setup.
             </p>
+            <Dialog open={showRegisterDialog} onOpenChange={setShowRegisterDialog}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Your Profile
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Alumni Registration</DialogTitle>
+                  <DialogDescription>
+                    Fill in your details to create your alumni profile
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">First Name *</label>
+                      <Input
+                        value={registerForm.firstName || ""}
+                        onChange={(e) => setRegisterForm({ ...registerForm, firstName: e.target.value })}
+                        placeholder="John"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Last Name *</label>
+                      <Input
+                        value={registerForm.lastName || ""}
+                        onChange={(e) => setRegisterForm({ ...registerForm, lastName: e.target.value })}
+                        placeholder="Doe"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Email *</label>
+                    <Input
+                      type="email"
+                      value={registerForm.email || user?.email || ""}
+                      onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
+                      placeholder="john.doe@example.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Phone</label>
+                    <Input
+                      value={registerForm.phone || ""}
+                      onChange={(e) => setRegisterForm({ ...registerForm, phone: e.target.value })}
+                      placeholder="+91 9876543210"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Graduation Year *</label>
+                      <Input
+                        type="number"
+                        value={registerForm.graduationYear || ""}
+                        onChange={(e) => setRegisterForm({ ...registerForm, graduationYear: parseInt(e.target.value) || undefined })}
+                        placeholder="2020"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Batch *</label>
+                      <Input
+                        value={registerForm.batch || ""}
+                        onChange={(e) => setRegisterForm({ ...registerForm, batch: e.target.value })}
+                        placeholder="2016-2020"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Degree</label>
+                    <Input
+                      value={registerForm.degree || ""}
+                      onChange={(e) => setRegisterForm({ ...registerForm, degree: e.target.value })}
+                      placeholder="B.Tech in Computer Science"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Current Status</label>
+                    <Select
+                      value={registerForm.currentStatus}
+                      onValueChange={(value: CurrentStatus) => setRegisterForm({ ...registerForm, currentStatus: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currentStatusOptions.map((status) => (
+                          <SelectItem key={status.value} value={status.value}>
+                            {status.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">LinkedIn Profile</label>
+                    <Input
+                      value={registerForm.linkedinUrl || ""}
+                      onChange={(e) => setRegisterForm({ ...registerForm, linkedinUrl: e.target.value })}
+                      placeholder="https://linkedin.com/in/johndoe"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Bio</label>
+                    <Textarea
+                      value={registerForm.bio || ""}
+                      onChange={(e) => setRegisterForm({ ...registerForm, bio: e.target.value })}
+                      placeholder="Tell us about yourself..."
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="text-sm font-medium">Open to Mentoring</label>
+                      <p className="text-xs text-muted-foreground">
+                        Allow students to request mentorship from you
+                      </p>
+                    </div>
+                    <Switch
+                      checked={registerForm.openToMentoring || false}
+                      onCheckedChange={(checked) => setRegisterForm({ ...registerForm, openToMentoring: checked })}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowRegisterDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleRegister}
+                    disabled={!registerForm.firstName || !registerForm.lastName || !registerForm.email || !registerForm.graduationYear || !registerForm.batch || registerAlumni.isPending}
+                  >
+                    {registerAlumni.isPending ? "Creating..." : "Create Profile"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
       </div>

@@ -17,16 +17,26 @@ export class TeacherAttendanceService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Get staff ID for a user (looks up by Clerk user ID)
+   * Get staff ID for a user (looks up by user ID or Clerk user ID)
    */
-  private async getStaffId(tenantId: string, clerkUserId: string): Promise<string> {
-    // First find the user by Clerk ID
-    const user = await this.prisma.user.findFirst({
-      where: { tenantId, clerkUserId },
+  private async getStaffId(tenantId: string, userId: string): Promise<string> {
+    // First try to find user by database ID
+    let user = await this.prisma.user.findFirst({
+      where: { tenantId, id: userId },
       include: {
         staff: true,
       },
     });
+
+    // If not found, try by Clerk ID (for backwards compatibility)
+    if (!user) {
+      user = await this.prisma.user.findFirst({
+        where: { tenantId, clerkUserId: userId },
+        include: {
+          staff: true,
+        },
+      });
+    }
 
     if (!user?.staff) {
       throw new ForbiddenException('User is not a staff member');
