@@ -448,6 +448,16 @@ export class TimelineFilterDto {
   @IsBoolean()
   @Type(() => Boolean)
   includeSnapshots?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  limit?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  offset?: number;
 }
 
 export class JourneyStatsDto {

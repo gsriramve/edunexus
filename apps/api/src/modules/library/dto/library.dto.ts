@@ -12,7 +12,7 @@ import {
   MaxLength,
   IsISBN,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 // =============================================================================
 // ENUMS
@@ -279,6 +279,11 @@ export class BookQueryDto {
   @IsOptional()
   @Type(() => Boolean)
   availableOnly?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  isActive?: boolean;
 
   @IsNumber()
   @IsOptional()

@@ -117,8 +117,8 @@ export default function StudentSportsPage() {
     try {
       const [activities, sportsEvents, clubEvents, teams, clubs] = await Promise.all([
         sportsClubsApi.getStudentActivities(tenantId, studentId),
-        sportsClubsApi.listSportsEvents(tenantId, { status: 'upcoming', limit: 20 }),
-        sportsClubsApi.listClubEvents(tenantId, { status: 'upcoming', limit: 20 }),
+        sportsClubsApi.listSportsEvents(tenantId, { upcomingOnly: true, limit: 20 }),
+        sportsClubsApi.listClubEvents(tenantId, { upcomingOnly: true, limit: 20 }),
         sportsClubsApi.listTeams(tenantId, { status: 'recruiting', limit: 50 }),
         sportsClubsApi.listClubs(tenantId, { status: 'recruiting', limit: 50 }),
       ]);

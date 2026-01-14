@@ -62,9 +62,9 @@ export default function StudentSportsClubsPage() {
   const { data: allTeamsData } = useSportsTeams(tenantId, { status: 'active' });
   const { data: allClubsData } = useClubs(tenantId, { status: 'active' });
 
-  // Fetch upcoming events (use status filter instead of upcomingOnly)
-  const { data: sportsEventsData } = useSportsEvents(tenantId, { status: 'upcoming' });
-  const { data: clubEventsData } = useClubEvents(tenantId, { status: 'upcoming' });
+  // Fetch upcoming events
+  const { data: sportsEventsData } = useSportsEvents(tenantId, { upcomingOnly: true });
+  const { data: clubEventsData } = useClubEvents(tenantId, { upcomingOnly: true });
 
   // Credits summary
   const { data: creditsSummary } = useStudentCreditsSummary(tenantId, studentId);
