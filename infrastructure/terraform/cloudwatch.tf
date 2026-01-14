@@ -161,8 +161,8 @@ resource "aws_cloudwatch_metric_alarm" "rds_memory_low" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = 268435456 # 256MB in bytes
-  alarm_description   = "RDS freeable memory is below 256MB"
+  threshold           = 104857600 # 100MB in bytes (appropriate for db.t3.micro)
+  alarm_description   = "RDS freeable memory is below 100MB"
   alarm_actions       = [aws_sns_topic.alerts.arn]
   ok_actions          = [aws_sns_topic.alerts.arn]
 
