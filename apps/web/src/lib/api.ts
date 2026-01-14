@@ -5911,10 +5911,19 @@ export const idCardsApi = {
 
   // Get PDF download URL (returns blob)
   downloadPdf: async (tenantId: string, id: string): Promise<Blob> => {
+    const headers: Record<string, string> = {
+      'x-tenant-id': tenantId,
+    };
+    // Add auth headers from context
+    const ctx = getAuthContext();
+    if (ctx) {
+      if (ctx.userId) headers['x-user-id'] = ctx.userId;
+      if (ctx.role) headers['x-user-role'] = ctx.role;
+      if (ctx.name) headers['x-user-name'] = ctx.name;
+      if (ctx.tenantId) headers['x-user-tenant-id'] = ctx.tenantId;
+    }
     const response = await fetch(`${getApiBaseUrl()}/id-cards/${id}/pdf`, {
-      headers: {
-        'x-tenant-id': tenantId,
-      },
+      headers,
     });
     if (!response.ok) {
       throw new Error('Failed to download PDF');
