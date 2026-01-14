@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduNexus - 9 Personas Interactive Guide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #6b6b7b;
+            --accent-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+
+            /* Persona Colors */
+            --platform-owner: #f59e0b;
+            --principal: #3b82f6;
+            --hod: #8b5cf6;
+            --admin: #10b981;
+            --teacher: #ec4899;
+            --lab: #06b6d4;
+            --student: #6366f1;
+            --parent: #f97316;
+            --alumni: #14b8a6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Instrument Sans', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .bg-orb:nth-child(1) {
+            width: 600px;
+            height: 600px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            top: -200px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+
+        .bg-orb:nth-child(2) {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            bottom: -100px;
+            left: -100px;
+            animation-delay: -7s;
+        }
+
+        .bg-orb:nth-child(3) {
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, #f59e0b, #ec4899);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -14s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -30px) scale(1.05); }
+            50% { transform: translate(-20px, 20px) scale(0.95); }
+            75% { transform: translate(20px, 10px) scale(1.02); }
+        }
+
+        /* Main container */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .logo-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 32px;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(36px, 5vw, 56px);
+            font-weight: 700;
+            margin-bottom: 16px;
+            line-height: 1.1;
+        }
+
+        .header h1 span {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Persona Grid */
+        .personas-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 1024px) {
+            .personas-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .personas-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Persona Card */
+        .persona-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            animation: fadeInUp 0.6s ease-out backwards;
+        }
+
+        .persona-card:nth-child(1) { animation-delay: 0.1s; }
+        .persona-card:nth-child(2) { animation-delay: 0.15s; }
+        .persona-card:nth-child(3) { animation-delay: 0.2s; }
+        .persona-card:nth-child(4) { animation-delay: 0.25s; }
+        .persona-card:nth-child(5) { animation-delay: 0.3s; }
+        .persona-card:nth-child(6) { animation-delay: 0.35s; }
+        .persona-card:nth-child(7) { animation-delay: 0.4s; }
+        .persona-card:nth-child(8) { animation-delay: 0.45s; }
+        .persona-card:nth-child(9) { animation-delay: 0.5s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .persona-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .persona-card.expanded {
+            grid-column: span 1;
+        }
+
+        .card-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .persona-card:hover .card-glow {
+            opacity: 1;
+        }
+
+        .card-header {
+            padding: 24px 24px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .persona-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .persona-card:hover .persona-icon {
+            transform: scale(1.1) rotate(-5deg);
+        }
+
+        .card-title-group {
+            flex: 1;
+        }
+
+        .persona-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .persona-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .expand-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .expand-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .expand-btn svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .persona-card.expanded .expand-btn svg {
+            transform: rotate(180deg);
+        }
+
+        /* Card Content */
+        .card-content {
+            padding: 0 24px 24px;
+        }
+
+        .login-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: var(--glass);
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .login-info code {
+            color: var(--text-primary);
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+        }
+
+        /* Features List */
+        .features-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .feature-tag {
+            padding: 6px 12px;
+            background: var(--glass);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+
+        .persona-card:hover .feature-tag {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Expanded Content */
+        .expanded-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .persona-card.expanded .expanded-content {
+            max-height: 600px;
+        }
+
+        .expanded-inner {
+            padding: 0 24px 24px;
+            border-top: 1px solid var(--border);
+            margin-top: 16px;
+            padding-top: 20px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .features-list {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .features-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .features-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .ai-benefits {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .ai-benefits .section-title {
+            color: #a78bfa;
+        }
+
+        .ai-benefit-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .ai-benefit-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .ai-badge {
+            padding: 2px 8px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .ai-benefit-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+
+        .demo-box {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 24px 40px;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .demo-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+        }
+
+        .demo-url {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .demo-password {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .demo-password code {
+            background: var(--glass);
+            padding: 4px 12px;
+            border-radius: 6px;
+            color: #10b981;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        /* Persona-specific colors */
+        .persona-card[data-persona="platform-owner"] .card-glow { background: linear-gradient(90deg, var(--platform-owner), transparent); }
+        .persona-card[data-persona="platform-owner"] .persona-icon { background: linear-gradient(135deg, var(--platform-owner), #fbbf24); color: #000; }
+        .persona-card[data-persona="platform-owner"] .feature-icon { background: rgba(245, 158, 11, 0.2); color: var(--platform-owner); }
+
+        .persona-card[data-persona="principal"] .card-glow { background: linear-gradient(90deg, var(--principal), transparent); }
+        .persona-card[data-persona="principal"] .persona-icon { background: linear-gradient(135deg, var(--principal), #60a5fa); color: #fff; }
+        .persona-card[data-persona="principal"] .feature-icon { background: rgba(59, 130, 246, 0.2); color: var(--principal); }
+
+        .persona-card[data-persona="hod"] .card-glow { background: linear-gradient(90deg, var(--hod), transparent); }
+        .persona-card[data-persona="hod"] .persona-icon { background: linear-gradient(135deg, var(--hod), #a78bfa); color: #fff; }
+        .persona-card[data-persona="hod"] .feature-icon { background: rgba(139, 92, 246, 0.2); color: var(--hod); }
+
+        .persona-card[data-persona="admin"] .card-glow { background: linear-gradient(90deg, var(--admin), transparent); }
+        .persona-card[data-persona="admin"] .persona-icon { background: linear-gradient(135deg, var(--admin), #34d399); color: #fff; }
+        .persona-card[data-persona="admin"] .feature-icon { background: rgba(16, 185, 129, 0.2); color: var(--admin); }
+
+        .persona-card[data-persona="teacher"] .card-glow { background: linear-gradient(90deg, var(--teacher), transparent); }
+        .persona-card[data-persona="teacher"] .persona-icon { background: linear-gradient(135deg, var(--teacher), #f472b6); color: #fff; }
+        .persona-card[data-persona="teacher"] .feature-icon { background: rgba(236, 72, 153, 0.2); color: var(--teacher); }
+
+        .persona-card[data-persona="lab"] .card-glow { background: linear-gradient(90deg, var(--lab), transparent); }
+        .persona-card[data-persona="lab"] .persona-icon { background: linear-gradient(135deg, var(--lab), #22d3ee); color: #fff; }
+        .persona-card[data-persona="lab"] .feature-icon { background: rgba(6, 182, 212, 0.2); color: var(--lab); }
+
+        .persona-card[data-persona="student"] .card-glow { background: linear-gradient(90deg, var(--student), transparent); }
+        .persona-card[data-persona="student"] .persona-icon { background: linear-gradient(135deg, var(--student), #818cf8); color: #fff; }
+        .persona-card[data-persona="student"] .feature-icon { background: rgba(99, 102, 241, 0.2); color: var(--student); }
+
+        .persona-card[data-persona="parent"] .card-glow { background: linear-gradient(90deg, var(--parent), transparent); }
+        .persona-card[data-persona="parent"] .persona-icon { background: linear-gradient(135deg, var(--parent), #fb923c); color: #fff; }
+        .persona-card[data-persona="parent"] .feature-icon { background: rgba(249, 115, 22, 0.2); color: var(--parent); }
+
+        .persona-card[data-persona="alumni"] .card-glow { background: linear-gradient(90deg, var(--alumni), transparent); }
+        .persona-card[data-persona="alumni"] .persona-icon { background: linear-gradient(135deg, var(--alumni), #2dd4bf); color: #fff; }
+        .persona-card[data-persona="alumni"] .feature-icon { background: rgba(20, 184, 166, 0.2); color: var(--alumni); }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">E</div>
+                <span class="logo-text">EduNexus</span>
+            </div>
+            <h1>Meet the <span>9 Personas</span></h1>
+            <p>AI-powered dashboards tailored for every stakeholder in your educational institution</p>
+        </header>
+
+        <div class="personas-grid">
+            <!-- Platform Owner -->
+            <div class="persona-card" data-persona="platform-owner">
+                <div class="card-glow"></div>
+                <div class="card-header">
+                    <div class="persona-icon">&#128081;</div>
+                    <div class="card-title-group">
+                        <h3 class="persona-title">Platform Owner</h3>
+                        <p class="persona-subtitle">Multi-tenant SaaS Administration</p>
+                    </div>
+                    <button class="expand-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div class="login-info">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <code>admin@edunexus.io</code>
+                    </div>
+                    <div class="features-preview">
+                        <span class="feature-tag">Multi-College</span>
+                        <span class="feature-tag">Billing</span>
+                        <span class="feature-tag">Analytics</span>
+                    </div>
+                </div>
+                <div class="expanded-content">
+                    <div class="expanded-inner">
+                        <h4 class="section-title">Key Features</h4>
+                        <ul class="features-list">
+                            <li><span class="feature-icon">&#10003;</span> Multi-college management from single interface</li>
+                            <li><span class="feature-icon">&#10003;</span> Subscription & billing management</li>
+                            <li><span class="feature-icon">&#10003;</span> Cross-institution analytics</li>
+                            <li><span class="feature-icon">&#10003;</span> Feature flag management</li>
+                        </ul>
+                        <div class="ai-benefits">
+                            <h4 class="section-title">AI Benefits</h4>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Benchmarking AI:</strong> Compare performance across all institutions</span>
+                            </div>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Churn Prediction:</strong> Identify at-risk institutions for proactive engagement</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Principal -->
+            <div class="persona-card" data-persona="principal">
+                <div class="card-glow"></div>
+                <div class="card-header">
+                    <div class="persona-icon">&#127891;</div>
+                    <div class="card-title-group">
+                        <h3 class="persona-title">Principal</h3>
+                        <p class="persona-subtitle">Strategic Institutional Leadership</p>
+                    </div>
+                    <button class="expand-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div class="login-info">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <code>principal@nexus-ec.edu</code>
+                    </div>
+                    <div class="features-preview">
+                        <span class="feature-tag">KPIs</span>
+                        <span class="feature-tag">Accreditation</span>
+                        <span class="feature-tag">Staff</span>
+                    </div>
+                </div>
+                <div class="expanded-content">
+                    <div class="expanded-inner">
+                        <h4 class="section-title">Key Features</h4>
+                        <ul class="features-list">
+                            <li><span class="feature-icon">&#10003;</span> Institution-wide performance metrics & KPIs</li>
+                            <li><span class="feature-icon">&#10003;</span> Department comparison & benchmarking</li>
+                            <li><span class="feature-icon">&#10003;</span> NAAC/NBA accreditation dashboard</li>
+                            <li><span class="feature-icon">&#10003;</span> Staff performance evaluation</li>
+                        </ul>
+                        <div class="ai-benefits">
+                            <h4 class="section-title">AI Benefits</h4>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Predictive Analytics:</strong> Forecast dropout risks for proactive intervention</span>
+                            </div>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Smart Reports:</strong> Auto-generated accreditation reports saving 100+ hours</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HOD -->
+            <div class="persona-card" data-persona="hod">
+                <div class="card-glow"></div>
+                <div class="card-header">
+                    <div class="persona-icon">&#128218;</div>
+                    <div class="card-title-group">
+                        <h3 class="persona-title">HOD</h3>
+                        <p class="persona-subtitle">Department Management</p>
+                    </div>
+                    <button class="expand-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div class="login-info">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <code>hod.cse@nexus-ec.edu</code>
+                    </div>
+                    <div class="features-preview">
+                        <span class="feature-tag">Faculty</span>
+                        <span class="feature-tag">Curriculum</span>
+                        <span class="feature-tag">Feedback</span>
+                    </div>
+                </div>
+                <div class="expanded-content">
+                    <div class="expanded-inner">
+                        <h4 class="section-title">Key Features</h4>
+                        <ul class="features-list">
+                            <li><span class="feature-icon">&#10003;</span> Faculty workload & timetable optimization</li>
+                            <li><span class="feature-icon">&#10003;</span> Subject-wise performance analytics</li>
+                            <li><span class="feature-icon">&#10003;</span> Curriculum gap analysis</li>
+                            <li><span class="feature-icon">&#10003;</span> Student skill gap identification</li>
+                        </ul>
+                        <div class="ai-benefits">
+                            <h4 class="section-title">AI Benefits</h4>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Skill Gap AI:</strong> Identifies student weaknesses & recommends training</span>
+                            </div>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Feedback Intelligence:</strong> NLP extracts actionable insights from feedback</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Staff -->
+            <div class="persona-card" data-persona="admin">
+                <div class="card-glow"></div>
+                <div class="card-header">
+                    <div class="persona-icon">&#128188;</div>
+                    <div class="card-title-group">
+                        <h3 class="persona-title">Admin Staff</h3>
+                        <p class="persona-subtitle">Administrative Operations</p>
+                    </div>
+                    <button class="expand-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div class="login-info">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <code>admin@nexus-ec.edu</code>
+                    </div>
+                    <div class="features-preview">
+                        <span class="feature-tag">Records</span>
+                        <span class="feature-tag">Fees</span>
+                        <span class="feature-tag">Certificates</span>
+                    </div>
+                </div>
+                <div class="expanded-content">
+                    <div class="expanded-inner">
+                        <h4 class="section-title">Key Features</h4>
+                        <ul class="features-list">
+                            <li><span class="feature-icon">&#10003;</span> Student records with bulk import/export</li>
+                            <li><span class="feature-icon">&#10003;</span> Fee collection with online payment</li>
+                            <li><span class="feature-icon">&#10003;</span> Certificate generation (TC, Bonafide)</li>
+                            <li><span class="feature-icon">&#10003;</span> Transport, hostel, library management</li>
+                        </ul>
+                        <div class="ai-benefits">
+                            <h4 class="section-title">AI Benefits</h4>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Smart Search:</strong> Find any record in milliseconds with AI search</span>
+                            </div>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Auto-Reminders:</strong> Personalized fee reminders based on history</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teacher -->
+            <div class="persona-card" data-persona="teacher">
+                <div class="card-glow"></div>
+                <div class="card-header">
+                    <div class="persona-icon">&#128105;&#8205;&#127979;</div>
+                    <div class="card-title-group">
+                        <h3 class="persona-title">Teacher</h3>
+                        <p class="persona-subtitle">Classroom Management</p>
+                    </div>
+                    <button class="expand-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div class="login-info">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <code>teacher@nexus-ec.edu</code>
+                    </div>
+                    <div class="features-preview">
+                        <span class="feature-tag">Attendance</span>
+                        <span class="feature-tag">Marks</span>
+                        <span class="feature-tag">Materials</span>
+                    </div>
+                </div>
+                <div class="expanded-content">
+                    <div class="expanded-inner">
+                        <h4 class="section-title">Key Features</h4>
+                        <ul class="features-list">
+                            <li><span class="feature-icon">&#10003;</span> AI-powered face recognition attendance</li>
+                            <li><span class="feature-icon">&#10003;</span> Digital assignment creation & grading</li>
+                            <li><span class="feature-icon">&#10003;</span> Student performance with at-risk alerts</li>
+                            <li><span class="feature-icon">&#10003;</span> Learning material repository</li>
+                        </ul>
+                        <div class="ai-benefits">
+                            <h4 class="section-title">AI Benefits</h4>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Face Recognition:</strong> Attendance in 30 seconds with anti-spoofing</span>
+                            </div>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>At-Risk Alerts:</strong> Flag students needing attention before they fail</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lab Assistant -->
+            <div class="persona-card" data-persona="lab">
+                <div class="card-glow"></div>
+                <div class="card-header">
+                    <div class="persona-icon">&#128300;</div>
+                    <div class="card-title-group">
+                        <h3 class="persona-title">Lab Assistant</h3>
+                        <p class="persona-subtitle">Laboratory Management</p>
+                    </div>
+                    <button class="expand-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div class="login-info">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <code>lab@nexus-ec.edu</code>
+                    </div>
+                    <div class="features-preview">
+                        <span class="feature-tag">Equipment</span>
+                        <span class="feature-tag">Sessions</span>
+                        <span class="feature-tag">Marks</span>
+                    </div>
+                </div>
+                <div class="expanded-content">
+                    <div class="expanded-inner">
+                        <h4 class="section-title">Key Features</h4>
+                        <ul class="features-list">
+                            <li><span class="feature-icon">&#10003;</span> Lab session attendance tracking</li>
+                            <li><span class="feature-icon">&#10003;</span> Equipment inventory management</li>
+                            <li><span class="feature-icon">&#10003;</span> Practical marks entry</li>
+                            <li><span class="feature-icon">&#10003;</span> Maintenance scheduling</li>
+                        </ul>
+                        <div class="ai-benefits">
+                            <h4 class="section-title">AI Benefits</h4>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Predictive Maintenance:</strong> Predicts equipment failures before they occur</span>
+                            </div>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Usage Analytics:</strong> Optimizes lab resource allocation</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student -->
+            <div class="persona-card" data-persona="student">
+                <div class="card-glow"></div>
+                <div class="card-header">
+                    <div class="persona-icon">&#127891;</div>
+                    <div class="card-title-group">
+                        <h3 class="persona-title">Student</h3>
+                        <p class="persona-subtitle">Academic Journey & Career</p>
+                    </div>
+                    <button class="expand-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div class="login-info">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <code>student@nexus-ec.edu</code>
+                    </div>
+                    <div class="features-preview">
+                        <span class="feature-tag">Grades</span>
+                        <span class="feature-tag">Career</span>
+                        <span class="feature-tag">Mentorship</span>
+                    </div>
+                </div>
+                <div class="expanded-content">
+                    <div class="expanded-inner">
+                        <h4 class="section-title">Key Features</h4>
+                        <ul class="features-list">
+                            <li><span class="feature-icon">&#10003;</span> Academic performance & grade analytics</li>
+                            <li><span class="feature-icon">&#10003;</span> Attendance monitoring with alerts</li>
+                            <li><span class="feature-icon">&#10003;</span> Career readiness assessment</li>
+                            <li><span class="feature-icon">&#10003;</span> Alumni mentorship connections</li>
+                        </ul>
+                        <div class="ai-benefits">
+                            <h4 class="section-title">AI Benefits</h4>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Career AI:</strong> Personalized career paths based on skills & interests</span>
+                            </div>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Smart Mentorship:</strong> AI matches with ideal alumni mentors</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parent -->
+            <div class="persona-card" data-persona="parent">
+                <div class="card-glow"></div>
+                <div class="card-header">
+                    <div class="persona-icon">&#128106;</div>
+                    <div class="card-title-group">
+                        <h3 class="persona-title">Parent</h3>
+                        <p class="persona-subtitle">Ward Monitoring & Engagement</p>
+                    </div>
+                    <button class="expand-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div class="login-info">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <code>parent@nexus-ec.edu</code>
+                    </div>
+                    <div class="features-preview">
+                        <span class="feature-tag">Attendance</span>
+                        <span class="feature-tag">Reports</span>
+                        <span class="feature-tag">Fees</span>
+                    </div>
+                </div>
+                <div class="expanded-content">
+                    <div class="expanded-inner">
+                        <h4 class="section-title">Key Features</h4>
+                        <ul class="features-list">
+                            <li><span class="feature-icon">&#10003;</span> Live attendance tracking</li>
+                            <li><span class="feature-icon">&#10003;</span> Academic performance reports</li>
+                            <li><span class="feature-icon">&#10003;</span> Fee payment portal</li>
+                            <li><span class="feature-icon">&#10003;</span> Direct teacher communication</li>
+                        </ul>
+                        <div class="ai-benefits">
+                            <h4 class="section-title">AI Benefits</h4>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Smart Alerts:</strong> Instant notifications for attendance & grade issues</span>
+                            </div>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Progress Insights:</strong> AI-generated monthly progress summaries</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alumni -->
+            <div class="persona-card" data-persona="alumni">
+                <div class="card-glow"></div>
+                <div class="card-header">
+                    <div class="persona-icon">&#127942;</div>
+                    <div class="card-title-group">
+                        <h3 class="persona-title">Alumni</h3>
+                        <p class="persona-subtitle">Lifelong Connection & Giving Back</p>
+                    </div>
+                    <button class="expand-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="card-content">
+                    <div class="login-info">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <code>alumni@nexus-ec.edu</code>
+                    </div>
+                    <div class="features-preview">
+                        <span class="feature-tag">Directory</span>
+                        <span class="feature-tag">Mentorship</span>
+                        <span class="feature-tag">Events</span>
+                    </div>
+                </div>
+                <div class="expanded-content">
+                    <div class="expanded-inner">
+                        <h4 class="section-title">Key Features</h4>
+                        <ul class="features-list">
+                            <li><span class="feature-icon">&#10003;</span> Alumni directory with search filters</li>
+                            <li><span class="feature-icon">&#10003;</span> Mentorship program management</li>
+                            <li><span class="feature-icon">&#10003;</span> Event registration & networking</li>
+                            <li><span class="feature-icon">&#10003;</span> Contribution & donation portal</li>
+                        </ul>
+                        <div class="ai-benefits">
+                            <h4 class="section-title">AI Benefits</h4>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Smart Matching:</strong> AI pairs mentors with students by career goals</span>
+                            </div>
+                            <div class="ai-benefit-item">
+                                <span class="ai-badge">AI</span>
+                                <span class="ai-benefit-text"><strong>Network AI:</strong> Suggests connections based on industry & interests</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="demo-box">
+                <span class="demo-label">Try the Live Demo</span>
+                <span class="demo-url">http://15.206.243.177</span>
+                <span class="demo-password">Password: <code>Nexus@1104</code></span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Toggle card expansion
+        document.querySelectorAll('.persona-card').forEach(card => {
+            const expandBtn = card.querySelector('.expand-btn');
+
+            card.addEventListener('click', (e) => {
+                // Don't toggle if clicking on the login info (for copy)
+                if (e.target.closest('.login-info')) return;
+
+                card.classList.toggle('expanded');
+            });
+        });
+
+        // Copy email on click
+        document.querySelectorAll('.login-info').forEach(info => {
+            info.style.cursor = 'pointer';
+            info.title = 'Click to copy email';
+
+            info.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const email = info.querySelector('code').textContent;
+                navigator.clipboard.writeText(email).then(() => {
+                    const originalText = info.querySelector('code').textContent;
+                    info.querySelector('code').textContent = 'Copied!';
+                    setTimeout(() => {
+                        info.querySelector('code').textContent = originalText;
+                    }, 1000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
