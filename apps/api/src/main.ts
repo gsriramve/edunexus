@@ -33,7 +33,10 @@ async function bootstrap() {
   const allowedOrigins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'https://edu-nexus.co.in',
+    'https://www.edu-nexus.co.in',
     process.env.FRONTEND_URL,
+    ...(process.env.CORS_ORIGINS?.split(',') || []),
   ].filter(Boolean);
 
   app.enableCors({
@@ -44,7 +47,10 @@ async function bootstrap() {
       }
       // Check if origin matches allowed list or same host pattern (for deployed environments)
       // Allow IPs with or without port for production deployments
-      if (allowedOrigins.includes(origin) || origin.match(/^https?:\/\/\d+\.\d+\.\d+\.\d+(:\d+)?$/)) {
+      // Also allow edu-nexus.co.in domain
+      if (allowedOrigins.includes(origin) ||
+          origin.match(/^https?:\/\/\d+\.\d+\.\d+\.\d+(:\d+)?$/) ||
+          origin.match(/^https?:\/\/(www\.)?edu-nexus\.co\.in$/)) {
         return callback(null, true);
       }
       callback(new Error('Not allowed by CORS'));
