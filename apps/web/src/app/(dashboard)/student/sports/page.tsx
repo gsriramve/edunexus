@@ -251,7 +251,10 @@ export default function StudentSportsPage() {
   const myClubs = studentActivities?.clubs || [];
   const myRegistrations = studentActivities?.registrations || [];
   const myAchievements = studentActivities?.achievements || [];
-  const myCredits = studentActivities?.credits || { total: 0, byType: [] };
+  const myCredits = {
+    total: studentActivities?.credits?.total || 0,
+    byType: studentActivities?.credits?.byType || [],
+  };
 
   return (
     <div className="space-y-6">
