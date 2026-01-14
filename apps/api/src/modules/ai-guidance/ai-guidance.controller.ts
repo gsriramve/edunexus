@@ -374,7 +374,7 @@ export class AiGuidanceController {
    * Get alert stats
    */
   @Get('stats/alerts')
-  @Roles('hod', 'principal')
+  @Roles('teacher', 'hod', 'principal')
   async getAlertStats(@TenantId() tenantId: string) {
     return this.aiGuidanceService.getAlertStats(tenantId);
   }

@@ -255,7 +255,7 @@ export class FeedbackController {
    * Get feedback statistics
    */
   @Get('stats')
-  @Roles('hod', 'principal')
+  @Roles('teacher', 'hod', 'principal')
   async getStats(@TenantId() tenantId: string) {
     return this.feedbackService.getStats(tenantId);
   }

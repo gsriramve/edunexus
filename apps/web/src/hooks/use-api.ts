@@ -577,6 +577,16 @@ export function useStudentIdCard(tenantId: string, studentId: string) {
   });
 }
 
+// Self-service hook for students to get their own ID card
+export function useMyIdCard(tenantId: string) {
+  return useQuery({
+    queryKey: [...idCardKeys.all, 'my-card', tenantId],
+    queryFn: () => idCardsApi.getMyCard(tenantId),
+    enabled: !!tenantId,
+    retry: false, // Don't retry if student doesn't have an ID card
+  });
+}
+
 export function useIdCard(tenantId: string, id: string) {
   return useQuery({
     queryKey: idCardKeys.detail(tenantId, id),
@@ -608,6 +618,20 @@ export function useGenerateIdCard(tenantId: string) {
       idCardsApi.generate(tenantId, studentId, data),
     onSuccess: (newCard, { studentId }) => {
       queryClient.invalidateQueries({ queryKey: idCardKeys.byStudent(tenantId, studentId) });
+      queryClient.invalidateQueries({ queryKey: idCardKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: idCardKeys.stats(tenantId) });
+    },
+  });
+}
+
+// Self-service hook for students to generate their own ID card
+export function useGenerateMyIdCard(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data?: GenerateIdCardInput) =>
+      idCardsApi.generateMyCard(tenantId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...idCardKeys.all, 'my-card', tenantId] });
       queryClient.invalidateQueries({ queryKey: idCardKeys.lists() });
       queryClient.invalidateQueries({ queryKey: idCardKeys.stats(tenantId) });
     },

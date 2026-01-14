@@ -10,6 +10,7 @@ import {
   BadRequestException,
   Res,
   StreamableFile,
+  UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { IdCardsService } from './id-cards.service';
@@ -19,8 +20,12 @@ import {
   RevokeIdCardDto,
   IdCardQueryDto,
 } from './dto/id-cards.dto';
+import { TenantId, UserId } from '../../common/decorators/tenant.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
 
 @Controller('id-cards')
+@UseGuards(RolesGuard)
 export class IdCardsController {
   constructor(private readonly idCardsService: IdCardsService) {}
 
@@ -37,6 +42,7 @@ export class IdCardsController {
   // =============================================================================
 
   @Get('stats')
+  @Roles('admin_staff', 'principal', 'hod')
   getStats(@Headers() headers: Record<string, string>) {
     return this.idCardsService.getStats(this.getTenantId(headers));
   }
@@ -45,7 +51,11 @@ export class IdCardsController {
   // ID CARD GENERATION
   // =============================================================================
 
+  /**
+   * Generate ID card for a specific student (admin use)
+   */
   @Post('generate/:studentId')
+  @Roles('admin_staff', 'principal', 'hod')
   generateIdCard(
     @Headers() headers: Record<string, string>,
     @Param('studentId') studentId: string,
@@ -58,7 +68,34 @@ export class IdCardsController {
     );
   }
 
+  /**
+   * Generate ID card for the current student (self-service)
+   */
+  @Post('generate-my-card')
+  @Roles('student')
+  async generateMyIdCard(
+    @TenantId() tenantId: string,
+    @UserId() userId: string,
+    @Body() dto: GenerateIdCardDto,
+  ) {
+    // Find the student ID from the user ID
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    try {
+      const student = await prisma.student.findFirst({
+        where: { userId, tenantId },
+      });
+      if (!student) {
+        throw new BadRequestException('Student profile not found');
+      }
+      return this.idCardsService.generateIdCard(tenantId, student.id, dto);
+    } finally {
+      await prisma.$disconnect();
+    }
+  }
+
   @Post('bulk-generate')
+  @Roles('admin_staff', 'principal', 'hod')
   bulkGenerateIdCards(
     @Headers() headers: Record<string, string>,
     @Body() dto: BulkGenerateIdCardsDto,
@@ -74,6 +111,7 @@ export class IdCardsController {
   // =============================================================================
 
   @Get()
+  @Roles('admin_staff', 'principal', 'hod')
   listIdCards(
     @Headers() headers: Record<string, string>,
     @Query() query: IdCardQueryDto,
@@ -81,7 +119,33 @@ export class IdCardsController {
     return this.idCardsService.listIdCards(this.getTenantId(headers), query);
   }
 
+  /**
+   * Get the current student's ID card
+   */
+  @Get('my-card')
+  @Roles('student')
+  async getMyIdCard(
+    @TenantId() tenantId: string,
+    @UserId() userId: string,
+  ) {
+    // Find the student ID from the user ID
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    try {
+      const student = await prisma.student.findFirst({
+        where: { userId, tenantId },
+      });
+      if (!student) {
+        return null; // Return null instead of throwing error
+      }
+      return this.idCardsService.getIdCardByStudentId(tenantId, student.id);
+    } finally {
+      await prisma.$disconnect();
+    }
+  }
+
   @Get('student/:studentId')
+  @Roles('student', 'admin_staff', 'principal', 'hod', 'teacher')
   getIdCardByStudentId(
     @Headers() headers: Record<string, string>,
     @Param('studentId') studentId: string,
@@ -93,6 +157,7 @@ export class IdCardsController {
   }
 
   @Get(':id')
+  @Roles('student', 'admin_staff', 'principal', 'hod', 'teacher')
   getIdCardById(
     @Headers() headers: Record<string, string>,
     @Param('id') id: string,
@@ -105,6 +170,7 @@ export class IdCardsController {
   // =============================================================================
 
   @Get(':id/pdf')
+  @Roles('student', 'admin_staff', 'principal', 'hod', 'teacher')
   async generatePdf(
     @Headers() headers: Record<string, string>,
     @Param('id') id: string,
@@ -127,6 +193,7 @@ export class IdCardsController {
 
   // =============================================================================
   // PUBLIC VERIFICATION (No tenant ID required)
+  // This endpoint skips role check - it's publicly accessible for QR verification
   // =============================================================================
 
   @Get('verify/:token')
@@ -139,6 +206,7 @@ export class IdCardsController {
   // =============================================================================
 
   @Patch(':id/revoke')
+  @Roles('admin_staff', 'principal', 'hod')
   revokeIdCard(
     @Headers() headers: Record<string, string>,
     @Param('id') id: string,

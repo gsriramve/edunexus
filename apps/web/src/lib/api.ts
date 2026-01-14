@@ -5876,6 +5876,10 @@ export const idCardsApi = {
   getByStudentId: (tenantId: string, studentId: string) =>
     api<IdCard>(`/id-cards/student/${studentId}`, { tenantId }),
 
+  // Get current student's ID card (self-service)
+  getMyCard: (tenantId: string) =>
+    api<IdCard | null>(`/id-cards/my-card`, { tenantId }),
+
   // Get ID card by ID
   get: (tenantId: string, id: string) =>
     api<IdCard>(`/id-cards/${id}`, { tenantId }),
@@ -5896,6 +5900,10 @@ export const idCardsApi = {
   // Generate ID card for a student
   generate: (tenantId: string, studentId: string, data?: GenerateIdCardInput) =>
     api<IdCard>(`/id-cards/generate/${studentId}`, { method: 'POST', body: data || {}, tenantId }),
+
+  // Generate ID card for current student (self-service)
+  generateMyCard: (tenantId: string, data?: GenerateIdCardInput) =>
+    api<IdCard>(`/id-cards/generate-my-card`, { method: 'POST', body: data || {}, tenantId }),
 
   // Bulk generate ID cards
   bulkGenerate: (tenantId: string, data: BulkGenerateIdCardsInput) =>

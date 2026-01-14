@@ -33,7 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
-import { useStudentByUserId, useUpdateStudent, useStudentIdCard, useGenerateIdCard, useDownloadIdCardPdf, useTenant, useUploadStudentPhoto } from "@/hooks/use-api";
+import { useStudentByUserId, useUpdateStudent, useMyIdCard, useGenerateMyIdCard, useDownloadIdCardPdf, useTenant, useUploadStudentPhoto } from "@/hooks/use-api";
 import { StudentIDCard } from "@/components/student/StudentIDCard";
 import { PhotoUpload } from "@/components/profile/photo-upload";
 import { toast } from "sonner";
@@ -50,21 +50,17 @@ export default function StudentProfile() {
   // Fetch tenant data for college name
   const { data: tenantData } = useTenant(tenantId);
 
-  // Fetch ID card data
-  const { data: idCard, isLoading: idCardLoading, error: idCardError } = useStudentIdCard(
-    tenantId,
-    studentData?.id || ''
-  );
-  const generateIdCardMutation = useGenerateIdCard(tenantId);
+  // Fetch ID card data (using self-service endpoint)
+  const { data: idCard, isLoading: idCardLoading, error: idCardError } = useMyIdCard(tenantId);
+  const generateIdCardMutation = useGenerateMyIdCard(tenantId);
   const downloadPdfMutation = useDownloadIdCardPdf(tenantId);
 
   // Photo upload mutation
   const uploadPhotoMutation = useUploadStudentPhoto(tenantId, studentData?.id || '');
 
   const handleGenerateIdCard = async () => {
-    if (!studentData?.id) return;
     try {
-      await generateIdCardMutation.mutateAsync({ studentId: studentData.id });
+      await generateIdCardMutation.mutateAsync({});
       toast.success('ID card generated successfully!');
     } catch (error: any) {
       toast.error(error.message || 'Failed to generate ID card');
