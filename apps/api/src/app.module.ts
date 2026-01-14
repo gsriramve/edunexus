@@ -59,6 +59,7 @@ import { StudentAcademicsModule } from './modules/student-academics/student-acad
 import { AdminRecordsModule } from './modules/admin-records/admin-records.module';
 import { ParentsModule } from './modules/parents/parents.module';
 import { LeadsModule } from './modules/leads/leads.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
 
 @Module({
   imports: [
@@ -136,6 +137,7 @@ import { LeadsModule } from './modules/leads/leads.module';
     AdminRecordsModule,
     ParentsModule,
     LeadsModule,
+    AttendanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
