@@ -62,7 +62,7 @@ import { useStudentByUserId } from '@/hooks/use-api';
 
 export default function StudentSportsPage() {
   // Auth context
-  const { user, isLoading: isUserLoaded } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const tenantId = useTenantId() || '';
   const { data: studentData, isLoading: studentLoading } = useStudentByUserId(tenantId, user?.id || '');
 
@@ -214,7 +214,7 @@ export default function StudentSportsPage() {
   };
 
   // Initial loading state
-  if (!isUserLoaded || studentLoading) {
+  if (authLoading || studentLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

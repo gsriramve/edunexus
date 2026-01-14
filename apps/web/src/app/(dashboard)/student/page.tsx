@@ -48,7 +48,7 @@ const quickActions = [
 ];
 
 export default function StudentDashboard() {
-  const { user, isLoading: userLoaded } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const tenantId = useTenantId() || '';
   const [greeting, setGreeting] = useState("Good morning");
 
@@ -72,7 +72,7 @@ export default function StudentDashboard() {
     else setGreeting("Good evening");
   }, []);
 
-  const isLoading = !userLoaded || studentLoading || dashboardLoading;
+  const isLoading = authLoading || studentLoading || dashboardLoading;
 
   if (isLoading) {
     return (

@@ -73,7 +73,7 @@ const CLUB_CATEGORIES = ['Technical', 'Cultural', 'Literary', 'Social Service', 
 
 export default function AdminSportsPage() {
   // Auth context
-  const { user, isLoading: isUserLoaded } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const tenantId = useTenantId() || '';
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -240,7 +240,7 @@ export default function AdminSportsPage() {
   };
 
   // Show loading state while auth is initializing
-  if (!isUserLoaded || !tenantId) {
+  if (authLoading || !tenantId) {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -162,7 +162,7 @@ function NotificationsList({
 }
 
 export default function NotificationsPage() {
-  const { user, isLoading: userLoaded } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const tenantId = useTenantId() || '';
   const [activeCategory, setActiveCategory] = useState("all");
   const [markingReadId, setMarkingReadId] = useState<string | null>(null);
@@ -199,7 +199,7 @@ export default function NotificationsPage() {
 
   const unreadCount = data?.unreadCount || 0;
 
-  if (!userLoaded || studentLoading) {
+  if (authLoading || studentLoading) {
     return (
       <div className="flex h-96 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

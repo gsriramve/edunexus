@@ -86,7 +86,7 @@ import {
 
 export default function CommunicationPage() {
   const { toast } = useToast();
-  const { user, isLoading: isUserLoaded } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const tenantId = useTenantId() || '';
 
   const [selectedTab, setSelectedTab] = useState("announcements");
@@ -430,7 +430,7 @@ export default function CommunicationPage() {
   };
 
   // Auth loading state
-  if (!isUserLoaded || !tenantId) {
+  if (authLoading || !tenantId) {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

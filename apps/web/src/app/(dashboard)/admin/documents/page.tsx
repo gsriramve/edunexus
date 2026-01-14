@@ -109,7 +109,7 @@ const formatFileSize = (bytes: number) => {
 
 export default function AdminDocumentsPage() {
   const { toast } = useToast();
-  const { user, isLoading: isUserLoaded } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const tenantId = useTenantId() || '';
   const userId = user?.id || '';
   const userName = user?.name || user?.name || 'Admin User';
@@ -332,7 +332,7 @@ export default function AdminDocumentsPage() {
   };
 
   // Auth loading state
-  if (!isUserLoaded || !tenantId) {
+  if (authLoading || !tenantId) {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

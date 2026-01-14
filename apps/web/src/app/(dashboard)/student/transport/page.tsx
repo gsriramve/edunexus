@@ -33,7 +33,7 @@ import {
 } from "@/hooks/use-transport";
 
 export default function StudentTransportPage() {
-  const { user, isLoading: isUserLoaded } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const tenantId = useTenantId();
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -84,7 +84,7 @@ export default function StudentTransportPage() {
   }, []);
 
   // Derived state
-  const isLoading = !isUserLoaded || studentLoading || passLoading;
+  const isLoading = authLoading || studentLoading || passLoading;
   const hasPass = !!passData;
 
   // Build pass display data - using correct TransportPass properties

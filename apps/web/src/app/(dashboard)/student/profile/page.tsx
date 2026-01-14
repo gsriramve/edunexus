@@ -39,7 +39,7 @@ import { PhotoUpload } from "@/components/profile/photo-upload";
 import { toast } from "sonner";
 
 export default function StudentProfile() {
-  const { user, isLoading: userLoaded } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const tenantId = useTenantId() || '';
   const [isEditing, setIsEditing] = useState(false);
 
@@ -116,7 +116,7 @@ export default function StudentProfile() {
     }
   };
 
-  const isLoading = !userLoaded || studentLoading;
+  const isLoading = authLoading || studentLoading;
 
   if (isLoading) {
     return (

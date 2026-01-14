@@ -59,7 +59,7 @@ export default function StudentFees() {
 
   // Auth context
   const tenantId = useTenantId();
-  const { user, isLoading: isUserLoaded } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   // Get student data from user ID
   const { data: studentData, isLoading: isLoadingStudent } = useStudentByUserId(

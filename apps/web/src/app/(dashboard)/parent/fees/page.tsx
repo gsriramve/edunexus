@@ -77,7 +77,7 @@ interface PaymentTransaction {
 
 export default function ParentFees() {
   const { toast } = useToast();
-  const { user, isLoading: isUserLoaded } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const tenantId = useTenantId();
 
   // Fetch parent's children
@@ -291,7 +291,7 @@ export default function ParentFees() {
   ];
 
   // Show loading state while fetching user or children
-  if (!isUserLoaded || childrenLoading) {
+  if (authLoading || childrenLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

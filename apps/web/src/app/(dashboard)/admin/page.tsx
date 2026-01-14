@@ -25,7 +25,7 @@ import { useAdminDashboard } from "@/hooks/use-admin-dashboard";
 
 export default function AdminStaffDashboard() {
   const tenantId = useTenantId() || '';
-  const { user, isLoading: userLoaded } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   // Fetch admin dashboard data
   const { data: dashboardData, isLoading, error } = useAdminDashboard(tenantId);
@@ -42,7 +42,7 @@ export default function AdminStaffDashboard() {
   const collectionProgress = stats ? (stats.monthlyCollected / stats.monthlyTarget) * 100 : 0;
 
   // Loading state
-  if (!tenantId || !userLoaded || isLoading) {
+  if (!tenantId || authLoading || isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
