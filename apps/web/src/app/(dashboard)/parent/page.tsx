@@ -178,7 +178,7 @@ export default function ParentDashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16">
-            <AvatarImage src="/placeholder-avatar.jpg" />
+            <AvatarImage src="/placeholder-avatar.svg" />
             <AvatarFallback className="text-lg bg-primary text-primary-foreground">
               {currentChild.name.split(" ").map(n => n[0]).join("")}
             </AvatarFallback>
