@@ -247,6 +247,7 @@ export default function StudentSportsPage() {
     );
   }
 
+  // Safely extract data with fallbacks
   const myTeams = studentActivities?.teams || [];
   const myClubs = studentActivities?.clubs || [];
   const myRegistrations = studentActivities?.registrations || [];
@@ -255,6 +256,10 @@ export default function StudentSportsPage() {
     total: studentActivities?.credits?.total || 0,
     byType: studentActivities?.credits?.byType || [],
   };
+  const safeAllTeams = allTeams || [];
+  const safeAllClubs = allClubs || [];
+  const safeAllSportsEvents = allSportsEvents || [];
+  const safeAllClubEvents = allClubEvents || [];
 
   return (
     <div className="space-y-6">
@@ -576,11 +581,11 @@ export default function StudentSportsPage() {
             <CardContent>
               <div className="space-y-6">
                 {/* Available Teams */}
-                {allTeams.length > 0 && (
+                {safeAllTeams.length > 0 && (
                   <div>
                     <h4 className="font-medium mb-3">Sports Teams</h4>
                     <div className="grid gap-3 md:grid-cols-2">
-                      {allTeams.slice(0, 4).map((team) => (
+                      {safeAllTeams.slice(0, 4).map((team) => (
                         <div key={team.id} className="flex justify-between items-center p-3 border rounded-lg">
                           <div>
                             <p className="font-medium">{team.name}</p>
@@ -594,11 +599,11 @@ export default function StudentSportsPage() {
                 )}
 
                 {/* Available Clubs */}
-                {allClubs.length > 0 && (
+                {safeAllClubs.length > 0 && (
                   <div>
                     <h4 className="font-medium mb-3">Student Clubs</h4>
                     <div className="grid gap-3 md:grid-cols-2">
-                      {allClubs.slice(0, 4).map((club) => (
+                      {safeAllClubs.slice(0, 4).map((club) => (
                         <div key={club.id} className="flex justify-between items-center p-3 border rounded-lg">
                           <div>
                             <p className="font-medium">{club.name}</p>
@@ -611,7 +616,7 @@ export default function StudentSportsPage() {
                   </div>
                 )}
 
-                {allTeams.length === 0 && allClubs.length === 0 && (
+                {safeAllTeams.length === 0 && safeAllClubs.length === 0 && (
                   <p className="text-center text-muted-foreground py-4">
                     No teams or clubs are currently recruiting
                   </p>
@@ -634,7 +639,7 @@ export default function StudentSportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {allSportsEvents.map((event) => (
+                  {safeAllSportsEvents.map((event) => (
                     <div key={event.id} className="p-4 border rounded-lg space-y-2">
                       <div className="flex justify-between items-start">
                         <h4 className="font-medium">{event.name}</h4>
@@ -668,7 +673,7 @@ export default function StudentSportsPage() {
                       </div>
                     </div>
                   ))}
-                  {allSportsEvents.length === 0 && (
+                  {safeAllSportsEvents.length === 0 && (
                     <p className="text-center text-muted-foreground py-8">
                       No upcoming sports events
                     </p>
@@ -687,7 +692,7 @@ export default function StudentSportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {allClubEvents.map((event) => (
+                  {safeAllClubEvents.map((event) => (
                     <div key={event.id} className="p-4 border rounded-lg space-y-2">
                       <div className="flex justify-between items-start">
                         <h4 className="font-medium">{event.name}</h4>
@@ -724,7 +729,7 @@ export default function StudentSportsPage() {
                       </div>
                     </div>
                   ))}
-                  {allClubEvents.length === 0 && (
+                  {safeAllClubEvents.length === 0 && (
                     <p className="text-center text-muted-foreground py-8">
                       No upcoming club events
                     </p>
