@@ -284,9 +284,9 @@ export default function AdminSportsPage() {
                 <Trophy className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.teams.total || 0}</div>
+                <div className="text-2xl font-bold">{stats?.teams?.total || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  {stats?.teams.active || 0} active
+                  {stats?.teams?.active || 0} active
                 </p>
               </CardContent>
             </Card>
@@ -296,9 +296,9 @@ export default function AdminSportsPage() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.clubs.total || 0}</div>
+                <div className="text-2xl font-bold">{stats?.clubs?.total || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  {stats?.clubs.active || 0} active
+                  {stats?.clubs?.active || 0} active
                 </p>
               </CardContent>
             </Card>
@@ -320,9 +320,9 @@ export default function AdminSportsPage() {
                 <Award className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats?.achievements.total || 0}</div>
+                <div className="text-2xl font-bold">{stats?.achievements?.total || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  {stats?.achievements.verified || 0} verified
+                  {stats?.achievements?.verified || 0} verified
                 </p>
               </CardContent>
             </Card>
@@ -335,13 +335,13 @@ export default function AdminSportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {stats?.teams.bySport.map((item) => (
+                  {stats?.teams?.bySport?.map((item) => (
                     <div key={item.sport} className="flex justify-between items-center">
                       <span className="text-sm">{item.sport}</span>
                       <Badge variant="outline">{item.count}</Badge>
                     </div>
                   ))}
-                  {(!stats?.teams.bySport || stats.teams.bySport.length === 0) && (
+                  {(!stats?.teams?.bySport || stats.teams.bySport.length === 0) && (
                     <p className="text-sm text-muted-foreground">No teams yet</p>
                   )}
                 </div>
@@ -353,13 +353,13 @@ export default function AdminSportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {stats?.clubs.byCategory.map((item) => (
+                  {stats?.clubs?.byCategory?.map((item) => (
                     <div key={item.category} className="flex justify-between items-center">
                       <span className="text-sm">{item.category}</span>
                       <Badge variant="outline">{item.count}</Badge>
                     </div>
                   ))}
-                  {(!stats?.clubs.byCategory || stats.clubs.byCategory.length === 0) && (
+                  {(!stats?.clubs?.byCategory || stats.clubs?.byCategory?.length === 0) && (
                     <p className="text-sm text-muted-foreground">No clubs yet</p>
                   )}
                 </div>
@@ -374,13 +374,13 @@ export default function AdminSportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {stats?.achievements.byLevel.map((item) => (
+                  {stats?.achievements?.byLevel?.map((item) => (
                     <div key={item.level} className="flex justify-between items-center">
                       <span className="text-sm capitalize">{item.level}</span>
                       <Badge variant="outline">{item.count}</Badge>
                     </div>
                   ))}
-                  {(!stats?.achievements.byLevel || stats.achievements.byLevel.length === 0) && (
+                  {(!stats?.achievements?.byLevel || stats.achievements?.byLevel?.length === 0) && (
                     <p className="text-sm text-muted-foreground">No achievements yet</p>
                   )}
                 </div>
@@ -392,13 +392,13 @@ export default function AdminSportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {stats?.credits.byType.map((item) => (
+                  {stats?.credits?.byType?.map((item) => (
                     <div key={item.type} className="flex justify-between items-center">
                       <span className="text-sm capitalize">{item.type}</span>
                       <Badge variant="outline">{item.total} credits</Badge>
                     </div>
                   ))}
-                  {(!stats?.credits.byType || stats.credits.byType.length === 0) && (
+                  {(!stats?.credits?.byType || stats.credits?.byType?.length === 0) && (
                     <p className="text-sm text-muted-foreground">No credits awarded yet</p>
                   )}
                 </div>
@@ -1146,7 +1146,7 @@ export default function AdminSportsPage() {
                       <CardTitle className="text-sm font-medium">Total Credits Awarded</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{stats?.credits.totalAwarded || 0}</div>
+                      <div className="text-2xl font-bold">{stats?.credits?.totalAwarded || 0}</div>
                     </CardContent>
                   </Card>
                   <Card>
@@ -1155,7 +1155,7 @@ export default function AdminSportsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        {stats?.credits.byType.find(t => t.type === 'sports')?.total || 0}
+                        {stats?.credits?.byType?.find(t => t.type === 'sports')?.total || 0}
                       </div>
                     </CardContent>
                   </Card>
@@ -1165,7 +1165,7 @@ export default function AdminSportsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">
-                        {stats?.credits.byType.find(t => t.type === 'cultural')?.total || 0}
+                        {stats?.credits?.byType?.find(t => t.type === 'cultural')?.total || 0}
                       </div>
                     </CardContent>
                   </Card>
@@ -1174,13 +1174,13 @@ export default function AdminSportsPage() {
                 <div className="border rounded-lg p-4">
                   <h4 className="font-medium mb-4">Credits by Activity Type</h4>
                   <div className="space-y-2">
-                    {stats?.credits.byType.map((item) => (
+                    {stats?.credits?.byType?.map((item) => (
                       <div key={item.type} className="flex items-center justify-between p-2 bg-muted/50 rounded">
                         <span className="capitalize font-medium">{item.type}</span>
                         <Badge variant="outline">{item.total} credits</Badge>
                       </div>
                     ))}
-                    {(!stats?.credits.byType || stats.credits.byType.length === 0) && (
+                    {(!stats?.credits?.byType || stats.credits?.byType?.length === 0) && (
                       <p className="text-center text-muted-foreground py-4">
                         No activity credits awarded yet
                       </p>
