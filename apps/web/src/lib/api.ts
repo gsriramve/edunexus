@@ -25,13 +25,14 @@ export function getApiBaseUrl(): string {
   }
 
   // Client-side: derive API URL from current host (for deployed environments)
-  const { protocol, hostname, port } = window.location;
+  const { protocol, hostname } = window.location;
 
   // If accessing via IP or non-localhost domain, use same host with /api path
-  // Nginx proxies /api to port 3001, so we don't need to specify the port
+  // Nginx proxies /api to port 3001, so we NEVER specify the port
   if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
     // For production, use the same origin with /api path (nginx handles proxying)
-    _cachedApiUrl = `${protocol}//${hostname}${port ? ':' + port : ''}/api`;
+    // IMPORTANT: Never include port - nginx proxies /api to internal port 3001
+    _cachedApiUrl = `${protocol}//${hostname}/api`;
     return _cachedApiUrl;
   }
 
@@ -106,6 +107,7 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     method,
     headers: requestHeaders,
     body: body ? JSON.stringify(body) : undefined,
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -161,6 +163,7 @@ async function uploadFile<T>(
     method: 'POST',
     headers: requestHeaders,
     body: formData,
+    credentials: 'include',
   });
 
   if (!response.ok) {
