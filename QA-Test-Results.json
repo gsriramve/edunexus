@@ -1,0 +1,694 @@
+[
+  {
+    "persona": "Platform Owner",
+    "email": "admin@edunexus.io",
+    "loginSuccess": true,
+    "loginTime": 1713,
+    "dashboardLoadTime": 0,
+    "pages": [
+      {
+        "name": "Dashboard",
+        "path": "/platform",
+        "loadTime": 890,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Colleges",
+        "path": "/platform/colleges",
+        "loadTime": 794,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Help & Support",
+        "path": "/help",
+        "loadTime": 610,
+        "success": true,
+        "error": null,
+        "has404": false
+      }
+    ],
+    "errors": [
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR"
+    ],
+    "has404": false,
+    "allPagesUnder2s": true,
+    "summary": "Login: PASS | Pages: 3/3 | 404: NO | Under 2s: YES"
+  },
+  {
+    "persona": "Principal",
+    "email": "principal@nexus-ec.edu",
+    "loginSuccess": true,
+    "loginTime": 1701,
+    "dashboardLoadTime": 0,
+    "pages": [
+      {
+        "name": "Dashboard",
+        "path": "/principal",
+        "loadTime": 1246,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Departments",
+        "path": "/principal/departments",
+        "loadTime": 1084,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Faculty",
+        "path": "/principal/faculty",
+        "loadTime": 591,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Students",
+        "path": "/principal/students",
+        "loadTime": 1116,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Academics",
+        "path": "/principal/academics",
+        "loadTime": 1096,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Reports",
+        "path": "/principal/reports",
+        "loadTime": 1032,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Fee Overview",
+        "path": "/principal/fees",
+        "loadTime": 1057,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Help & Support",
+        "path": "/help",
+        "loadTime": 599,
+        "success": true,
+        "error": null,
+        "has404": false
+      }
+    ],
+    "errors": [
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR"
+    ],
+    "has404": false,
+    "allPagesUnder2s": true,
+    "summary": "Login: PASS | Pages: 8/8 | 404: NO | Under 2s: YES",
+    "nonCritical404s": [
+      "404: https://edu-nexus.co.in/principal/faculty"
+    ]
+  },
+  {
+    "persona": "HOD",
+    "email": "hod.cse@nexus-ec.edu",
+    "loginSuccess": true,
+    "loginTime": 1567,
+    "dashboardLoadTime": 0,
+    "pages": [
+      {
+        "name": "Dashboard",
+        "path": "/hod",
+        "loadTime": 1048,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Faculty",
+        "path": "/hod/faculty",
+        "loadTime": 986,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Students",
+        "path": "/hod/students",
+        "loadTime": 989,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Subjects",
+        "path": "/hod/subjects",
+        "loadTime": 979,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Time Table",
+        "path": "/hod/timetable",
+        "loadTime": 588,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Attendance",
+        "path": "/hod/attendance",
+        "loadTime": 970,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Results",
+        "path": "/hod/results",
+        "loadTime": 585,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "At-Risk Students",
+        "path": "/hod/at-risk",
+        "loadTime": 585,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Skill Gaps",
+        "path": "/hod/skill-gaps",
+        "loadTime": 1182,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Help & Support",
+        "path": "/help",
+        "loadTime": 607,
+        "success": true,
+        "error": null,
+        "has404": false
+      }
+    ],
+    "errors": [
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR"
+    ],
+    "has404": false,
+    "allPagesUnder2s": true,
+    "summary": "Login: PASS | Pages: 10/10 | 404: NO | Under 2s: YES",
+    "nonCritical404s": [
+      "404: https://edu-nexus.co.in/hod/timetable",
+      "404: https://edu-nexus.co.in/hod/results",
+      "404: https://edu-nexus.co.in/hod/at-risk"
+    ]
+  },
+  {
+    "persona": "Admin Staff",
+    "email": "admin@nexus-ec.edu",
+    "loginSuccess": true,
+    "loginTime": 1687,
+    "dashboardLoadTime": 0,
+    "pages": [
+      {
+        "name": "Dashboard",
+        "path": "/admin",
+        "loadTime": 1143,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Records",
+        "path": "/admin/records",
+        "loadTime": 1121,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Fee Management",
+        "path": "/admin/fees",
+        "loadTime": 1083,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Attendance",
+        "path": "/admin/attendance",
+        "loadTime": 608,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Announcements",
+        "path": "/admin/announcements",
+        "loadTime": 603,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Help & Support",
+        "path": "/help",
+        "loadTime": 613,
+        "success": true,
+        "error": null,
+        "has404": false
+      }
+    ],
+    "errors": [
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR"
+    ],
+    "has404": false,
+    "allPagesUnder2s": true,
+    "summary": "Login: PASS | Pages: 6/6 | 404: NO | Under 2s: YES",
+    "nonCritical404s": [
+      "404: https://edu-nexus.co.in/admin/attendance",
+      "404: https://edu-nexus.co.in/admin/announcements"
+    ]
+  },
+  {
+    "persona": "Teacher",
+    "email": "teacher@nexus-ec.edu",
+    "loginSuccess": true,
+    "loginTime": 1714,
+    "dashboardLoadTime": 0,
+    "pages": [
+      {
+        "name": "Dashboard",
+        "path": "/teacher",
+        "loadTime": 10137,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Classes",
+        "path": "/teacher/classes",
+        "loadTime": 1019,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Attendance",
+        "path": "/teacher/attendance",
+        "loadTime": 950,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Results",
+        "path": "/teacher/results",
+        "loadTime": 1007,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Materials",
+        "path": "/teacher/materials",
+        "loadTime": 1089,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Feedback",
+        "path": "/teacher/feedback",
+        "loadTime": 916,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Help & Support",
+        "path": "/help",
+        "loadTime": 594,
+        "success": true,
+        "error": null,
+        "has404": false
+      }
+    ],
+    "errors": [
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR"
+    ],
+    "has404": false,
+    "allPagesUnder2s": false,
+    "summary": "Login: PASS | Pages: 7/7 | 404: NO | Under 2s: NO",
+    "nonCritical404s": [
+      "404: https://edu-nexus.co.in/teacher/timetable?_rsc=q18w7",
+      "404: https://edu-nexus.co.in/teacher/profile?_rsc=q18w7"
+    ]
+  },
+  {
+    "persona": "Lab Assistant",
+    "email": "lab@nexus-ec.edu",
+    "loginSuccess": true,
+    "loginTime": 1593,
+    "dashboardLoadTime": 0,
+    "pages": [
+      {
+        "name": "Dashboard",
+        "path": "/lab",
+        "loadTime": 656,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Labs",
+        "path": "/lab/labs",
+        "loadTime": 584,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Attendance",
+        "path": "/lab/attendance",
+        "loadTime": 590,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Equipment",
+        "path": "/lab/equipment",
+        "loadTime": 587,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Marks Entry",
+        "path": "/lab/marks",
+        "loadTime": 583,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Help & Support",
+        "path": "/help",
+        "loadTime": 653,
+        "success": true,
+        "error": null,
+        "has404": false
+      }
+    ],
+    "errors": [
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Console: Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Console: Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "has404": false,
+    "allPagesUnder2s": true,
+    "summary": "Login: PASS | Pages: 6/6 | 404: NO | Under 2s: YES",
+    "nonCritical404s": [
+      "404: https://edu-nexus.co.in/lab",
+      "404: https://edu-nexus.co.in/lab/labs",
+      "404: https://edu-nexus.co.in/lab/attendance",
+      "404: https://edu-nexus.co.in/lab/equipment",
+      "404: https://edu-nexus.co.in/lab/marks"
+    ]
+  },
+  {
+    "persona": "Student",
+    "email": "student@nexus-ec.edu",
+    "loginSuccess": true,
+    "loginTime": 1587,
+    "dashboardLoadTime": 1,
+    "pages": [
+      {
+        "name": "Dashboard",
+        "path": "/student",
+        "loadTime": 1223,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Academics",
+        "path": "/student/academics",
+        "loadTime": 1106,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Attendance",
+        "path": "/student/attendance",
+        "loadTime": 1073,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Results",
+        "path": "/student/results",
+        "loadTime": 585,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Fee Details",
+        "path": "/student/fees",
+        "loadTime": 1261,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "ID Card",
+        "path": "/student/id-card",
+        "loadTime": 583,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Career",
+        "path": "/student/career",
+        "loadTime": 1074,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Insights",
+        "path": "/student/insights",
+        "loadTime": 1023,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Help & Support",
+        "path": "/help",
+        "loadTime": 590,
+        "success": true,
+        "error": null,
+        "has404": false
+      }
+    ],
+    "errors": [
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR"
+    ],
+    "has404": false,
+    "allPagesUnder2s": true,
+    "summary": "Login: PASS | Pages: 9/9 | 404: NO | Under 2s: YES",
+    "nonCritical404s": [
+      "404: https://edu-nexus.co.in/student/results",
+      "404: https://edu-nexus.co.in/student/id-card"
+    ]
+  },
+  {
+    "persona": "Parent",
+    "email": "parent@nexus-ec.edu",
+    "loginSuccess": true,
+    "loginTime": 1669,
+    "dashboardLoadTime": 0,
+    "pages": [
+      {
+        "name": "Dashboard",
+        "path": "/parent",
+        "loadTime": 960,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Academics",
+        "path": "/parent/academics",
+        "loadTime": 853,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Attendance",
+        "path": "/parent/attendance",
+        "loadTime": 863,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Fee Details",
+        "path": "/parent/fees",
+        "loadTime": 1045,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Communications",
+        "path": "/parent/communications",
+        "loadTime": 585,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Help & Support",
+        "path": "/help",
+        "loadTime": 595,
+        "success": true,
+        "error": null,
+        "has404": false
+      }
+    ],
+    "errors": [
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR"
+    ],
+    "has404": false,
+    "allPagesUnder2s": true,
+    "summary": "Login: PASS | Pages: 6/6 | 404: NO | Under 2s: YES",
+    "nonCritical404s": [
+      "404: https://edu-nexus.co.in/parent/communications"
+    ]
+  },
+  {
+    "persona": "Alumni",
+    "email": "alumni@nexus-ec.edu",
+    "loginSuccess": true,
+    "loginTime": 1581,
+    "dashboardLoadTime": 0,
+    "pages": [
+      {
+        "name": "Dashboard",
+        "path": "/alumni",
+        "loadTime": 1047,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Events",
+        "path": "/alumni/events",
+        "loadTime": 1109,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Jobs",
+        "path": "/alumni/jobs",
+        "loadTime": 588,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Mentorship",
+        "path": "/alumni/mentorship",
+        "loadTime": 878,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Directory",
+        "path": "/alumni/directory",
+        "loadTime": 882,
+        "success": true,
+        "error": null,
+        "has404": false
+      },
+      {
+        "name": "Help & Support",
+        "path": "/help",
+        "loadTime": 598,
+        "success": true,
+        "error": null,
+        "has404": false
+      }
+    ],
+    "errors": [
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR",
+      "Console: Failed to load resource: net::ERR_SSL_PROTOCOL_ERROR"
+    ],
+    "has404": false,
+    "allPagesUnder2s": true,
+    "summary": "Login: PASS | Pages: 6/6 | 404: NO | Under 2s: YES",
+    "nonCritical404s": [
+      "404: https://edu-nexus.co.in/alumni/jobs"
+    ]
+  }
+]
