@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -92,6 +92,13 @@ export default function AlumniProfilePage() {
 
   const tenantId = useTenantId();
   const { user } = useAuth();
+
+  // Initialize email from user when available
+  useEffect(() => {
+    if (user?.email && !registerForm.email) {
+      setRegisterForm(prev => ({ ...prev, email: user.email }));
+    }
+  }, [user?.email]);
 
   const { data: profile, isLoading, refetch } = useMyAlumniProfile(tenantId || "");
   const updateProfile = useUpdateMyAlumniProfile(tenantId || "");
