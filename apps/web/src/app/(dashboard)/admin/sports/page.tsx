@@ -118,11 +118,11 @@ export default function AdminSportsPage() {
         sportsClubsApi.listAchievements(tenantId, { limit: 100 }),
       ]);
       setStats(statsData);
-      setTeams(teamsData.data);
-      setClubs(clubsData.data);
-      setSportsEvents(sportsEventsData.data);
-      setClubEvents(clubEventsData.data);
-      setAchievements(achievementsData.data);
+      setTeams(teamsData?.data || []);
+      setClubs(clubsData?.data || []);
+      setSportsEvents(sportsEventsData?.data || []);
+      setClubEvents(clubEventsData?.data || []);
+      setAchievements(achievementsData?.data || []);
     } catch (error) {
       console.error('Failed to load sports data:', error);
     } finally {
