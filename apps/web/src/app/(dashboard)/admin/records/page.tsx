@@ -237,7 +237,7 @@ export default function StudentRecordsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4 xl:grid-cols-7">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-7">
         {statsLoading ? (
           Array.from({ length: 7 }).map((_, i) => (
             <Card key={i}>
