@@ -138,7 +138,12 @@ export class IdCardsController {
       if (!student) {
         return null; // Return null instead of throwing error
       }
-      return this.idCardsService.getIdCardByStudentId(tenantId, student.id);
+      try {
+        return await this.idCardsService.getIdCardByStudentId(tenantId, student.id);
+      } catch {
+        // Return null if no ID card found (instead of 404)
+        return null;
+      }
     } finally {
       await prisma.$disconnect();
     }
