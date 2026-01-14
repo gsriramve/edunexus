@@ -70,8 +70,8 @@ const gradeColors: Record<string, string> = {
 };
 
 export default function TeacherResultsPage() {
-  const [selectedSubject, setSelectedSubject] = useState("");
-  const [selectedExamType, setSelectedExamType] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("all");
+  const [selectedExamType, setSelectedExamType] = useState("all");
   const [selectedExam, setSelectedExam] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [editMode, setEditMode] = useState(false);
@@ -82,8 +82,8 @@ export default function TeacherResultsPage() {
 
   // Load exams and subjects
   const { data: examsData, isLoading: isLoadingExams } = useTeacherExams(tenantId || "", {
-    teacherSubjectId: selectedSubject || undefined,
-    type: selectedExamType || undefined,
+    teacherSubjectId: selectedSubject !== "all" ? selectedSubject : undefined,
+    type: selectedExamType !== "all" ? selectedExamType : undefined,
   });
 
   // Load results for selected exam
@@ -121,9 +121,9 @@ export default function TeacherResultsPage() {
   // Filter exams by subject and type
   const filteredExams = useMemo(() => {
     return exams.filter((exam) => {
-      const matchesSubject = !selectedSubject ||
+      const matchesSubject = selectedSubject === "all" ||
         subjects.find((s) => s.teacherSubjectId === selectedSubject)?.id === exam.subjectId;
-      const matchesType = !selectedExamType || exam.type === selectedExamType;
+      const matchesType = selectedExamType === "all" || exam.type === selectedExamType;
       return matchesSubject && matchesType;
     });
   }, [exams, selectedSubject, selectedExamType, subjects]);
@@ -249,7 +249,7 @@ export default function TeacherResultsPage() {
             <SelectValue placeholder="All Subjects" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Subjects</SelectItem>
+            <SelectItem value="all">All Subjects</SelectItem>
             {subjects.map((subject) => (
               <SelectItem key={subject.teacherSubjectId} value={subject.teacherSubjectId}>
                 {subject.code} - {subject.name}
@@ -263,7 +263,7 @@ export default function TeacherResultsPage() {
             <SelectValue placeholder="All Exam Types" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Exam Types</SelectItem>
+            <SelectItem value="all">All Exam Types</SelectItem>
             {examTypes.map((type) => (
               <SelectItem key={type} value={type}>
                 {type.charAt(0).toUpperCase() + type.slice(1)}
