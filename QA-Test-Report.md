@@ -1,5 +1,5 @@
 # EduNexus QA Test Report
-Generated: 2026-01-14T19:28:14.626Z
+Generated: 2026-01-18T05:54:49.779Z
 Domain: https://edu-nexus.co.in
 
 ## Summary
@@ -8,7 +8,7 @@ Domain: https://edu-nexus.co.in
 |---------|-------|--------------|------------|-----------|--------|
 | Platform Owner | ✅ | 3/3 | ✅ | ✅ | ✅ PASS |
 | Principal | ✅ | 8/8 | ✅ | ✅ | ✅ PASS |
-| HOD | ✅ | 9/10 | ✅ | ✅ | ❌ FAIL |
+| HOD | ✅ | 10/10 | ✅ | ✅ | ✅ PASS |
 | Admin Staff | ✅ | 6/6 | ✅ | ✅ | ✅ PASS |
 | Teacher | ✅ | 7/7 | ✅ | ✅ | ✅ PASS |
 | Lab Assistant | ✅ | 6/6 | ✅ | ✅ | ✅ PASS |
@@ -16,13 +16,13 @@ Domain: https://edu-nexus.co.in
 | Parent | ✅ | 6/6 | ✅ | ✅ | ✅ PASS |
 | Alumni | ✅ | 6/6 | ✅ | ✅ | ✅ PASS |
 
-**Overall: 8/9 personas passed all tests**
+**Overall: 9/9 personas passed all tests**
 
 ## Detailed Results
 
 ### Platform Owner (admin@edunexus.io)
 
-- **Login**: Success (1885ms)
+- **Login**: Success (1645ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -31,9 +31,9 @@ Domain: https://edu-nexus.co.in
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 366ms | ✅ |
-| Colleges | 184ms | ✅ |
-| Help & Support | 69ms | ✅ |
+| Dashboard | 605ms | ✅ |
+| Colleges | 580ms | ✅ |
+| Help & Support | 549ms | ✅ |
 
 #### Errors
 
@@ -47,7 +47,7 @@ Domain: https://edu-nexus.co.in
 
 ### Principal (principal@nexus-ec.edu)
 
-- **Login**: Success (1883ms)
+- **Login**: Success (1703ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -56,14 +56,14 @@ Domain: https://edu-nexus.co.in
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 150ms | ✅ |
-| Departments | 113ms | ✅ |
-| Faculty | 56ms | ✅ |
-| Students | 117ms | ✅ |
-| Academics | 143ms | ✅ |
-| Reports | 120ms | ✅ |
-| Fee Overview | 125ms | ✅ |
-| Help & Support | 66ms | ✅ |
+| Dashboard | 605ms | ✅ |
+| Departments | 563ms | ✅ |
+| Faculty | 544ms | ✅ |
+| Students | 567ms | ✅ |
+| Academics | 566ms | ✅ |
+| Reports | 572ms | ✅ |
+| Fee Overview | 572ms | ✅ |
+| Help & Support | 550ms | ✅ |
 
 #### Errors
 
@@ -75,8 +75,8 @@ Domain: https://edu-nexus.co.in
 
 ### HOD (hod.cse@nexus-ec.edu)
 
-- **Login**: Success (3012ms)
-- **Dashboard Load**: 2ms
+- **Login**: Success (1568ms)
+- **Dashboard Load**: 1ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
 
@@ -84,47 +84,30 @@ Domain: https://edu-nexus.co.in
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 738ms | ✅ |
-| Faculty | 112ms | ✅ |
-| Students | 124ms | ✅ |
-| Subjects | 117ms | ✅ |
-| Time Table | 61ms | ✅ |
-| Attendance | 0ms | ❌ page.goto: Timeout 30000ms exceeded.
-Call log:
-[2m  - navigating to "https://edu-nexus.co.in/hod/attendance", waiting until "load"[22m
- |
-| Results | 597ms | ✅ |
-| At-Risk Students | 60ms | ✅ |
-| Skill Gaps | 148ms | ✅ |
-| Help & Support | 76ms | ✅ |
+| Dashboard | 613ms | ✅ |
+| Faculty | 574ms | ✅ |
+| Students | 563ms | ✅ |
+| Subjects | 569ms | ✅ |
+| Time Table | 550ms | ✅ |
+| Attendance | 569ms | ✅ |
+| Results | 545ms | ✅ |
+| At-Risk Students | 546ms | ✅ |
+| Skill Gaps | 563ms | ✅ |
+| Help & Support | 545ms | ✅ |
 
 #### Errors
 
-- Attendance: page.goto: Timeout 30000ms exceeded.
-Call log:
-[2m  - navigating to "https://edu-nexus.co.in/hod/attendance", waiting until "load"[22m
-
 - Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)
 - Console: Failed to load resource: the server responded with a status of 401 (Unauthorized)
-- Console: Failed to load resource: net::ERR_NETWORK_IO_SUSPENDED
 - Console: Failed to load resource: the server responded with a status of 404 (Not Found)
-- Console: Auth initialization failed: TypeError: Failed to fetch
-    at https://edu-nexus.co.in/_next/static/chunks/9044-a2dd1bd90fbe8b5b.js:1:1634
-    at https://edu-nexus.co.in/_next/static/chunks/9044-a2dd1bd90fbe8b5b.js:1:2155
-    at iy (https://edu-nexus.co.in/_next/static/chunks/87c73c54-6924dc1d7f5947de.js:1:92274)
-    at um (https://edu-nexus.co.in/_next/static/chunks/87c73c54-6924dc1d7f5947de.js:1:116124)
-    at up (https://edu-nexus.co.in/_next/static/chunks/87c73c54-6924dc1d7f5947de.js:1:115786)
-    at um (https://edu-nexus.co.in/_next/static/chunks/87c73c54-6924dc1d7f5947de.js:1:116169)
-    at up (https://edu-nexus.co.in/_next/static/chunks/87c73c54-6924dc1d7f5947de.js:1:115786)
-    at um (https://edu-nexus.co.in/_next/static/chunks/87c73c54-6924dc1d7f5947de.js:1:116169)
-    at up (https://edu-nexus.co.in/_next/static/chunks/87c73c54-6924dc1d7f5947de.js:1:115786)
-    at um (https://edu-nexus.co.in/_next/static/chunks/87c73c54-6924dc1d7f5947de.js:1:116169)
+- Console: Failed to load resource: the server responded with a status of 404 (Not Found)
+- Console: Failed to load resource: the server responded with a status of 404 (Not Found)
 
 ---
 
 ### Admin Staff (admin@nexus-ec.edu)
 
-- **Login**: Success (1683ms)
+- **Login**: Success (1557ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -133,12 +116,12 @@ Call log:
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 170ms | ✅ |
-| Records | 144ms | ✅ |
-| Fee Management | 123ms | ✅ |
-| Attendance | 61ms | ✅ |
-| Announcements | 56ms | ✅ |
-| Help & Support | 52ms | ✅ |
+| Dashboard | 590ms | ✅ |
+| Records | 576ms | ✅ |
+| Fee Management | 629ms | ✅ |
+| Attendance | 555ms | ✅ |
+| Announcements | 567ms | ✅ |
+| Help & Support | 557ms | ✅ |
 
 #### Errors
 
@@ -152,7 +135,7 @@ Call log:
 
 ### Teacher (teacher@nexus-ec.edu)
 
-- **Login**: Success (1621ms)
+- **Login**: Success (1567ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -161,13 +144,13 @@ Call log:
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 165ms | ✅ |
-| Classes | 159ms | ✅ |
-| Attendance | 115ms | ✅ |
-| Results | 109ms | ✅ |
-| Materials | 138ms | ✅ |
-| Feedback | 125ms | ✅ |
-| Help & Support | 60ms | ✅ |
+| Dashboard | 622ms | ✅ |
+| Classes | 574ms | ✅ |
+| Attendance | 560ms | ✅ |
+| Results | 560ms | ✅ |
+| Materials | 588ms | ✅ |
+| Feedback | 576ms | ✅ |
+| Help & Support | 548ms | ✅ |
 
 #### Errors
 
@@ -180,7 +163,7 @@ Call log:
 
 ### Lab Assistant (lab@nexus-ec.edu)
 
-- **Login**: Success (1981ms)
+- **Login**: Success (1548ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -189,12 +172,12 @@ Call log:
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 49ms | ✅ |
-| Labs | 73ms | ✅ |
-| Attendance | 44ms | ✅ |
-| Equipment | 52ms | ✅ |
-| Marks Entry | 47ms | ✅ |
-| Help & Support | 88ms | ✅ |
+| Dashboard | 546ms | ✅ |
+| Labs | 544ms | ✅ |
+| Attendance | 544ms | ✅ |
+| Equipment | 545ms | ✅ |
+| Marks Entry | 541ms | ✅ |
+| Help & Support | 557ms | ✅ |
 
 #### Errors
 
@@ -208,7 +191,7 @@ Call log:
 
 ### Student (student@nexus-ec.edu)
 
-- **Login**: Success (1618ms)
+- **Login**: Success (1555ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -217,15 +200,15 @@ Call log:
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 141ms | ✅ |
-| Academics | 125ms | ✅ |
-| Attendance | 127ms | ✅ |
-| Results | 60ms | ✅ |
-| Fee Details | 130ms | ✅ |
-| ID Card | 57ms | ✅ |
-| Career | 117ms | ✅ |
-| Insights | 103ms | ✅ |
-| Help & Support | 61ms | ✅ |
+| Dashboard | 617ms | ✅ |
+| Academics | 577ms | ✅ |
+| Attendance | 588ms | ✅ |
+| Results | 546ms | ✅ |
+| Fee Details | 575ms | ✅ |
+| ID Card | 546ms | ✅ |
+| Career | 567ms | ✅ |
+| Insights | 567ms | ✅ |
+| Help & Support | 544ms | ✅ |
 
 #### Errors
 
@@ -238,8 +221,8 @@ Call log:
 
 ### Parent (parent@nexus-ec.edu)
 
-- **Login**: Success (1810ms)
-- **Dashboard Load**: 0ms
+- **Login**: Success (1598ms)
+- **Dashboard Load**: 4ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
 
@@ -247,12 +230,12 @@ Call log:
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 217ms | ✅ |
-| Academics | 127ms | ✅ |
-| Attendance | 115ms | ✅ |
-| Fee Details | 535ms | ✅ |
-| Communications | 47ms | ✅ |
-| Help & Support | 58ms | ✅ |
+| Dashboard | 1108ms | ✅ |
+| Academics | 593ms | ✅ |
+| Attendance | 569ms | ✅ |
+| Fee Details | 561ms | ✅ |
+| Communications | 569ms | ✅ |
+| Help & Support | 550ms | ✅ |
 
 #### Errors
 
@@ -265,7 +248,7 @@ Call log:
 
 ### Alumni (alumni@nexus-ec.edu)
 
-- **Login**: Success (1647ms)
+- **Login**: Success (1603ms)
 - **Dashboard Load**: 0ms
 - **404 Errors**: No
 - **All Pages Under 2s**: Yes
@@ -274,12 +257,12 @@ Call log:
 
 | Page | Load Time | Status |
 |------|-----------|--------|
-| Dashboard | 103ms | ✅ |
-| Events | 111ms | ✅ |
-| Jobs | 55ms | ✅ |
-| Mentorship | 101ms | ✅ |
-| Directory | 112ms | ✅ |
-| Help & Support | 77ms | ✅ |
+| Dashboard | 591ms | ✅ |
+| Events | 567ms | ✅ |
+| Jobs | 546ms | ✅ |
+| Mentorship | 567ms | ✅ |
+| Directory | 587ms | ✅ |
+| Help & Support | 568ms | ✅ |
 
 #### Errors
 
