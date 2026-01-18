@@ -222,6 +222,52 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Demo Video Section */}
+      <section id="demo" className="py-16 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <p className="text-blue-600 font-semibold text-sm uppercase tracking-wider mb-3">
+              See It In Action
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
+              Watch How Edu-Nexus Works
+            </h2>
+            <p className="mt-4 text-slate-600 max-w-2xl mx-auto">
+              30 seconds to see how AI powers every role in your institution.
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-slate-300/50 border border-slate-200">
+              <video
+                controls
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full aspect-video bg-black"
+                poster="/videos/demo-poster.jpg"
+              >
+                <source src="/videos/demo.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+
+            <div className="mt-8 text-center">
+              <Link href="/contact">
+                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/25 px-8">
+                  Schedule a Live Demo
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+              <p className="mt-3 text-sm text-slate-500">
+                Get a personalized walkthrough for your institution
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Problem-Agitation Section - "Aha Moments" */}
       <section id="problem" className="py-20 bg-slate-900 text-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
