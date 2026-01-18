@@ -186,14 +186,17 @@ async function testPersona(browser, persona, results) {
       try {
         const pageStart = Date.now();
 
-        // Navigate to page and wait for load state
-        await page.goto(`${DOMAIN}${pageInfo.path}`, { waitUntil: 'load', timeout: TIMEOUT });
+        // Navigate to page - use domcontentloaded for SPAs (faster, doesn't wait for all resources)
+        await page.goto(`${DOMAIN}${pageInfo.path}`, { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
 
-        // Measure time at load event (page fully rendered)
+        // Wait briefly for React to hydrate and render
+        await page.waitForTimeout(500);
+
+        // Measure time after initial render
         pageResult.loadTime = Date.now() - pageStart;
 
         // Also wait briefly for network to settle for 404 detection
-        await page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => {});
+        await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
         pageResult.success = true;
 
         // Check if we got redirected to login (session issue)
