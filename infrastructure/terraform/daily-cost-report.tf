@@ -163,10 +163,10 @@ def handler(event, context):
 ==============================
 Date: {yesterday.strftime('%Y-%m-%d')}
 
-Yesterday's Cost: ${yesterday_total:.2f}
-Month-to-Date: ${mtd_total:.2f}
-Budget: ${monthly_budget:.2f}
-Remaining: ${remaining:.2f} ({100-budget_pct:.0f}% left)
+Yesterday's Cost: $${yesterday_total:.2f}
+Month-to-Date: $${mtd_total:.2f}
+Budget: $${monthly_budget:.2f}
+Remaining: $${remaining:.2f} ({100-budget_pct:.0f}% left)
 
 """
 
@@ -175,13 +175,13 @@ Remaining: ${remaining:.2f} ({100-budget_pct:.0f}% left)
         for service, amount in services[:7]:  # Top 7 services
             # Shorten service names
             short_name = service.replace('Amazon ', '').replace('AWS ', '')
-            message += f"  - {short_name}: ${amount:.2f}\n"
+            message += f"  - {short_name}: $${amount:.2f}\n"
     else:
         message += "No charges recorded yesterday.\n"
 
     # Add warning if over 80% of budget
     if budget_pct > 80:
-        message += f"\n⚠️ WARNING: You've used {budget_pct:.0f}% of your monthly budget!\n"
+        message += f"\n WARNING: You've used {budget_pct:.0f}% of your monthly budget!\n"
 
     message += f"""
 ---
@@ -189,7 +189,7 @@ Generated at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
 """
 
     # Send email via SNS
-    subject = f"[EduNexus] Daily Cost: ${yesterday_total:.2f} | MTD: ${mtd_total:.2f}"
+    subject = f"[EduNexus] Daily Cost: $${yesterday_total:.2f} | MTD: $${mtd_total:.2f}"
 
     sns.publish(
         TopicArn=sns_topic,
@@ -197,7 +197,7 @@ Generated at {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
         Message=message
     )
 
-    print(f"Cost report sent: Yesterday=${yesterday_total:.2f}, MTD=${mtd_total:.2f}")
+    print(f"Cost report sent: Yesterday=$${yesterday_total:.2f}, MTD=$${mtd_total:.2f}")
 
     return {
         'statusCode': 200,
