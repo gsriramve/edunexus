@@ -2,7 +2,7 @@
 
 This document provides an overview of the EduNexus system architecture, including high-level design, component interactions, and deployment topology.
 
-**Last Updated:** January 11, 2026
+**Last Updated:** January 22, 2026
 
 ## High-Level Architecture
 
@@ -213,6 +213,12 @@ flowchart LR
         Transport["Transport"]
     end
 
+    subgraph EnrollmentModules["Enrollment Modules"]
+        StudentEnrollment["Student Enrollment"]
+        OnboardingFlow["Onboarding Flow"]
+        ApprovalWorkflow["Approval Workflow"]
+    end
+
     subgraph CommunityModules["Community Modules"]
         Parents["Parents"]
         Alumni["Alumni"]
@@ -229,9 +235,11 @@ flowchart LR
     CoreModules --> AcademicModules
     CoreModules --> StudentModules
     CoreModules --> StaffModules
+    CoreModules --> EnrollmentModules
     AcademicModules --> AdminModules
     StudentModules --> CommunityModules
     StaffModules --> SupportModules
+    EnrollmentModules --> StudentModules
 ```
 
 ## Database Schema Overview
@@ -248,6 +256,10 @@ The database contains 130+ models organized into functional groups:
 - `Department`, `Course`, `Subject`
 - `Exam`, `ExamResult`
 - `StudentAttendance`, `StudentFee`
+
+### Enrollment & Onboarding Models
+- `StudentEnrollment` - Enrollment workflow state and student data
+- `EnrollmentStatus` - Workflow states (INITIATED → COMPLETED)
 
 ### Growth & Career Models
 - `StudentGrowthIndex` - SGI scores
@@ -292,6 +304,17 @@ The database contains 130+ models organized into functional groups:
 ├── /student-*              # Student APIs
 ├── /parent-*               # Parent APIs
 ├── /alumni                 # Alumni APIs
+│
+├── /student-enrollment     # Enrollment & Onboarding
+│   ├── POST /initiate      # Admin initiates enrollment
+│   ├── POST /:id/send-invitation  # Send email invite
+│   ├── GET /verify/:token  # Verify token (public)
+│   ├── POST /signup/:token # Student completes signup
+│   ├── PATCH /profile/:token # Update profile
+│   ├── POST /submit/:token # Submit for review
+│   ├── POST /:id/admin-review # Admin approves
+│   ├── GET /pending-approval # HOD/Principal list
+│   └── POST /:id/approve   # Final approval
 │
 ├── /departments            # Academic
 ├── /courses

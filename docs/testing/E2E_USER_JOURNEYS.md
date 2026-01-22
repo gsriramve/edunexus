@@ -1,7 +1,7 @@
 # EduNexus - E2E User Journey Test Plan
 
-**Version:** 1.0
-**Created:** January 2026
+**Version:** 1.1
+**Updated:** January 22, 2026
 **Perspectives:** Product Team, BA, QA
 **Test Type:** Manual E2E Testing
 
@@ -15,6 +15,7 @@
 4. [Principal Journey](#4-principal-journey)
 5. [HOD Journey](#5-hod-journey)
 6. [Admin Staff Journey](#6-admin-staff-journey)
+6.5. [Student Enrollment & Onboarding Journey](#65-student-enrollment--onboarding-journey)
 7. [Teacher Journey](#7-teacher-journey)
 8. [Lab Assistant Journey](#8-lab-assistant-journey)
 9. [Student Journey](#9-student-journey)
@@ -526,6 +527,243 @@ curl -X POST http://localhost:3001/api/tenants \
 
 ---
 
+## 6.5 Student Enrollment & Onboarding Journey
+
+**Feature:** Complete student enrollment workflow from initiation to credential generation
+**Portal:** `/admin/enrollments/*`, `/enroll/[token]`, `/approvals/enrollments/*`
+**Pages:** Enrollment List, New Enrollment, Enrollment Detail, Public Onboarding, Approval Pages
+
+### TC-ENR-001: Enrollment List Page
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 - Critical |
+| **Precondition** | User logged in as `admin_staff` or `principal` |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Navigate to `/admin/enrollments` | Enrollment list page loads |
+| 2 | Verify page components | See: Title "Student Enrollments", "New Enrollment" button |
+| 3 | Check status filter | Filter dropdown works |
+| 4 | View enrollment statistics | Stats cards display (pending, approved, etc.) |
+
+### TC-ENR-002: Initiate New Enrollment
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 - Critical |
+| **Precondition** | Admin logged in, departments exist |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Navigate to `/admin/enrollments/new` | New enrollment form loads |
+| 2 | Verify form fields | First Name, Last Name, Email, Mobile, Department, Academic Year |
+| 3 | Enter valid student data | Form accepts input |
+| 4 | Select department from dropdown | Department selected |
+| 5 | Click "Create Enrollment" | Enrollment created, redirected to detail page |
+| 6 | Verify enrollment status | Status shows "INITIATED" |
+
+### TC-ENR-003: Send Invitation Email
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 - Critical |
+| **Precondition** | Enrollment created with status "INITIATED" |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Navigate to enrollment detail page | Detail page loads |
+| 2 | Click "Send Invitation" button | Confirmation dialog appears |
+| 3 | Confirm send | Email sent, status changes to "INVITATION_SENT" |
+| 4 | Check email (test inbox) | Invitation email received with link |
+| 5 | Verify token in URL | Token is valid UUID |
+
+### TC-ENR-004: Student Public Onboarding Page
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 - Critical |
+| **Precondition** | Invitation sent, have valid token |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Navigate to `/enroll/[token]` | Public onboarding page loads |
+| 2 | Verify token validation | Student info displayed (name, email) |
+| 3 | Check form sections | Personal Details, Academic Details, Documents sections |
+| 4 | Fill personal details (DOB, gender, address) | Form validates |
+| 5 | Fill academic details (previous education, marks) | Form validates |
+| 6 | Upload documents (photo, certificates) | Documents upload to S3 |
+| 7 | Click "Save Progress" | Progress saved |
+
+### TC-ENR-005: Student Submits Application
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 - Critical |
+| **Precondition** | Student has completed profile |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Verify all sections completed | Checkmarks visible |
+| 2 | Click "Submit for Review" | Confirmation dialog appears |
+| 3 | Confirm submission | Application submitted |
+| 4 | Verify status change | Status shows "SUBMITTED" |
+| 5 | Check confirmation message | Success message displayed |
+
+### TC-ENR-006: Admin Reviews Submission
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 - Critical |
+| **Precondition** | Application submitted, admin logged in |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Navigate to enrollment detail page | Application details visible |
+| 2 | Review student information | All submitted data displayed |
+| 3 | View uploaded documents | Documents viewable/downloadable |
+| 4 | Assign section | Section dropdown works |
+| 5 | Add admin notes (optional) | Notes field accepts input |
+| 6 | Click "Approve" | Status changes to "ADMIN_APPROVED" |
+
+### TC-ENR-007: Admin Requests Changes
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P2 - High |
+| **Precondition** | Application submitted, admin reviewing |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Review application with issues | Issues identified |
+| 2 | Click "Request Changes" | Dialog with notes field appears |
+| 3 | Enter reason for changes | Notes entered |
+| 4 | Submit request | Status changes to "CHANGES_REQUESTED" |
+| 5 | Student receives notification | Email sent to student |
+
+### TC-ENR-008: HOD/Principal Approval Page
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 - Critical |
+| **Precondition** | Application admin-approved, HOD logged in |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Navigate to `/approvals/enrollments` | Pending approvals list loads |
+| 2 | Filter by department | Filter works (HOD sees own dept only) |
+| 3 | View pending count | Count badge visible |
+| 4 | Click on enrollment | Detail view opens |
+| 5 | Review complete application | All data and documents visible |
+
+### TC-ENR-009: HOD Final Approval
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 - Critical |
+| **Precondition** | HOD logged in, pending approvals exist |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Open pending enrollment | Enrollment detail loads |
+| 2 | Click "Approve" | Confirmation dialog appears |
+| 3 | Confirm approval | Status changes to "HOD_APPROVED" |
+| 4 | Verify workflow continues | Moves to Principal queue OR completes |
+
+### TC-ENR-010: Principal Final Approval
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 - Critical |
+| **Precondition** | Principal logged in, HOD-approved enrollments exist |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Navigate to `/approvals/enrollments` | Pending approvals list loads |
+| 2 | Open HOD-approved enrollment | Enrollment detail loads |
+| 3 | Click "Approve" | Confirmation dialog appears |
+| 4 | Confirm approval | Status changes to "PRINCIPAL_APPROVED" → "COMPLETED" |
+
+### TC-ENR-011: Credential Generation
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 - Critical |
+| **Precondition** | Enrollment completed (final approval given) |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Verify enrollment status | Status is "COMPLETED" |
+| 2 | Check roll number generated | Format: YYDDDSSS (e.g., 26CSE001) |
+| 3 | Check official email generated | Format: firstname.lastname@domain.edu |
+| 4 | Verify student record created | Student appears in Students list |
+| 5 | Verify welcome email sent | Email with credentials received |
+
+### TC-ENR-012: Reject Enrollment
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P2 - High |
+| **Precondition** | HOD/Principal reviewing enrollment |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Open enrollment for review | Detail page loads |
+| 2 | Click "Reject" | Dialog with reason field appears |
+| 3 | Enter rejection reason | Reason entered |
+| 4 | Confirm rejection | Status changes to "REJECTED" |
+| 5 | Student notified | Rejection email sent with reason |
+
+### TC-ENR-013: Expired Invitation
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P2 - High |
+| **Precondition** | Invitation sent more than 7 days ago |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Navigate to expired token URL | Error page loads |
+| 2 | Verify error message | "Invitation expired" message displayed |
+| 3 | Admin resends invitation | New token generated, new email sent |
+
+### TC-ENR-014: End-to-End Enrollment Flow
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P1 - Critical |
+| **Precondition** | Fresh test environment |
+
+**Steps:**
+| # | Action | Expected Result |
+|---|--------|-----------------|
+| 1 | Login as Admin | Admin dashboard loads |
+| 2 | Create new enrollment | Enrollment initiated |
+| 3 | Send invitation | Email sent |
+| 4 | Open email link | Public page loads |
+| 5 | Complete profile | All sections filled |
+| 6 | Submit application | Status: SUBMITTED |
+| 7 | Login as Admin, approve | Status: ADMIN_APPROVED |
+| 8 | Login as HOD, approve | Status: HOD_APPROVED |
+| 9 | Login as Principal, approve | Status: COMPLETED |
+| 10 | Verify credentials | Roll number + email generated |
+| 11 | Student can login | New student accesses portal |
+
+---
+
 ## 7. Teacher Journey
 
 **Persona:** Faculty Member
@@ -996,8 +1234,8 @@ curl -X POST http://localhost:3001/api/tenants \
 
 | Priority | Count | Description |
 |----------|-------|-------------|
-| **P1 - Critical** | 28 | Core user flows, must work for launch |
-| **P2 - High** | 18 | Important features, needed for pilot |
+| **P1 - Critical** | 39 | Core user flows, must work for launch |
+| **P2 - High** | 21 | Important features, needed for pilot |
 | **P3 - Medium** | 5 | Nice-to-have features |
 
 ## Execution Checklist
@@ -1010,6 +1248,7 @@ curl -X POST http://localhost:3001/api/tenants \
 - [ ] Principal journey complete
 - [ ] HOD journey complete
 - [ ] Admin Staff journey complete
+- [ ] **Student Enrollment & Onboarding journey complete**
 - [ ] Teacher journey complete
 - [ ] Lab Assistant journey complete
 - [ ] Student journey complete
@@ -1266,7 +1505,75 @@ curl -X POST http://localhost:3001/api/staff \
 
 ---
 
-### 12.5 Student Endpoints
+### 12.5 Student Enrollment Endpoints
+
+```bash
+# Initiate enrollment (Admin)
+curl -X POST http://localhost:3001/api/student-enrollment/initiate \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -H "x-tenant-id: test-tenant-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Rahul",
+    "lastName": "Sharma",
+    "email": "rahul.test@example.com",
+    "mobileNumber": "9876543210",
+    "departmentId": "dept-cse-001",
+    "academicYear": "2025-26"
+  }'
+
+# List enrollments (Admin)
+curl http://localhost:3001/api/student-enrollment \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -H "x-tenant-id: test-tenant-001"
+
+# Send invitation (Admin)
+curl -X POST http://localhost:3001/api/student-enrollment/<ID>/send-invitation \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -H "x-tenant-id: test-tenant-001"
+
+# Verify token (Public)
+curl http://localhost:3001/api/student-enrollment/verify/<TOKEN>
+
+# Update profile (Public, token-based)
+curl -X PATCH http://localhost:3001/api/student-enrollment/profile/<TOKEN> \
+  -H "Content-Type: application/json" \
+  -d '{
+    "personalDetails": {
+      "dateOfBirth": "2005-05-15",
+      "gender": "male",
+      "address": "123 Main St, City"
+    }
+  }'
+
+# Submit application (Public, token-based)
+curl -X POST http://localhost:3001/api/student-enrollment/submit/<TOKEN>
+
+# Admin review (Admin)
+curl -X POST http://localhost:3001/api/student-enrollment/<ID>/admin-review \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -H "x-tenant-id: test-tenant-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "approve",
+    "sectionId": "section-a-001",
+    "notes": "Documents verified"
+  }'
+
+# Pending approvals (HOD/Principal)
+curl http://localhost:3001/api/student-enrollment/pending-approval \
+  -H "Authorization: Bearer <HOD_TOKEN>" \
+  -H "x-tenant-id: test-tenant-001"
+
+# Final approval (HOD/Principal)
+curl -X POST http://localhost:3001/api/student-enrollment/<ID>/approve \
+  -H "Authorization: Bearer <HOD_TOKEN>" \
+  -H "x-tenant-id: test-tenant-001"
+```
+
+---
+
+### 12.6 Student Record Endpoints
 
 ```bash
 # List students

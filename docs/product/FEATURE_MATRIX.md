@@ -25,6 +25,36 @@ This document maps all EduNexus features to user personas, showing which roles h
 
 ---
 
+## Student Enrollment & Onboarding
+
+| Feature | Platform | Principal | HOD | Admin | Teacher | Lab Asst | Student | Parent | Alumni |
+|---------|:--------:|:---------:|:---:|:-----:|:-------:|:--------:|:-------:|:------:|:------:|
+| **Enrollment Initiation** |
+| Initiate New Enrollment | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Send Invitation Email | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Resend Invitation | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| View Enrollment List | ❌ | ✅ | 👁️ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Cancel Enrollment | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Student Onboarding** |
+| Complete Profile (via token) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Upload Documents | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Submit Application | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| **Admin Review** |
+| Review Submitted Applications | ❌ | ✅ | 👁️ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Request Changes | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Assign Section | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Admin Approval | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Final Approval** |
+| View Pending Approvals | ❌ | ✅ | ✅ | 👁️ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| HOD Final Approval | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Principal Final Approval | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Reject Enrollment | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Credential Generation** |
+| Auto-generate Roll Number | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Auto-generate Official Email | ❌ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+---
+
 ## Academic Management
 
 | Feature | Platform | Principal | HOD | Admin | Teacher | Lab Asst | Student | Parent | Alumni |
@@ -214,12 +244,12 @@ This document maps all EduNexus features to user personas, showing which roles h
 | Persona | Full Access | View Only | Partial | Total |
 |---------|:-----------:|:---------:|:-------:|:-----:|
 | Platform Owner | 5 | 0 | 0 | 5 |
-| Principal | 45 | 8 | 0 | 53 |
-| HOD | 28 | 6 | 1 | 35 |
-| Admin Staff | 35 | 2 | 0 | 37 |
+| Principal | 60 | 8 | 0 | 68 |
+| HOD | 31 | 8 | 1 | 40 |
+| Admin Staff | 47 | 4 | 0 | 51 |
 | Teacher | 15 | 2 | 4 | 21 |
 | Lab Assistant | 8 | 2 | 0 | 10 |
-| Student | 25 | 0 | 3 | 28 |
+| Student | 28 | 0 | 3 | 31 |
 | Parent | 5 | 12 | 0 | 17 |
 | Alumni | 10 | 1 | 0 | 11 |
 
