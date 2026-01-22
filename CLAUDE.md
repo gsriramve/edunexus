@@ -80,12 +80,52 @@
 3. Seeded test data across 3 colleges
 4. Created sales deck (12 slides) with Quantumlayer branding
 
-## Next Steps
-See `PRODUCTION-ROADMAP.md` for detailed 5-week plan:
-- Week 1: Security fixes
-- Week 2-3: DPDP compliance (consent, erasure, parental consent)
-- Week 3-4: Testing (60%+ coverage)
-- Week 4-5: Documentation & monitoring
+## Current Readiness (Updated Jan 18, 2026)
+| Use Case | Status |
+|----------|--------|
+| Sales demos | ✅ READY |
+| Pilot with test data | ✅ READY |
+| Production with real data | ❌ NOT READY |
+| DPDP compliant | ❌ NOT READY |
+
+## Prioritized Next Steps (TO DO LATER)
+
+### Phase 1: Critical Security Fixes (Week 1) - ~15 hours
+| Task | File | Priority |
+|------|------|----------|
+| Make DB private | `infrastructure/terraform/rds.tf:52` | CRITICAL |
+| Enable DB backups (30 days) | `infrastructure/terraform/rds.tf:55` | CRITICAL |
+| Enable deletion protection | `infrastructure/terraform/rds.tf:64` | CRITICAL |
+| Restrict SSH to VPN/office IPs | `infrastructure/terraform/security-groups.tf:25` | HIGH |
+| Add rate limiting on auth | `apps/api/src/modules/auth/auth.controller.ts` | HIGH |
+| Rotate all API keys | `.env`, Secrets Manager | HIGH |
+
+### Phase 2: DPDP Compliance (Week 2-3) - ~70 hours
+| Task | DPDP Section | Priority | Hours |
+|------|--------------|----------|-------|
+| Consent management module | Section 6 | CRITICAL | 16-20 |
+| Account deletion (right to erasure) | Section 12 | CRITICAL | 12-16 |
+| Parental consent for minors | Section 9 | CRITICAL | 16-20 |
+| Grievance redressal mechanism | Section 13 | MEDIUM | 10-12 |
+| Data breach notification system | Section 8 | MEDIUM | 8-10 |
+| Privacy policy updates | Section 5 | MEDIUM | 8-10 |
+
+### Phase 3: Testing (Week 3-4) - ~55 hours
+| Task | Target | Hours |
+|------|--------|-------|
+| Unit tests (auth, payment, consent) | 60% coverage | 30-40 |
+| Integration tests (multi-tenant, payments) | Critical flows | 15-20 |
+
+### Phase 4: Documentation & Monitoring (Week 4-5) - ~30 hours
+| Task | Hours |
+|------|-------|
+| API documentation (Swagger) | 8-10 |
+| Operational runbooks | 12-15 |
+| CloudWatch monitoring & alerts | 10-12 |
+
+**Total Estimated Effort: 140-200 hours (3-5 weeks)**
+
+See `PRODUCTION-ROADMAP.md` for detailed implementation guides.
 
 ## Commands
 ```bash

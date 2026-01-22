@@ -8,7 +8,9 @@ import { setAuthContext as setApiAuthContext, getApiBaseUrl } from '@/lib/api';
 function getAuthApiUrl(): string {
   // Server-side: use env variable
   if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const envUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    // Remove /api suffix if present (we add it manually in fetch calls)
+    return envUrl.replace(/\/api$/, '');
   }
 
   // Client-side: derive from current origin for production
@@ -19,8 +21,8 @@ function getAuthApiUrl(): string {
     return `${protocol}//${hostname}`;
   }
 
-  // Local development: use localhost:3001
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  // Local development: use localhost:3001 directly (don't rely on env var which may be cached)
+  return 'http://localhost:3001';
 }
 
 // JWT payload structure

@@ -20,6 +20,7 @@ const PUBLIC_ROUTES = [
   '/verify',
   '/forgot-password',
   '/reset-password',
+  '/enroll',
 ];
 
 // API routes that are public

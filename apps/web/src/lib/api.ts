@@ -14,7 +14,7 @@ export function getApiBaseUrl(): string {
 
   // Server-side: use env variable
   if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   }
 
   // Client-side: check for explicit env variable first
@@ -37,7 +37,7 @@ export function getApiBaseUrl(): string {
   }
 
   // Fallback for local development
-  _cachedApiUrl = envUrl || 'http://localhost:3001/api';
+  _cachedApiUrl = envUrl || 'http://localhost:3001';
   return _cachedApiUrl;
 }
 
@@ -96,6 +96,10 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     }
     if (authContext.tenantId) {
       requestHeaders['x-user-tenant-id'] = authContext.tenantId;
+      // Also set x-tenant-id for backend guards if not explicitly provided
+      if (!tenantId) {
+        requestHeaders['x-tenant-id'] = authContext.tenantId;
+      }
     }
   }
 
@@ -103,7 +107,9 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     requestHeaders['x-tenant-id'] = tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+  // Ensure endpoint starts with /api
+  const apiEndpoint = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
+  const response = await fetch(`${getApiBaseUrl()}${apiEndpoint}`, {
     method,
     headers: requestHeaders,
     body: body ? JSON.stringify(body) : undefined,
@@ -152,6 +158,10 @@ async function uploadFile<T>(
     }
     if (authContext.tenantId) {
       requestHeaders['x-user-tenant-id'] = authContext.tenantId;
+      // Also set x-tenant-id for backend guards if not explicitly provided
+      if (!tenantId) {
+        requestHeaders['x-tenant-id'] = authContext.tenantId;
+      }
     }
   }
 
@@ -159,7 +169,9 @@ async function uploadFile<T>(
     requestHeaders['x-tenant-id'] = tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+  // Ensure endpoint starts with /api
+  const apiEndpoint = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
+  const response = await fetch(`${getApiBaseUrl()}${apiEndpoint}`, {
     method: 'POST',
     headers: requestHeaders,
     body: formData,
