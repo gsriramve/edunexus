@@ -60,6 +60,7 @@ import { AdminRecordsModule } from './modules/admin-records/admin-records.module
 import { ParentsModule } from './modules/parents/parents.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
+import { StudentEnrollmentModule } from './modules/student-enrollment/student-enrollment.module';
 
 @Module({
   imports: [
@@ -138,6 +139,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
     ParentsModule,
     LeadsModule,
     AttendanceModule,
+    StudentEnrollmentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

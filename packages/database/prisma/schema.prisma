@@ -137,19 +137,19 @@ model PlatformAuditLog {
 
 /// Sales leads from website contact form
 model Lead {
-  id              String   @id @default(cuid())
-  name            String
-  email           String
-  phone           String?
-  institutionName String
-  message         String?
-  source          String   @default("website") // website, referral, social_media, event, other
-  status          String   @default("new") // new, contacted, qualified, demo_scheduled, negotiation, won, lost
-  notes           String?
-  assignedTo      String?
+  id                  String   @id @default(cuid())
+  name                String
+  email               String
+  phone               String?
+  institutionName     String
+  message             String?
+  source              String   @default("website") // website, referral, social_media, event, other
+  status              String   @default("new") // new, contacted, qualified, demo_scheduled, negotiation, won, lost
+  notes               String?
+  assignedTo          String?
   convertedToTenantId String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   @@index([status])
   @@index([source])
@@ -175,13 +175,13 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  profile        UserProfile?
-  student        Student?
-  staff          Staff?
-  parent         Parent?
-  notifications  Notification[]
-  deviceTokens   DeviceToken[]
-  refreshTokens  RefreshToken[]
+  profile       UserProfile?
+  student       Student?
+  staff         Staff?
+  parent        Parent?
+  notifications Notification[]
+  deviceTokens  DeviceToken[]
+  refreshTokens RefreshToken[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -218,6 +218,22 @@ enum UserRole {
   student
   parent
   alumni
+}
+
+/// Enrollment workflow status
+enum EnrollmentStatus {
+  INITIATED // Admin created, email not sent yet
+  INVITATION_SENT // Email sent to student
+  STUDENT_SIGNED_UP // Student created account
+  PROFILE_INCOMPLETE // Student filling profile
+  SUBMITTED // Student submitted for review
+  ADMIN_APPROVED // Admin reviewed and approved
+  CHANGES_REQUESTED // Admin requested changes
+  HOD_APPROVED // HOD approved
+  PRINCIPAL_APPROVED // Principal approved
+  COMPLETED // All done, credentials assigned
+  REJECTED // Application rejected
+  EXPIRED // Invitation expired
 }
 
 /// User invitations - track pending user invitations
@@ -343,10 +359,11 @@ model Department {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  staff    Staff[]
-  courses  Course[]
-  students Student[]
-  alumniProfiles AlumniProfile[]
+  staff              Staff[]
+  courses            Course[]
+  students           Student[]
+  alumniProfiles     AlumniProfile[]
+  studentEnrollments StudentEnrollment[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -405,10 +422,10 @@ model Student {
   hostelAllocations   HostelAllocation[]
   hostelFees          HostelFee[]
   hostelComplaints    HostelComplaint[]
-  libraryCard             LibraryCard?
-  certificateRequests     CertificateRequest[]
-  teamMemberships         TeamMember[]
-  clubMemberships         ClubMember[]
+  libraryCard         LibraryCard?
+  certificateRequests CertificateRequest[]
+  teamMemberships     TeamMember[]
+  clubMemberships     ClubMember[]
   eventRegistrations  EventRegistration[]
   achievements        Achievement[]
   activityCredits     ActivityCredit[]
@@ -416,28 +433,31 @@ model Student {
   faceEnrollment      FaceEnrollment?
 
   // Student Growth & Career Indices
-  growthIndices         StudentGrowthIndex[]
+  growthIndices          StudentGrowthIndex[]
   careerReadinessIndices CareerReadinessIndex[]
 
   // Feedback System
-  feedbackEntries       FeedbackEntry[]
-  feedbackSummaries     FeedbackSummary[]
+  feedbackEntries   FeedbackEntry[]
+  feedbackSummaries FeedbackSummary[]
 
   // AI Guidance & Goals
-  aiGuidance            AiGuidance[]
-  studentGoals          StudentGoal[]
-  disengagementAlerts   DisengagementAlert[]
+  aiGuidance          AiGuidance[]
+  studentGoals        StudentGoal[]
+  disengagementAlerts DisengagementAlert[]
 
   // Journey Timeline
-  journeyMilestones     JourneyMilestone[]
-  semesterSnapshots     SemesterSnapshot[]
+  journeyMilestones JourneyMilestone[]
+  semesterSnapshots SemesterSnapshot[]
 
   // Alumni (post-graduation link)
-  alumniProfile         AlumniProfile?
-  alumniMentorships     AlumniMentorship[]
+  alumniProfile     AlumniProfile?
+  alumniMentorships AlumniMentorship[]
 
   // Assignments
   assignmentSubmissions AssignmentSubmission[]
+
+  // Enrollment record (links to onboarding workflow)
+  enrollment StudentEnrollment?
 
   @@unique([tenantId, rollNo])
   @@index([tenantId])
@@ -542,8 +562,8 @@ model TeacherSubject {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  staff       Staff        @relation(fields: [staffId], references: [id])
-  subject     Subject      @relation(fields: [subjectId], references: [id])
+  staff       Staff            @relation(fields: [staffId], references: [id])
+  subject     Subject          @relation(fields: [subjectId], references: [id])
   timetables  Timetable[]
   assignments Assignment[]
   folders     MaterialFolder[]
@@ -560,23 +580,23 @@ model TeacherSubject {
 
 /// Assignments created by teachers
 model Assignment {
-  id               String   @id @default(cuid())
-  tenantId         String
-  teacherSubjectId String
-  title            String
-  description      String?
-  instructions     String?  @db.Text
-  totalMarks       Int      @default(100)
-  dueDate          DateTime
-  status           String   @default("draft") // draft, active, completed, archived
-  attachments      Json     @default("[]") // Array of {name, url, type, size}
-  allowLateSubmission Boolean @default(false)
-  latePenaltyPercent  Int?   // Percentage deducted for late submissions
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  tenantId            String
+  teacherSubjectId    String
+  title               String
+  description         String?
+  instructions        String?  @db.Text
+  totalMarks          Int      @default(100)
+  dueDate             DateTime
+  status              String   @default("draft") // draft, active, completed, archived
+  attachments         Json     @default("[]") // Array of {name, url, type, size}
+  allowLateSubmission Boolean  @default(false)
+  latePenaltyPercent  Int? // Percentage deducted for late submissions
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  teacherSubject   TeacherSubject       @relation(fields: [teacherSubjectId], references: [id], onDelete: Cascade)
-  submissions      AssignmentSubmission[]
+  teacherSubject TeacherSubject         @relation(fields: [teacherSubjectId], references: [id], onDelete: Cascade)
+  submissions    AssignmentSubmission[]
 
   @@index([tenantId])
   @@index([teacherSubjectId])
@@ -597,12 +617,12 @@ model AssignmentSubmission {
   marks        Decimal?  @db.Decimal(5, 2)
   feedback     String?   @db.Text
   gradedAt     DateTime?
-  gradedBy     String?   // Staff ID who graded
+  gradedBy     String? // Staff ID who graded
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([assignmentId, studentId])
   @@index([tenantId])
@@ -626,8 +646,8 @@ model MaterialFolder {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  teacherSubject   TeacherSubject @relation(fields: [teacherSubjectId], references: [id], onDelete: Cascade)
-  materials        Material[]
+  teacherSubject TeacherSubject @relation(fields: [teacherSubjectId], references: [id], onDelete: Cascade)
+  materials      Material[]
 
   @@unique([teacherSubjectId, name])
   @@index([tenantId])
@@ -637,20 +657,20 @@ model MaterialFolder {
 
 /// Study materials uploaded by teachers
 model Material {
-  id          String   @id @default(cuid())
-  tenantId    String
-  folderId    String?
+  id               String   @id @default(cuid())
+  tenantId         String
+  folderId         String?
   teacherSubjectId String
-  name        String
-  description String?
-  fileUrl     String
-  fileType    String   // pdf, video, pptx, doc, image, zip, etc.
-  fileSize    Int      // Size in bytes
-  mimeType    String?
-  downloads   Int      @default(0)
-  isPublished Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  name             String
+  description      String?
+  fileUrl          String
+  fileType         String // pdf, video, pptx, doc, image, zip, etc.
+  fileSize         Int // Size in bytes
+  mimeType         String?
+  downloads        Int      @default(0)
+  isPublished      Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   folder         MaterialFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   teacherSubject TeacherSubject  @relation(fields: [teacherSubjectId], references: [id], onDelete: Cascade)
@@ -668,28 +688,28 @@ model Material {
 
 /// Class timetable entries - schedule for each class period
 model Timetable {
-  id              String   @id @default(cuid())
-  tenantId        String
+  id               String @id @default(cuid())
+  tenantId         String
   teacherSubjectId String
 
   // Schedule details
-  dayOfWeek       Int      // 0=Sunday, 1=Monday, ..., 6=Saturday
-  startTime       String   // HH:mm format (e.g., "09:00")
-  endTime         String   // HH:mm format (e.g., "10:30")
-  room            String?  // Room/venue name (e.g., "LH-101")
+  dayOfWeek Int // 0=Sunday, 1=Monday, ..., 6=Saturday
+  startTime String // HH:mm format (e.g., "09:00")
+  endTime   String // HH:mm format (e.g., "10:30")
+  room      String? // Room/venue name (e.g., "LH-101")
 
   // Period info
-  periodNumber    Int?     // Optional period number (1, 2, 3...)
+  periodNumber Int? // Optional period number (1, 2, 3...)
 
   // Validity
-  effectiveFrom   DateTime @default(now())
-  effectiveTo     DateTime?
-  isActive        Boolean  @default(true)
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  isActive      Boolean   @default(true)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  teacherSubject  TeacherSubject @relation(fields: [teacherSubjectId], references: [id], onDelete: Cascade)
+  teacherSubject TeacherSubject @relation(fields: [teacherSubjectId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([teacherSubjectId])
@@ -901,13 +921,13 @@ model CertificateType {
 
 /// Certificate requests from students
 model CertificateRequest {
-  id                String   @id @default(cuid())
+  id                String    @id @default(cuid())
   tenantId          String
   studentId         String
   certificateTypeId String
   purpose           String // Bank Loan, Visa Application, Higher Studies, etc.
-  status            String   @default("pending") // pending, processing, ready, issued, rejected
-  requestDate       DateTime @default(now())
+  status            String    @default("pending") // pending, processing, ready, issued, rejected
+  requestDate       DateTime  @default(now())
   processedDate     DateTime?
   issuedDate        DateTime?
   processedBy       String? // Staff ID who processed
@@ -2539,15 +2559,15 @@ model StudentGrowthIndex {
   year      Int
 
   // Components (0-100 scale)
-  academicScore    Float // 40% weight - CGPA trend, exam improvements
-  engagementScore  Float // 30% weight - clubs, events, attendance
-  skillsScore      Float // 20% weight - certifications, projects
-  behavioralScore  Float // 10% weight - feedback, punctuality
+  academicScore   Float // 40% weight - CGPA trend, exam improvements
+  engagementScore Float // 30% weight - clubs, events, attendance
+  skillsScore     Float // 20% weight - certifications, projects
+  behavioralScore Float // 10% weight - feedback, punctuality
 
   // Composite score
   sgiScore   Float // Weighted composite (0-100)
-  sgiTrend   String  @default("stable") // improving, stable, declining
-  trendDelta Float   @default(0) // Change from previous month
+  sgiTrend   String @default("stable") // improving, stable, declining
+  trendDelta Float  @default(0) // Change from previous month
 
   // Explainability - breakdown of each component
   academicBreakdown   Json? // {cgpaTrend, examImprovement, assignments}
@@ -2675,7 +2695,7 @@ model FeedbackCycle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  feedbackEntries  FeedbackEntry[]
+  feedbackEntries   FeedbackEntry[]
   feedbackSummaries FeedbackSummary[]
 
   @@unique([tenantId, month, year])
@@ -2686,7 +2706,7 @@ model FeedbackCycle {
 
 /// Feedback Entry - Individual feedback submission
 model FeedbackEntry {
-  id              String  @id @default(cuid())
+  id              String @id @default(cuid())
   tenantId        String
   cycleId         String
   targetStudentId String
@@ -2709,8 +2729,8 @@ model FeedbackEntry {
   improvements String? @db.Text // Areas for improvement
 
   // Normalized scores (after bias correction)
-  rawAverageScore    Float? // Simple average of ratings
-  normalizedScore    Float? // After bias normalization
+  rawAverageScore     Float? // Simple average of ratings
+  normalizedScore     Float? // After bias normalization
   evaluatorBiasFactor Float? // Detected bias factor
 
   // AI analysis
@@ -2752,7 +2772,7 @@ model FeedbackSummary {
   peerCount    Int @default(0)
 
   // AI-generated summary
-  aiSummary       String?   @db.Text
+  aiSummary       String? @db.Text
   topStrengths    Json? // [{strength, frequency, sources}]
   topImprovements Json? // [{area, frequency, suggestions}]
 
@@ -2784,7 +2804,7 @@ model AiGuidance {
   priority     String @default("medium") // low, medium, high, urgent
 
   title       String
-  description String  @db.Text
+  description String @db.Text
   actionItems Json? // [{action, deadline, completed}]
   resources   Json? // [{title, url, type}]
 
@@ -2825,10 +2845,10 @@ model StudentGoal {
   category    String // academic, career, skill, extracurricular, personal
 
   // Target metrics
-  targetDate  DateTime?
-  targetValue Float?
+  targetDate   DateTime?
+  targetValue  Float?
   currentValue Float?
-  unit        String? // e.g., "CGPA", "certifications", "%"
+  unit         String? // e.g., "CGPA", "certifications", "%"
 
   // Goal source
   isAiSuggested    Boolean @default(false)
@@ -2865,15 +2885,15 @@ model DisengagementAlert {
   severity  String @default("warning") // info, warning, critical
 
   // Metric details
-  metricName    String // e.g., "attendance_rate", "cgpa", "club_activity"
-  currentValue  Float
-  previousValue Float?
+  metricName     String // e.g., "attendance_rate", "cgpa", "club_activity"
+  currentValue   Float
+  previousValue  Float?
   thresholdValue Float
-  changePercent Float?
+  changePercent  Float?
 
   // Context
-  timeframe   String? // e.g., "last 30 days"
-  description String? @db.Text
+  timeframe        String? // e.g., "last 30 days"
+  description      String? @db.Text
   suggestedActions Json? // [{action, priority, assignedTo}]
 
   // Resolution tracking
@@ -3021,7 +3041,7 @@ model AlumniProfile {
   showEmployment     Boolean @default(true)
 
   // Mentorship
-  openToMentoring Boolean @default(false)
+  openToMentoring Boolean  @default(false)
   mentorshipAreas String[] @default([]) // Areas willing to mentor
 
   // Bio
@@ -3035,7 +3055,7 @@ model AlumniProfile {
   department Department? @relation(fields: [departmentId], references: [id])
 
   employmentHistory AlumniEmployment[]
-  mentorships       AlumniMentorship[] @relation("AlumniMentor")
+  mentorships       AlumniMentorship[]      @relation("AlumniMentor")
   contributions     AlumniContribution[]
   testimonials      AlumniTestimonial[]
   eventAttendances  AlumniEventAttendance[]
@@ -3094,7 +3114,7 @@ model AlumniMentorship {
   status    String @default("pending") // pending, active, completed, cancelled
 
   // Request details
-  requestMessage String? @db.Text
+  requestMessage  String? @db.Text
   responseMessage String? @db.Text
 
   startDate     DateTime?
@@ -3102,10 +3122,10 @@ model AlumniMentorship {
   meetingsCount Int       @default(0)
 
   // Ratings
-  studentRating  Int? // 1-5
-  studentReview  String?
-  alumniRating   Int? // 1-5
-  alumniReview   String?
+  studentRating Int? // 1-5
+  studentReview String?
+  alumniRating  Int? // 1-5
+  alumniReview  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3136,7 +3156,7 @@ model AlumniContribution {
   currency String   @default("INR")
 
   // For non-monetary
-  estimatedValue Decimal? @db.Decimal(12, 2)
+  estimatedValue   Decimal? @db.Decimal(12, 2)
   hoursContributed Int?
 
   // Allocation
@@ -3144,8 +3164,8 @@ model AlumniContribution {
   beneficiaryInfo String?
 
   // Status
-  status       String    @default("pending") // pending, approved, received, acknowledged
-  receivedDate DateTime?
+  status         String    @default("pending") // pending, approved, received, acknowledged
+  receivedDate   DateTime?
   acknowledgedBy String?
 
   // Recognition
@@ -3209,7 +3229,7 @@ model AlumniEvent {
   startDate DateTime
   endDate   DateTime?
   venue     String?
-  isVirtual Boolean  @default(false)
+  isVirtual Boolean   @default(false)
   meetLink  String?
 
   // Registration
@@ -3218,7 +3238,7 @@ model AlumniEvent {
   registrationFee      Decimal?  @db.Decimal(8, 2)
 
   // Target audience
-  targetBatches   String[] @default([]) // Empty = all batches
+  targetBatches     String[] @default([]) // Empty = all batches
   targetDepartments String[] @default([]) // Empty = all departments
 
   // Status
@@ -3243,8 +3263,8 @@ model AlumniEventAttendance {
   eventId  String
   alumniId String
 
-  registeredAt DateTime @default(now())
-  attended     Boolean  @default(false)
+  registeredAt DateTime  @default(now())
+  attended     Boolean   @default(false)
   attendedAt   DateTime?
 
   feedback String?
@@ -3282,9 +3302,9 @@ model AccreditationMetric {
   weightage   Float   @default(1) // Weight in overall score
 
   // Data source mapping
-  dataSource     String? // Which table/field to pull data from
+  dataSource         String? // Which table/field to pull data from
   calculationFormula String? @db.Text // Formula for calculation
-  mappedEntities Json? // [{entity, field, aggregation}]
+  mappedEntities     Json? // [{entity, field, aggregation}]
 
   // Benchmarks
   minThreshold Float? // Minimum acceptable value
@@ -3325,10 +3345,10 @@ model AccreditationValue {
   trend         String? // improving, stable, declining
 
   // Audit
-  calculatedAt   DateTime?
-  verifiedBy     String?
-  verifiedAt     DateTime?
-  isLatest       Boolean   @default(true)
+  calculatedAt DateTime?
+  verifiedBy   String?
+  verifiedAt   DateTime?
+  isLatest     Boolean   @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3354,18 +3374,18 @@ model AccreditationReport {
   description  String?
 
   // Scores
-  totalScore    Float?
-  maxScore      Float?
-  percentage    Float?
-  grade         String? // A++, A+, A, B++, etc. for NAAC
+  totalScore Float?
+  maxScore   Float?
+  percentage Float?
+  grade      String? // A++, A+, A, B++, etc. for NAAC
 
   // Report file
-  reportUrl    String?
-  reportS3Key  String?
-  generatedAt  DateTime?
+  reportUrl   String?
+  reportS3Key String?
+  generatedAt DateTime?
 
   // Status
-  status      String @default("draft") // draft, in_progress, review, submitted, approved
+  status      String    @default("draft") // draft, in_progress, review, submitted, approved
   submittedAt DateTime?
   submittedBy String?
 
@@ -3389,14 +3409,14 @@ model DirectMessage {
   tenantId String
 
   // Sender information
-  senderId     String
-  senderType   String // teacher, student, parent, staff, hod, principal
-  senderName   String
+  senderId   String
+  senderType String // teacher, student, parent, staff, hod, principal
+  senderName String
 
   // Recipient information (individual or group)
-  recipientType    String // individual, class, department, custom
-  recipientId      String? // User ID for individual, class/department ID for groups
-  recipientName    String? // Display name for recipient
+  recipientType     String // individual, class, department, custom
+  recipientId       String? // User ID for individual, class/department ID for groups
+  recipientName     String? // Display name for recipient
   recipientUserType String? // student, parent, teacher, staff (for individual)
 
   // For group messages - store recipient list
@@ -3404,35 +3424,35 @@ model DirectMessage {
 
   // Message content
   subject     String
-  content     String   @db.Text
-  messageType String   @default("general") // general, query, request, announcement, reply
+  content     String @db.Text
+  messageType String @default("general") // general, query, request, announcement, reply
 
   // Parent message for threads/replies
-  parentId    String?
-  threadId    String? // Root message ID for conversation threads
+  parentId String?
+  threadId String? // Root message ID for conversation threads
 
   // Attachments
   attachments Json? // Array of {name, url, type, size}
 
   // Status tracking
-  status      String    @default("sent") // draft, sent, delivered, read
-  isRead      Boolean   @default(false)
-  readAt      DateTime?
-  isStarred   Boolean   @default(false)
-  isArchived  Boolean   @default(false)
-  isDeleted   Boolean   @default(false) // Soft delete
-  deletedAt   DateTime?
+  status     String    @default("sent") // draft, sent, delivered, read
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  isStarred  Boolean   @default(false)
+  isArchived Boolean   @default(false)
+  isDeleted  Boolean   @default(false) // Soft delete
+  deletedAt  DateTime?
 
   // For sent messages - track delivery
-  deliveredCount Int @default(0)
-  readCount      Int @default(0)
+  deliveredCount  Int @default(0)
+  readCount       Int @default(0)
   totalRecipients Int @default(1)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  parent   DirectMessage?  @relation("MessageThread", fields: [parentId], references: [id])
-  replies  DirectMessage[] @relation("MessageThread")
+  parent   DirectMessage?   @relation("MessageThread", fields: [parentId], references: [id])
+  replies  DirectMessage[]  @relation("MessageThread")
   receipts MessageReceipt[]
 
   @@index([tenantId])
@@ -3477,4 +3497,73 @@ model MessageReceipt {
   @@index([recipientId])
   @@index([readAt])
   @@map("message_receipts")
+}
+
+// =============================================================================
+// STUDENT ENROLLMENT & ONBOARDING
+// =============================================================================
+
+/// Student enrollment workflow - tracks entire onboarding process
+model StudentEnrollment {
+  id       String @id @default(cuid())
+  tenantId String
+
+  // Basic info from Admin
+  firstName    String
+  lastName     String
+  email        String
+  mobileNumber String
+  departmentId String
+  academicYear String // e.g., "2025-26"
+
+  // Invitation
+  invitationToken     String   @unique
+  invitationExpiresAt DateTime
+
+  // Student profile data (JSON for flexibility)
+  personalDetails Json? // DOB, gender, address, emergency contact, etc.
+  academicDetails Json? // Previous education, marks, certificates
+  documents       Json? // Uploaded document URLs
+
+  // Assignments (by Admin)
+  section       String? // Section assignment (e.g., "A", "B")
+  rollNumber    String? // Generated: YYDDDSSS (e.g., 25CSE001)
+  officialEmail String? // Generated: firstname.lastname@domain.edu
+
+  // Workflow status
+  status      EnrollmentStatus @default(INITIATED)
+  submittedAt DateTime?
+
+  // Admin review
+  adminReviewedAt   DateTime?
+  adminReviewedById String?
+  adminNotes        String?
+
+  // HOD approval
+  hodApprovedAt   DateTime?
+  hodApprovedById String?
+  hodNotes        String?
+
+  // Principal approval
+  principalApprovedAt   DateTime?
+  principalApprovedById String?
+  principalNotes        String?
+
+  // Completion
+  completedAt DateTime?
+
+  // Relations
+  department Department @relation(fields: [departmentId], references: [id])
+  studentId  String?    @unique
+  student    Student?   @relation(fields: [studentId], references: [id])
+
+  // Audit
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  @@index([tenantId, status])
+  @@index([invitationToken])
+  @@index([email, tenantId])
+  @@map("student_enrollments")
 }

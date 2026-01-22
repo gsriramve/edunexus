@@ -6327,4 +6327,173 @@ export const faceRecognitionApi = {
     ),
 };
 
+// ============ Student Enrollment Types ============
+
+export type EnrollmentStatusType =
+  | 'INITIATED'
+  | 'INVITATION_SENT'
+  | 'STUDENT_SIGNED_UP'
+  | 'PROFILE_INCOMPLETE'
+  | 'SUBMITTED'
+  | 'ADMIN_APPROVED'
+  | 'CHANGES_REQUESTED'
+  | 'HOD_APPROVED'
+  | 'PRINCIPAL_APPROVED'
+  | 'COMPLETED'
+  | 'REJECTED'
+  | 'EXPIRED';
+
+export interface StudentEnrollment {
+  id: string;
+  tenantId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  mobileNumber: string;
+  departmentId: string;
+  department: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  academicYear: string;
+  invitationToken: string;
+  invitationExpiresAt: string;
+  personalDetails?: Record<string, any>;
+  academicDetails?: Record<string, any>;
+  documents?: Record<string, any>;
+  sectionId?: string;
+  section?: string;
+  rollNumber?: string;
+  officialEmail?: string;
+  status: EnrollmentStatusType;
+  submittedAt?: string;
+  adminReviewedAt?: string;
+  adminReviewedById?: string;
+  adminNotes?: string;
+  hodApprovedAt?: string;
+  hodApprovedById?: string;
+  principalApprovedAt?: string;
+  principalApprovedById?: string;
+  completedAt?: string;
+  studentId?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdById: string;
+}
+
+export interface InitiateEnrollmentInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  mobileNumber: string;
+  departmentId: string;
+  academicYear: string;
+}
+
+export interface EnrollmentQueryParams {
+  status?: EnrollmentStatusType;
+  departmentId?: string;
+  academicYear?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface UpdateProfileInput {
+  personalDetails?: Record<string, any>;
+  academicDetails?: Record<string, any>;
+  documents?: Record<string, any>;
+}
+
+export interface AdminReviewInput {
+  action: 'approve' | 'request_changes' | 'reject';
+  section?: string;
+  notes?: string;
+}
+
+export interface ApprovalInput {
+  action: 'approve' | 'reject';
+  notes?: string;
+}
+
+export interface StudentSignupInput {
+  clerkUserId: string;
+}
+
+export interface TokenVerificationResult {
+  valid: boolean;
+  expired: boolean;
+  enrollment?: StudentEnrollment;
+}
+
+// ============ Student Enrollment API ============
+
+export const studentEnrollmentApi = {
+  // ============ Admin Endpoints ============
+
+  // Initiate a new enrollment
+  initiate: (data: InitiateEnrollmentInput) =>
+    api<StudentEnrollment>('/student-enrollment/initiate', { method: 'POST', body: data }),
+
+  // List enrollments with filters
+  list: (params?: EnrollmentQueryParams) => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.departmentId) searchParams.set('departmentId', params.departmentId);
+    if (params?.academicYear) searchParams.set('academicYear', params.academicYear);
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.offset) searchParams.set('offset', params.offset.toString());
+    const query = searchParams.toString();
+    return api<{ data: StudentEnrollment[]; total: number }>(
+      `/student-enrollment${query ? `?${query}` : ''}`
+    );
+  },
+
+  // Get enrollment by ID
+  get: (id: string) =>
+    api<StudentEnrollment>(`/student-enrollment/${id}`),
+
+  // Send/resend invitation email
+  sendInvitation: (id: string) =>
+    api<StudentEnrollment>(`/student-enrollment/${id}/send-invitation`, { method: 'POST' }),
+
+  // Admin review (approve, request changes, reject)
+  adminReview: (id: string, data: AdminReviewInput) =>
+    api<StudentEnrollment>(`/student-enrollment/${id}/admin-review`, { method: 'POST', body: data }),
+
+  // Delete/cancel enrollment
+  delete: (id: string) =>
+    api<void>(`/student-enrollment/${id}`, { method: 'DELETE' }),
+
+  // ============ Public Endpoints (Token-based) ============
+
+  // Verify invitation token
+  verifyToken: (token: string) =>
+    api<TokenVerificationResult>(`/student-enrollment/verify/${token}`),
+
+  // Complete signup with Clerk account
+  signup: (token: string, data: StudentSignupInput) =>
+    api<StudentEnrollment>(`/student-enrollment/signup/${token}`, { method: 'POST', body: data }),
+
+  // Update profile
+  updateProfile: (token: string, data: UpdateProfileInput) =>
+    api<StudentEnrollment>(`/student-enrollment/profile/${token}`, { method: 'PATCH', body: data }),
+
+  // Submit for review
+  submit: (token: string) =>
+    api<StudentEnrollment>(`/student-enrollment/submit/${token}`, { method: 'POST' }),
+
+  // ============ Approval Endpoints (HOD/Principal) ============
+
+  // Get pending approvals
+  getPendingApprovals: () =>
+    api<StudentEnrollment[]>('/student-enrollment/pending-approval'),
+
+  // Approve or reject enrollment (final approval)
+  approve: (id: string, data: ApprovalInput) =>
+    api<StudentEnrollment>(`/student-enrollment/${id}/approve`, { method: 'POST', body: data }),
+};
+
 export { ApiError };

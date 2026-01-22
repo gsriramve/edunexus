@@ -995,3 +995,38 @@ export {
   type MatchedStudent,
   type DetectedFaceResult,
 } from './use-face-recognition';
+
+// ============ Student Enrollment Hooks ============
+// Student enrollment hooks are in a separate file: use-student-enrollment.ts
+export {
+  // Query keys
+  studentEnrollmentKeys,
+  // Admin query hooks
+  useStudentEnrollments,
+  useStudentEnrollment,
+  // Admin mutation hooks
+  useInitiateEnrollment,
+  useSendEnrollmentInvitation,
+  useAdminReviewEnrollment,
+  useDeleteEnrollment,
+  // Public (token-based) query hooks
+  useVerifyEnrollmentToken,
+  // Public mutation hooks
+  useEnrollmentSignup,
+  useUpdateEnrollmentProfile,
+  useSubmitEnrollment,
+  // Approval query hooks
+  usePendingEnrollmentApprovals,
+  // Approval mutation hooks
+  useApproveEnrollment,
+  // Types
+  type StudentEnrollment,
+  type EnrollmentStatusType,
+  type InitiateEnrollmentInput,
+  type EnrollmentQueryParams,
+  type UpdateProfileInput,
+  type AdminReviewInput,
+  type ApprovalInput,
+  type StudentSignupInput,
+  type TokenVerificationResult,
+} from './use-student-enrollment';
