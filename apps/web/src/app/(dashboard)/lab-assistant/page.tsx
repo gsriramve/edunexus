@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useLabAssistantDashboard } from "@/hooks/use-lab-assistant";
+import { EquipmentRiskAlert } from "@/components/insights";
 
 function LoadingSkeleton() {
   return (
@@ -364,6 +365,12 @@ export default function LabAssistantDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI-Powered Equipment Risk Prediction */}
+      <EquipmentRiskAlert
+        tenantId={tenantId}
+        minRiskScore={50}
+      />
 
       {/* Equipment Alerts */}
       <Card>

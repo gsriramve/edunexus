@@ -30,6 +30,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useHodDashboard } from "@/hooks/use-hod-dashboard";
+import { SilentStrugglersAlert } from "@/components/insights";
 
 export default function HODDashboard() {
   const tenantId = useTenantId() || '';
@@ -349,6 +350,19 @@ export default function HODDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Insights - Silent Strugglers */}
+      {department?.id && (
+        <SilentStrugglersAlert
+          tenantId={tenantId}
+          departmentId={department.id}
+          limit={10}
+          onStudentClick={(studentId) => {
+            // Navigate to student profile
+            console.log('View student:', studentId);
+          }}
+        />
+      )}
 
       {/* Semester-wise Students & Alerts */}
       <div className="grid gap-6 md:grid-cols-2">

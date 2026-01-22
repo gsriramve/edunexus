@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useTeacherDashboard, type TeacherDashboardResponse, type ScheduleItemDto, type PendingTaskDto, type SubjectStatsDto } from "@/hooks/use-teacher-dashboard";
+import { DailyFocusList } from "@/components/insights";
 
 // Sample data for demo purposes when API fails
 const sampleDashboardData: TeacherDashboardResponse = {
@@ -335,6 +336,16 @@ export default function TeacherDashboard() {
           )}
         </div>
       )}
+
+      {/* AI-Powered Daily Focus - Students Needing Attention */}
+      <DailyFocusList
+        tenantId={tenantId}
+        limit={5}
+        onStudentClick={(studentId) => {
+          // Navigate to student profile
+          window.location.href = `/teacher/students/${studentId}`;
+        }}
+      />
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3">

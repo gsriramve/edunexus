@@ -58,6 +58,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { TenantHealthCard } from '@/components/insights';
 import {
   usePlatformStats,
   usePlatformTenants,
@@ -412,6 +413,15 @@ export default function PlatformDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI-Powered Tenant Health Monitor */}
+      <TenantHealthCard
+        limit={10}
+        onTenantClick={(tenantId) => {
+          // Navigate to tenant details
+          console.log('View tenant:', tenantId);
+        }}
+      />
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="tenants" className="space-y-4">

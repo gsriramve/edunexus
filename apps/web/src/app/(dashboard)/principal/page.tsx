@@ -29,6 +29,7 @@ import {
   type ActivityDto,
   type EventDto,
 } from "@/hooks/use-principal-dashboard";
+import { InstitutionalPulse } from "@/components/insights";
 
 export default function PrincipalDashboard() {
   const { isLoading: authLoading } = useAuth();
@@ -186,6 +187,14 @@ export default function PrincipalDashboard() {
           </Link>
         ))}
       </div>
+
+      {/* AI-Powered Institutional Pulse */}
+      <InstitutionalPulse
+        tenantId={tenantId}
+        onViewDepartment={(departmentId) => {
+          window.location.href = `/principal/departments/${departmentId}`;
+        }}
+      />
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3">

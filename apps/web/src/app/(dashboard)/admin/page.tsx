@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useAuth } from "@/lib/auth";
 import { useAdminDashboard } from "@/hooks/use-admin-dashboard";
+import { FeeRiskPredictor } from "@/components/insights";
 
 export default function AdminStaffDashboard() {
   const tenantId = useTenantId() || '';
@@ -229,6 +230,17 @@ export default function AdminStaffDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI-Powered Fee Risk Predictor */}
+      <FeeRiskPredictor
+        tenantId={tenantId}
+        minRiskScore={50}
+        limit={10}
+        onStudentClick={(studentId) => {
+          // Navigate to student profile
+          console.log('View student:', studentId);
+        }}
+      />
 
       {/* Monthly Collection Progress */}
       <Card>

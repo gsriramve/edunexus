@@ -43,6 +43,7 @@ import {
   EventCardSkeleton,
   EventsEmptyState,
 } from "@/components/alumni/EventCard";
+import { AlumniImpactStory } from "@/components/insights";
 
 export default function AlumniDashboardPage() {
   const tenantId = useTenantId();
@@ -125,6 +126,14 @@ export default function AlumniDashboardPage() {
 
       {/* Quick Stats */}
       <AlumniStatsRow stats={dashboardStats} isLoading={false} />
+
+      {/* AI-Powered Impact Story */}
+      {profile?.id && tenantId && (
+        <AlumniImpactStory
+          tenantId={tenantId}
+          alumniId={profile.id}
+        />
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Profile Card */}

@@ -61,6 +61,7 @@ import { ParentsModule } from './modules/parents/parents.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { StudentEnrollmentModule } from './modules/student-enrollment/student-enrollment.module';
+import { InsightsModule } from './modules/insights/insights.module';
 
 @Module({
   imports: [
@@ -140,6 +141,7 @@ import { StudentEnrollmentModule } from './modules/student-enrollment/student-en
     LeadsModule,
     AttendanceModule,
     StudentEnrollmentModule,
+    InsightsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

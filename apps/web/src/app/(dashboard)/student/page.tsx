@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useStudentByUserId, useStudentDashboard, useStudentAcademics } from "@/hooks/use-api";
+import { CareerPathVisualizer } from "@/components/insights";
 import { useStudentCGPA } from "@/hooks/use-exams";
 import { type StudentScheduleItem, type StudentNotification, type AIInsight } from "@/lib/api";
 
@@ -290,6 +291,18 @@ export default function StudentDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Career Path Visualizer */}
+      {studentId && (
+        <CareerPathVisualizer
+          tenantId={tenantId}
+          studentId={studentId}
+          onAlumniClick={(alumniId) => {
+            // Navigate to alumni profile or start chat
+            console.log('Connect with alumni:', alumniId);
+          }}
+        />
+      )}
 
       {/* Second Row */}
       <div className="grid gap-6 lg:grid-cols-2">

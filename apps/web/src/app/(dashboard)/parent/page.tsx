@@ -35,6 +35,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantId } from "@/hooks/use-tenant";
 import { useParentChildren } from "@/hooks/use-parents";
 import { useParentDashboard } from "@/hooks/use-parent-dashboard";
+import { ParentEarlyWarning } from "@/components/insights";
 
 export default function ParentDashboard() {
   const { user } = useAuth();
@@ -296,6 +297,19 @@ export default function ParentDashboard() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* AI-Powered Early Warning Alert */}
+      {selectedChildId && (
+        <ParentEarlyWarning
+          tenantId={tenantId}
+          studentId={selectedChildId}
+          studentName={currentChild.name}
+          onContactTeacher={() => {
+            // Navigate to communication page
+            window.location.href = '/parent/communication';
+          }}
+        />
       )}
 
       {/* Main Content */}
