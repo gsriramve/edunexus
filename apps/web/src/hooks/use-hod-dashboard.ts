@@ -102,7 +102,7 @@ async function hodDashboardApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/hod-dashboard${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/hod-dashboard${endpoint}`, {
     method: 'GET',
     headers,
   });

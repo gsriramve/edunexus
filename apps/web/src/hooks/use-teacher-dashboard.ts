@@ -84,7 +84,7 @@ async function teacherDashboardApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/teacher-dashboard${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/teacher-dashboard${endpoint}`, {
     method: 'GET',
     headers,
   });

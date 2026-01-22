@@ -83,7 +83,7 @@ async function studentCareerApi<T>(
     if (authContext.role) headers['x-user-role'] = authContext.role;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/student-career${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/student-career${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

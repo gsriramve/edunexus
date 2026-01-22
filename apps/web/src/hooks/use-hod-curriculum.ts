@@ -120,7 +120,7 @@ async function hodCurriculumApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/hod-curriculum${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/hod-curriculum${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

@@ -61,7 +61,7 @@ async function hodSkillGapsApi<T>(
     if (authContext.role) headers['x-user-role'] = authContext.role;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/hod-skill-gaps${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/hod-skill-gaps${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

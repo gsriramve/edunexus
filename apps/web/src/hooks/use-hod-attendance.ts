@@ -107,7 +107,7 @@ async function hodAttendanceApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/hod-attendance${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/hod-attendance${endpoint}`, {
     method: 'GET',
     headers,
   });

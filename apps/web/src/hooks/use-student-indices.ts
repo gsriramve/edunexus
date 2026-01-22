@@ -175,7 +175,7 @@ async function studentIndicesApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/student-indices${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/student-indices${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

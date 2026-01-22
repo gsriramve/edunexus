@@ -322,7 +322,7 @@ async function principalDashboardApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/principal-dashboard${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/principal-dashboard${endpoint}`, {
     method: 'GET',
     headers,
   });

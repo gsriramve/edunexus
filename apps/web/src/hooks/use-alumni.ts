@@ -349,7 +349,7 @@ async function alumniApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/alumni${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/alumni${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -385,7 +385,7 @@ async function alumniUploadFile<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/alumni${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/alumni${endpoint}`, {
     method: 'POST',
     headers,
     body: formData,

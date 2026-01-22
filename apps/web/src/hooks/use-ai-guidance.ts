@@ -344,7 +344,7 @@ async function aiGuidanceApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/ai-guidance${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/ai-guidance${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

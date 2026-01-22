@@ -169,7 +169,7 @@ async function hodExamsApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/hod/exams${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/hod/exams${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

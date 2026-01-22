@@ -141,7 +141,7 @@ async function studentGrowthApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/student-indices${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/student-indices${endpoint}`, {
     method: 'GET',
     headers,
   });

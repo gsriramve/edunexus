@@ -144,7 +144,7 @@ async function hodReportsApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/hod-reports${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/hod-reports${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

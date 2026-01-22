@@ -275,7 +275,7 @@ async function insightsApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/insights${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/insights${endpoint}`, {
     method: 'GET',
     headers,
   });

@@ -73,7 +73,7 @@ async function feedbackApi<T>(
     if (authContext.role) headers['x-user-role'] = authContext.role;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/feedback${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/feedback${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

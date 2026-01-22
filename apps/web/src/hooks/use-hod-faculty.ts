@@ -133,7 +133,7 @@ async function hodFacultyApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/hod-faculty${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/hod-faculty${endpoint}`, {
     method: 'GET',
     headers,
   });

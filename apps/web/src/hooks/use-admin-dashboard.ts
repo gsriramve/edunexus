@@ -130,7 +130,7 @@ async function adminDashboardApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/admin-dashboard${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/admin-dashboard${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

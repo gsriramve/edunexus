@@ -230,7 +230,7 @@ async function feedbackApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/feedback${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/feedback${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

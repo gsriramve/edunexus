@@ -157,7 +157,7 @@ async function parentDashboardApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/parent-dashboard${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/parent-dashboard${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

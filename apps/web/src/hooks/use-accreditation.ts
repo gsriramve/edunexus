@@ -333,7 +333,7 @@ async function accreditationApi<T>(
     if (authContext.role) headers['x-user-role'] = authContext.role;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/accreditation${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/accreditation${endpoint}`, {
     ...options,
     headers: { ...headers, ...(options.headers as Record<string, string>) },
     credentials: 'include',

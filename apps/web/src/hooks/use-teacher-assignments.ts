@@ -147,7 +147,7 @@ async function teacherAssignmentsApi<T>(
     if (authContext.tenantId) headers['x-user-tenant-id'] = authContext.tenantId;
   }
 
-  const response = await fetch(`${getApiBaseUrl()}/teacher-assignments${endpoint}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/teacher-assignments${endpoint}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
