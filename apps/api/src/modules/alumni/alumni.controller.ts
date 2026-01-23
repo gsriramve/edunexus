@@ -673,14 +673,15 @@ export class AlumniController {
   }
 
   /**
-   * Get event by ID
+   * Get upcoming events
+   * NOTE: This route MUST come before 'events/:id' to avoid being matched by the parametric route
    */
-  @Get('events/:id')
-  async getEvent(
+  @Get('events/upcoming')
+  async getUpcomingEvents(
     @TenantId() tenantId: string,
-    @Param('id') id: string,
+    @Query('limit') limit?: number,
   ) {
-    return this.eventsService.getEvent(tenantId, id);
+    return this.eventsService.getUpcomingEvents(tenantId, limit);
   }
 
   /**
@@ -695,14 +696,14 @@ export class AlumniController {
   }
 
   /**
-   * Get upcoming events
+   * Get event by ID
    */
-  @Get('events/upcoming')
-  async getUpcomingEvents(
+  @Get('events/:id')
+  async getEvent(
     @TenantId() tenantId: string,
-    @Query('limit') limit?: number,
+    @Param('id') id: string,
   ) {
-    return this.eventsService.getUpcomingEvents(tenantId, limit);
+    return this.eventsService.getEvent(tenantId, id);
   }
 
   /**
