@@ -1,3 +1,5 @@
+"use client";
+
 import { PersonaPageTemplate } from "@/components/marketing";
 import {
   BookOpen,
@@ -11,11 +13,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-export const metadata = {
-  title: "EduNexus for HODs | Department Management Dashboard",
-  description:
-    "Identify silent strugglers, optimize faculty workload, and track curriculum gaps with AI-powered insights.",
-};
 
 export default function ForHODsPage() {
   return (

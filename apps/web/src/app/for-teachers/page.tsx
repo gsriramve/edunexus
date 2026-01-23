@@ -1,3 +1,5 @@
+"use client";
+
 import { PersonaPageTemplate } from "@/components/marketing";
 import {
   UserCheck,
@@ -11,11 +13,6 @@ import {
   Users,
 } from "lucide-react";
 
-export const metadata = {
-  title: "EduNexus for Teachers | Classroom Excellence",
-  description:
-    "Face recognition attendance in 30 seconds, AI identifies at-risk students, and digital grading saves hours weekly.",
-};
 
 export default function ForTeachersPage() {
   return (

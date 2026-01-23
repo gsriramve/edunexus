@@ -1,3 +1,5 @@
+"use client";
+
 import { PersonaPageTemplate } from "@/components/marketing";
 import {
   Trophy,
@@ -11,11 +13,6 @@ import {
   Building2,
 } from "lucide-react";
 
-export const metadata = {
-  title: "EduNexus for Alumni | Give Back & Connect",
-  description:
-    "See the real impact of your mentorship. Connect with batchmates, mentor students, and stay engaged with your alma mater.",
-};
 
 export default function ForAlumniPage() {
   return (

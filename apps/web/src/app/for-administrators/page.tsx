@@ -1,3 +1,5 @@
+"use client";
+
 import { PersonaPageTemplate } from "@/components/marketing";
 import {
   Briefcase,
@@ -11,11 +13,6 @@ import {
   Library,
 } from "lucide-react";
 
-export const metadata = {
-  title: "EduNexus for Administrators | Operations Hub",
-  description:
-    "35% faster fee collection, one-click certificates, bulk imports, and AI-powered smart search for all records.",
-};
 
 export default function ForAdministratorsPage() {
   return (

@@ -1,3 +1,5 @@
+"use client";
+
 import { PersonaPageTemplate } from "@/components/marketing";
 import {
   User,
@@ -11,11 +13,6 @@ import {
   Calendar,
 } from "lucide-react";
 
-export const metadata = {
-  title: "EduNexus for Students | Your Academic Journey",
-  description:
-    "See your career path clearly, predict your scores with 85% accuracy, and connect with alumni mentors who've been where you want to go.",
-};
 
 export default function ForStudentsPage() {
   return (

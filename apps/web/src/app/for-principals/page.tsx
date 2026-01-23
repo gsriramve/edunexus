@@ -1,3 +1,5 @@
+"use client";
+
 import { PersonaPageTemplate } from "@/components/marketing";
 import {
   GraduationCap,
@@ -11,11 +13,6 @@ import {
   Award,
 } from "lucide-react";
 
-export const metadata = {
-  title: "EduNexus for Principals | AI-Powered Institution Leadership",
-  description:
-    "See your entire institution's health in 30 seconds. AI predicts dropouts 6 weeks early. Auto-generated NAAC reports save 100+ hours.",
-};
 
 export default function ForPrincipalsPage() {
   return (

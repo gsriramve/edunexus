@@ -1,3 +1,5 @@
+"use client";
+
 import { PersonaPageTemplate } from "@/components/marketing";
 import {
   Users,
@@ -11,11 +13,6 @@ import {
   Heart,
 } from "lucide-react";
 
-export const metadata = {
-  title: "EduNexus for Parents | Peace of Mind",
-  description:
-    "Get warned 6 weeks before problems, not after. Real-time attendance alerts, progress insights, and direct teacher communication.",
-};
 
 export default function ForParentsPage() {
   return (
