@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Users, LayoutGrid, Clock, Shield } from "lucide-react";
 
 interface StatItem {
-  icon: typeof Building2;
+  icon: typeof LayoutGrid;
   value: number;
   suffix: string;
   label: string;
