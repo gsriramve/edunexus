@@ -27,12 +27,12 @@ export function getApiBaseUrl(): string {
   // Client-side: derive API URL from current host (for deployed environments)
   const { protocol, hostname } = window.location;
 
-  // If accessing via IP or non-localhost domain, use same host with /api path
+  // If accessing via IP or non-localhost domain, use same host
   // Nginx proxies /api to port 3001, so we NEVER specify the port
+  // NOTE: Don't include /api here - the api() function adds /api prefix to endpoints
   if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-    // For production, use the same origin with /api path (nginx handles proxying)
-    // IMPORTANT: Never include port - nginx proxies /api to internal port 3001
-    _cachedApiUrl = `${protocol}//${hostname}/api`;
+    // For production, use the same origin (nginx handles proxying /api to port 3001)
+    _cachedApiUrl = `${protocol}//${hostname}`;
     return _cachedApiUrl;
   }
 
