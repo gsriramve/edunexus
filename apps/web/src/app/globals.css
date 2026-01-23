@@ -47,6 +47,17 @@
 
 :root {
   --radius: 0.625rem;
+
+  /* Persona Colors */
+  --persona-platform-owner: #f59e0b;
+  --persona-principal: #3b82f6;
+  --persona-hod: #8b5cf6;
+  --persona-admin: #10b981;
+  --persona-teacher: #ec4899;
+  --persona-lab: #06b6d4;
+  --persona-student: #6366f1;
+  --persona-parent: #f97316;
+  --persona-alumni: #14b8a6;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
