@@ -1,14 +1,21 @@
 # EduNexus AWS Deployment Guide
 
+> **CURRENT STATUS (2026-03-03): ALL INFRASTRUCTURE SHUT DOWN**
+>
+> EC2 instance **STOPPED**, RDS **STOPPED**, Elastic IP **RELEASED**, all EventBridge auto-start/stop rules **DISABLED**.
+> The $100 AWS Free Tier credit was fully exhausted on 2026-03-01.
+> See [Restart Procedure](#restart-procedure) below to bring the environment back online.
+
 ## Budget Overview
 
 | Item | Value |
 |------|-------|
-| **Available Credits** | $100.00 |
-| **Credit Type** | AWS Free Tier |
-| **Expiration** | January 9, 2027 |
-| **Estimated Monthly Cost** | $17-25 |
-| **Expected Runway** | 4-6 months |
+| **AWS Free Tier Credit ($100)** | **EXHAUSTED** (03/01/2026) |
+| **Remaining Credits** | ~$42.27 (3 Explore credits, shared with Careerfied account) |
+| **Credit Expiration** | January 9, 2027 |
+| **Current Monthly Cost** | **~$5/mo** (EBS + RDS storage only while stopped) |
+| **Instance Status** | **ALL STOPPED** |
+| **Elastic IP** | **RELEASED** (was 15.206.243.177) |
 
 ---
 
@@ -546,13 +553,65 @@ docker system prune -a
 
 ## Quick Reference
 
-| Item | Value |
-|------|-------|
-| **EC2 IP** | `<your-elastic-ip>` |
-| **RDS Endpoint** | `<your-rds-endpoint>.ap-south-1.rds.amazonaws.com` |
-| **S3 Bucket** | `edunexus-demo-uploads` |
-| **Demo URL** | `https://demo.edunexus.io` |
-| **SSH Command** | `ssh -i key.pem ec2-user@<EC2-IP>` |
+| Item | Value | Status |
+|------|-------|--------|
+| **EC2 Instance** | `i-08ba5ac1298133995` (t3.medium) | **STOPPED** |
+| **Elastic IP** | ~~15.206.243.177~~ | **RELEASED** |
+| **RDS** | `edunexus-demo-postgres` (db.t3.micro) | **STOPPED** |
+| **RDS Endpoint** | `edunexus-demo-postgres.cvi02c06krh6.ap-south-1.rds.amazonaws.com` | Offline |
+| **S3 Bucket** | `edunexus-demo-uploads` | Active |
+| **Demo URL** | `https://edu-nexus.co.in` | **OFFLINE** |
+| **EBS Volume** | 50 GB gp3 | Data preserved |
+| **RDS Storage** | 20 GB gp2 | Data preserved |
+
+> **Note:** RDS auto-restarts after 7 days. Check and re-stop if not needed.
+
+## Restart Procedure
+
+> **Use this to bring the EduNexus demo environment back online.**
+
+### Step 1: Start RDS (takes ~5 minutes)
+```bash
+aws rds start-db-instance --db-instance-identifier edunexus-demo-postgres --region ap-south-1
+# Wait for status to become 'available'
+aws rds wait db-instance-available --db-instance-identifier edunexus-demo-postgres --region ap-south-1
+```
+
+### Step 2: Start EC2 Instance
+```bash
+aws ec2 start-instances --instance-ids i-08ba5ac1298133995 --region ap-south-1
+# Wait ~60 seconds
+aws ec2 describe-instances --instance-ids i-08ba5ac1298133995 --region ap-south-1 \
+  --query 'Reservations[0].Instances[0].[State.Name,PublicIpAddress]' --output table
+```
+
+### Step 3: Allocate New Elastic IP (old one was released)
+```bash
+# Allocate new EIP
+aws ec2 allocate-address --region ap-south-1 --domain vpc
+# Note the AllocationId and PublicIp
+
+# Associate with instance
+aws ec2 associate-address --instance-id i-08ba5ac1298133995 --allocation-id <NEW_ALLOC_ID> --region ap-south-1
+```
+
+### Step 4: Update DNS
+Update the A record for `edu-nexus.co.in` to point to the new Elastic IP.
+
+### Step 5: Verify
+```bash
+ssh -i key.pem ubuntu@<NEW_IP>
+docker ps  # Verify containers are running
+curl http://localhost:3000  # Web
+curl http://localhost:3001/api/health  # API
+```
+
+### Step 6: (Optional) Re-enable Auto Schedule
+```bash
+aws events enable-rule --name edunexus-demo-ec2-start-schedule --region ap-south-1
+aws events enable-rule --name edunexus-demo-ec2-stop-schedule --region ap-south-1
+aws events enable-rule --name edunexus-demo-daily-cost-report --region ap-south-1
+```
 
 ---
 
