@@ -62,18 +62,22 @@ Consolidated EduNexus infrastructure for cost efficiency and operational simplic
 
 ## Production Configuration
 
-> **SHUTDOWN STATUS (2026-03-03):** EC2 stopped, RDS stopped, EIP released, all automation disabled.
-> See `docs/AWS-DEPLOYMENT-GUIDE.md` → "Restart Procedure" to bring back online.
+> **ALL INFRASTRUCTURE TERMINATED (2026-03-03)**
+> EC2 terminated, RDS deleted, EBS deleted, EIP released, Lambda/EventBridge/CW/SNS all deleted.
+> Monthly bill: **$0.00**. AMI + RDS snapshot preserved for recovery.
+> See `docs/AWS-DEPLOYMENT-GUIDE.md` → "Deploy From Scratch" to rebuild.
 
 ### EC2 Instance
 ```
-Instance ID: i-08ba5ac1298133995
-Type: t3.medium
+Instance ID: i-08ba5ac1298133995 — TERMINATED
+Type: t3.medium (was)
 Region: ap-south-1
 Elastic IP: RELEASED (was 15.206.243.177)
 DNS: edu-nexus.co.in (OFFLINE)
-Status: STOPPED (since 2026-03-03)
-EBS: 50 GB gp3 (data preserved)
+Status: TERMINATED (since 2026-03-03)
+EBS: DELETED (was 50 GB gp3)
+AMI Backup: ami-0adbce39165b5133c
+RDS Snapshot: edunexus-final-snapshot-2026-03-03
 ```
 
 ### Docker Containers

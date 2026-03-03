@@ -1,21 +1,24 @@
 # EduNexus AWS Deployment Guide
 
-> **CURRENT STATUS (2026-03-03): ALL INFRASTRUCTURE SHUT DOWN**
+> **CURRENT STATUS (2026-03-03): ALL INFRASTRUCTURE TERMINATED**
 >
-> EC2 instance **STOPPED**, RDS **STOPPED**, Elastic IP **RELEASED**, all EventBridge auto-start/stop rules **DISABLED**.
-> The $100 AWS Free Tier credit was fully exhausted on 2026-03-01.
-> See [Restart Procedure](#restart-procedure) below to bring the environment back online.
+> All AWS resources **permanently deleted** to bring monthly bill to **$0.00**.
+> AMI backup: `ami-0adbce39165b5133c` (ap-south-1). RDS snapshot: `edunexus-final-snapshot-2026-03-03`.
+> Everything needed to redeploy is in this Git repo. Estimated redeploy time: **~35-50 minutes**.
+> See [Deploy From Scratch](#deploy-from-scratch) below.
 
 ## Budget Overview
 
 | Item | Value |
 |------|-------|
 | **AWS Free Tier Credit ($100)** | **EXHAUSTED** (03/01/2026) |
-| **Remaining Credits** | ~$42.27 (3 Explore credits, shared with Careerfied account) |
-| **Credit Expiration** | January 9, 2027 |
-| **Current Monthly Cost** | **~$5/mo** (EBS + RDS storage only while stopped) |
-| **Instance Status** | **ALL STOPPED** |
+| **Remaining Credits** | ~$42.27 (3 Explore credits, shared with Careerfied account, expire 01/09/2027) |
+| **Current Monthly Cost** | **$0.00** (all resources terminated) |
+| **EC2 Instance** | **TERMINATED** (was i-08ba5ac1298133995) |
+| **RDS Instance** | **DELETED** (final snapshot preserved) |
 | **Elastic IP** | **RELEASED** (was 15.206.243.177) |
+| **EBS Volume** | **DELETED** (was 50 GB gp3) |
+| **S3 Buckets** | **Retained** (edunexus-demo-uploads, edunexus-demo-backups) |
 
 ---
 
@@ -555,63 +558,64 @@ docker system prune -a
 
 | Item | Value | Status |
 |------|-------|--------|
-| **EC2 Instance** | `i-08ba5ac1298133995` (t3.medium) | **STOPPED** |
+| **EC2 Instance** | ~~i-08ba5ac1298133995~~ | **TERMINATED** |
 | **Elastic IP** | ~~15.206.243.177~~ | **RELEASED** |
-| **RDS** | `edunexus-demo-postgres` (db.t3.micro) | **STOPPED** |
-| **RDS Endpoint** | `edunexus-demo-postgres.cvi02c06krh6.ap-south-1.rds.amazonaws.com` | Offline |
-| **S3 Bucket** | `edunexus-demo-uploads` | Active |
+| **RDS** | ~~edunexus-demo-postgres~~ | **DELETED** (snapshot preserved) |
+| **EBS Volume** | ~~50 GB gp3~~ | **DELETED** |
+| **S3 Bucket** | `edunexus-demo-uploads` | **Retained** |
+| **S3 Backups** | `edunexus-demo-backups-1a18d68f` | **Retained** |
 | **Demo URL** | `https://edu-nexus.co.in` | **OFFLINE** |
-| **EBS Volume** | 50 GB gp3 | Data preserved |
-| **RDS Storage** | 20 GB gp2 | Data preserved |
+| **AMI Backup** | `ami-0adbce39165b5133c` (ap-south-1) | Preserved |
+| **RDS Snapshot** | `edunexus-final-snapshot-2026-03-03` | Preserved |
 
-> **Note:** RDS auto-restarts after 7 days. Check and re-stop if not needed.
+## Deploy From Scratch
 
-## Restart Procedure
+> **All infrastructure was terminated on 2026-03-03. Use this to rebuild from zero.**
+> Estimated time: **~35-50 minutes**. All code and Terraform configs are in this Git repo.
 
-> **Use this to bring the EduNexus demo environment back online.**
-
-### Step 1: Start RDS (takes ~5 minutes)
+### Option A: Use Terraform (recommended, full IaC)
 ```bash
-aws rds start-db-instance --db-instance-identifier edunexus-demo-postgres --region ap-south-1
-# Wait for status to become 'available'
-aws rds wait db-instance-available --db-instance-identifier edunexus-demo-postgres --region ap-south-1
+cd infrastructure/terraform
+
+# Initialize and apply
+terraform init
+terraform plan
+terraform apply
+
+# This creates: VPC, EC2, RDS, S3, Security Groups, Lambda, EventBridge
+# Note the outputs for EC2 IP and RDS endpoint
 ```
 
-### Step 2: Start EC2 Instance
+### Option B: Launch from AMI Backup (fastest for EC2)
 ```bash
-aws ec2 start-instances --instance-ids i-08ba5ac1298133995 --region ap-south-1
-# Wait ~60 seconds
-aws ec2 describe-instances --instance-ids i-08ba5ac1298133995 --region ap-south-1 \
-  --query 'Reservations[0].Instances[0].[State.Name,PublicIpAddress]' --output table
-```
+# Launch EC2 from saved AMI (has all Docker images + data)
+aws ec2 run-instances \
+  --image-id ami-0adbce39165b5133c \
+  --instance-type t3.medium \
+  --key-name edunexus-demo-key \
+  --region ap-south-1 \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=edunexus-demo-server}]'
 
-### Step 3: Allocate New Elastic IP (old one was released)
-```bash
-# Allocate new EIP
+# Allocate EIP
 aws ec2 allocate-address --region ap-south-1 --domain vpc
-# Note the AllocationId and PublicIp
-
-# Associate with instance
-aws ec2 associate-address --instance-id i-08ba5ac1298133995 --allocation-id <NEW_ALLOC_ID> --region ap-south-1
+aws ec2 associate-address --instance-id <NEW_ID> --allocation-id <ALLOC_ID> --region ap-south-1
 ```
 
-### Step 4: Update DNS
-Update the A record for `edu-nexus.co.in` to point to the new Elastic IP.
-
-### Step 5: Verify
+### Option C: Restore RDS from Snapshot
 ```bash
-ssh -i key.pem ubuntu@<NEW_IP>
-docker ps  # Verify containers are running
-curl http://localhost:3000  # Web
-curl http://localhost:3001/api/health  # API
+aws rds restore-db-instance-from-db-snapshot \
+  --db-instance-identifier edunexus-demo-postgres \
+  --db-snapshot-identifier edunexus-final-snapshot-2026-03-03 \
+  --db-instance-class db.t3.micro \
+  --region ap-south-1
 ```
 
-### Step 6: (Optional) Re-enable Auto Schedule
-```bash
-aws events enable-rule --name edunexus-demo-ec2-start-schedule --region ap-south-1
-aws events enable-rule --name edunexus-demo-ec2-stop-schedule --region ap-south-1
-aws events enable-rule --name edunexus-demo-daily-cost-report --region ap-south-1
-```
+### After Deployment
+1. Update DNS for `edu-nexus.co.in` → new EC2 IP
+2. SSH into EC2: `ssh -i key.pem ubuntu@<NEW_IP>`
+3. Start containers: `cd edunexus && docker-compose --profile app up -d`
+4. Verify: `curl https://edu-nexus.co.in`
+5. Update this document with new resource IDs
 
 ---
 
